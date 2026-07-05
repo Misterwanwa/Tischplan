@@ -1,0 +1,17 @@
+{
+  "short_name": "Tischplan",
+  "name": "Tischplan - Speiseplaner",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#1c1917",
+  "display": "standalone",
+  "orientation": "portrait"
+}

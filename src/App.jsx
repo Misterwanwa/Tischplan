@@ -1,0 +1,2034 @@
+import React, { useState, useEffect, useMemo, useContext, createContext, useRef } from 'react';
+import {
+  Calendar, ChevronLeft, ChevronRight, Plus, X, Search, ShoppingCart, BookOpen,
+  Settings as SettingsIcon, Camera, Upload, Sparkles, Trash2, Edit2, Check,
+  AlertTriangle, Utensils, Coffee, Cookie, Cake, Sun, Moon, Loader2, ExternalLink,
+  Copy, Printer, User, Users, Star, Save,
+} from 'lucide-react';
+
+/* ---------------------------------- Design tokens ---------------------------------- */
+const inputCls = "w-full px-3 py-2 rounded-lg border border-stone-300 text-sm focus:outline-none focus:ring-1 focus:ring-stone-900 bg-white";
+const labelCls = "font-mono uppercase tracking-wide text-xs text-stone-400";
+const primaryBtnCls = "w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-stone-900 text-white font-mono uppercase tracking-wide text-xs font-semibold disabled:opacity-40 active:scale-[0.99]";
+const secondaryBtnCls = "w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-stone-300 text-stone-700 text-sm font-medium active:scale-[0.99]";
+const cardCls = "bg-white rounded-xl border border-stone-200 p-4";
+
+/* ---------------------------------- Constants ---------------------------------- */
+const MEAL_TIMES = [
+  { key: 'breakfast', label: 'Frühstück', icon: Coffee, color: 'bg-amber-600', dot: 'bg-amber-500' },
+  { key: 'lunch', label: 'Mittagessen', icon: Sun, color: 'bg-emerald-700', dot: 'bg-emerald-600' },
+  { key: 'dinner', label: 'Abendessen', icon: Moon, color: 'bg-indigo-700', dot: 'bg-indigo-600' },
+];
+const COURSES = [
+  { key: 'snack', label: 'Snack', icon: Cookie },
+  { key: 'main', label: 'Hauptspeise', icon: Utensils },
+  { key: 'dessert', label: 'Nachspeise', icon: Cake },
+];
+const COURSE_KEYS = COURSES.map(c => c.key);
+const MEAL_KEYS = MEAL_TIMES.map(m => m.key);
+const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+const LONG_WEEKDAYS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+const KNOWN_UNITS = ['g', 'kg', 'ml', 'l', 'el', 'tl', 'stück', 'stk', 'prise', 'tasse', 'becher', 'dose', 'packung', 'pck', 'bund', 'zehe', 'zehen', 'scheibe', 'scheiben', 'msp', 'handvoll'];
+const NUTRIENT_KEYS = ['kcal', 'protein', 'carbs', 'fat'];
+const NUTRIENT_LABELS = { kcal: 'kcal', protein: 'Eiweiß', carbs: 'Kohlenh.', fat: 'Fett' };
+
+const DEFAULT_SETTINGS = {
+  people: [
+    { name: 'Person 1', targets: { kcal: 2000, protein: 80, carbs: 250, fat: 70 } },
+    { name: 'Person 2', targets: { kcal: 2000, protein: 80, carbs: 250, fat: 70 } },
+  ],
+  cookbooks: [],
+  coverTitle: 'Unser Kochbuch',
+  cookbookVolumes: [],
+  defaultCalendarView: 'week',
+  showNextMonday: false,
+};
+
+/* ---------------------------------- Helpers ---------------------------------- */
+function pad(n) { return String(n).padStart(2, '0'); }
+function dateKey(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function todayKey() { return dateKey(new Date()); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+function formatLongDate(dk) {
+  const [y, m, d] = dk.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return `${LONG_WEEKDAYS[date.getDay()]}, ${d}. ${MONTHS[m - 1]} ${y}`;
+}
+
+function emptyDayPlan() {
+  const p = {};
+  for (const mt of MEAL_KEYS) p[mt] = { snack: null, main: null, dessert: null };
+  return p;
+}
+
+function mealTimeCounts(plan) {
+  const counts = {};
+  for (const mt of MEAL_KEYS) counts[mt] = COURSE_KEYS.filter(co => plan[mt] && plan[mt][co]).length;
+  return counts;
+}
+
+function parseIngredientLine(line) {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  const tokens = trimmed.split(/\s+/);
+  let amount = null, unit = '', nameTokens = tokens;
+  const numToken = tokens[0] ? tokens[0].replace(',', '.') : '';
+  if (/^\d+(\.\d+)?$/.test(numToken)) {
+    amount = parseFloat(numToken);
+    nameTokens = tokens.slice(1);
+    if (nameTokens[0] && KNOWN_UNITS.includes(nameTokens[0].toLowerCase())) {
+      unit = nameTokens[0];
+      nameTokens = nameTokens.slice(1);
+    }
+  }
+  return { amount, unit, name: nameTokens.join(' ') || trimmed, raw: trimmed };
+}
+function parseIngredientsText(text) {
+  return text.split('\n').map(parseIngredientLine).filter(Boolean);
+}
+function ingredientsToText(ings) {
+  return (ings || []).map(i => i.raw || [i.amount, i.unit, i.name].filter(x => x !== null && x !== '' && x !== undefined).join(' ')).join('\n');
+}
+
+async function resizeImage(file, maxDim = 700, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+        else if (height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function callClaude(prompt, useSearch) {
+  const body = { model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] };
+  if (useSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('API-Fehler');
+  const data = await res.json();
+  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  const first = text.indexOf('{'); const last = text.lastIndexOf('}');
+  if (first === -1 || last === -1) throw new Error('Keine JSON-Antwort erhalten');
+  return JSON.parse(text.slice(first, last + 1));
+}
+const RECIPE_JSON_SCHEMA = '{"title": "...", "servings": Zahl, "ingredients": ["Menge Einheit Zutat", ...], "steps": ["Schritt 1", "Schritt 2", ...], "sourceUrl": "...", "nutrition": {"kcal": Zahl, "protein": Zahl, "carbs": Zahl, "fat": Zahl}}';
+
+async function estimateNutrition(ingredientsText, servings) {
+  const prompt = `Schätze die Nährwerte PRO PORTION für ein Rezept mit ${servings} Portionen. Zutaten:\n${ingredientsText}\n\nAntworte NUR mit JSON, ohne weiteren Text, im Format: {"kcal": Zahl, "protein": Zahl, "carbs": Zahl, "fat": Zahl}`;
+  return callClaude(prompt, false);
+}
+async function searchRecipeOnline(query) {
+  const prompt = `Suche im Web nach einem echten, existierenden Rezept für "${query}". Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz und knapp (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
+  return callClaude(prompt, true);
+}
+async function extractRecipeFromUrl(url) {
+  const prompt = `Finde den Inhalt dieser Rezept-Seite und extrahiere das Rezept daraus: ${url}\nFalls die Seite nicht direkt zugänglich ist, nutze eine Websuche, um ihren Inhalt zu finden. Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion falls nicht angegeben. "sourceUrl" = "${url}".`;
+  return callClaude(prompt, true);
+}
+async function searchRecipeOnSite(domain, query) {
+  const prompt = `Suche auf der Website ${domain} (site:${domain}) nach einem passenden Rezept: ${query}. Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
+  return callClaude(prompt, true);
+}
+function buildRecipeFromExtraction(result, source) {
+  return {
+    title: result.title || 'Rezept',
+    servings: result.servings || 1,
+    ingredients: parseIngredientsText((result.ingredients || []).join('\n')),
+    steps: result.steps || [],
+    nutrition: result.nutrition ? {
+      kcal: Math.round(result.nutrition.kcal) || 0, protein: Math.round(result.nutrition.protein) || 0,
+      carbs: Math.round(result.nutrition.carbs) || 0, fat: Math.round(result.nutrition.fat) || 0,
+    } : null,
+    photo: null,
+    source,
+  };
+}
+
+async function storageGet(key, shared, fallback) {
+  try {
+    if (window.storage && typeof window.storage.get === 'function') {
+      const r = await window.storage.get(key, shared);
+      return r ? JSON.parse(r.value) : fallback;
+    }
+    if (shared) {
+      try {
+        const res = await fetch(`/api/storage?key=${encodeURIComponent(key)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && 'value' in data && data.value !== null) {
+            localStorage.setItem(`shared_${key}`, JSON.stringify(data.value));
+            return data.value;
+          }
+        }
+      } catch (apiError) {
+        console.warn('KV storage get failed, falling back to local cache:', apiError);
+      }
+      const cachedVal = localStorage.getItem(`shared_${key}`);
+      if (cachedVal !== null) return JSON.parse(cachedVal);
+    }
+    const localVal = localStorage.getItem(key);
+    return localVal ? JSON.parse(localVal) : fallback;
+  } catch (e) { return fallback; }
+}
+async function storageSet(key, value, shared) {
+  try {
+    if (window.storage && typeof window.storage.set === 'function') {
+      await window.storage.set(key, JSON.stringify(value), shared);
+      return;
+    }
+    if (shared) {
+      localStorage.setItem(`shared_${key}`, JSON.stringify(value));
+      try {
+        const res = await fetch('/api/storage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key, value })
+        });
+        if (res.ok) return;
+      } catch (apiError) {
+        console.warn('KV storage set failed, stored locally in cache:', apiError);
+      }
+      return;
+    }
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+  catch (e) { console.error('storage set failed', key, e); }
+}
+
+function aggregateIngredients(usageList) {
+  const map = new Map();
+  for (const { recipe, multiplier } of usageList) {
+    for (const ing of recipe.ingredients || []) {
+      const nameKey = (ing.name || ing.raw || '').toLowerCase().trim();
+      const unitKey = (ing.unit || '').toLowerCase().trim();
+      const key = nameKey + '|' + unitKey;
+      const amt = ing.amount != null ? ing.amount * multiplier : null;
+      if (map.has(key)) {
+        const ex = map.get(key);
+        if (amt != null) ex.amount = (ex.amount || 0) + amt;
+      } else {
+        map.set(key, { name: ing.name || ing.raw, unit: ing.unit, amount: amt });
+      }
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+
+function computeDayNutrition(plan, recipes) {
+  const totals = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  for (const mt of MEAL_KEYS) for (const co of COURSE_KEYS) {
+    const slot = plan[mt] && plan[mt][co];
+    if (!slot) continue;
+    const recipe = recipes.find(r => r.id === slot.recipeId);
+    if (!recipe || !recipe.nutrition) continue;
+    for (const k of NUTRIENT_KEYS) totals[k] += (recipe.nutrition[k] || 0) * slot.multiplier;
+  }
+  return totals;
+}
+
+function getMonday(d) {
+  const dow = (d.getDay() + 6) % 7;
+  const m = new Date(d); m.setDate(d.getDate() - dow); m.setHours(0, 0, 0, 0);
+  return m;
+}
+function getNextWeekMonday() {
+  const m = getMonday(new Date()); m.setDate(m.getDate() + 7);
+  return m;
+}
+function weekDatesFrom(monday, showNextMonday) {
+  const arr = [];
+  const count = showNextMonday ? 8 : 7;
+  for (let i = 0; i < count; i++) { const d = new Date(monday); d.setDate(monday.getDate() + i); arr.push(d); }
+  return arr;
+}
+function hostnameOf(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return null; }
+}
+function looksLikeRecipePage(link) {
+  const t = (link.title + ' ' + link.url).toLowerCase();
+  let pathDepth = 0;
+  try { pathDepth = new URL(link.url).pathname.split('/').filter(Boolean).length; } catch (e) { }
+  return /rezept|recipe/.test(t) || pathDepth >= 2;
+}
+function pickSiteDomains(bookmarks, n) {
+  n = n || 2;
+  const counts = new Map();
+  for (const b of bookmarks) {
+    const h = hostnameOf(b.url);
+    if (!h) continue;
+    counts.set(h, (counts.get(h) || 0) + 1);
+  }
+  return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).map(([h]) => h).slice(0, n);
+}
+function averageTargets(people) {
+  const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  for (const p of people) for (const k of NUTRIENT_KEYS) sum[k] += (p.targets[k] || 0);
+  const n = people.length || 1;
+  const avg = {}; for (const k of NUTRIENT_KEYS) avg[k] = sum[k] / n;
+  return avg;
+}
+function currentOpenVolume(settings) {
+  const vols = settings.cookbookVolumes || [];
+  return vols.find(v => !v.closedAt) || vols[0];
+}
+async function parseBookmarksFile(file) {
+  const text = await file.text();
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  const anchors = Array.from(doc.querySelectorAll('a'));
+  return anchors.map(a => ({ title: a.textContent.trim() || a.getAttribute('href'), url: a.getAttribute('href') })).filter(l => l.url && l.url.startsWith('http'));
+}
+
+/* ---------------------------------- Context ---------------------------------- */
+const AppCtx = createContext(null);
+function useApp() { return useContext(AppCtx); }
+
+/* ---------------------------------- Small shared components ---------------------------------- */
+function LoadingScreen() {
+  return <div className="min-h-screen bg-stone-100 flex items-center justify-center"><Loader2 className="animate-spin text-stone-400" size={26} /></div>;
+}
+function Toast({ toast }) {
+  return (
+    <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-sm text-white z-50 shadow-lg ${toast.type === 'error' ? 'bg-rose-600' : 'bg-stone-900'}`}>
+      {toast.msg}
+    </div>
+  );
+}
+function NutritionInput({ label, value, onChange }) {
+  return (
+    <div>
+      <input type="number" value={value} onChange={e => onChange(e.target.value)} className="w-full px-2 py-1.5 rounded-lg border border-stone-300 text-sm text-center focus:outline-none focus:ring-1 focus:ring-stone-900" />
+      <div className="text-xs text-stone-400 text-center mt-0.5 font-mono">{label}</div>
+    </div>
+  );
+}
+function NutrientBar({ label, value, target, unit }) {
+  const pct = target > 0 ? (value / target) * 100 : 0;
+  const off = pct < 80 || pct > 120;
+  const barColor = pct < 80 ? 'bg-sky-400' : pct > 120 ? 'bg-rose-400' : 'bg-emerald-500';
+  return (
+    <div className="mb-2 last:mb-0">
+      <div className="flex justify-between text-xs text-stone-500 mb-0.5">
+        <span className="flex items-center gap-1">{label}{off && <AlertTriangle size={11} className="text-rose-500" />}</span>
+        <span className="font-mono">{Math.round(value)} / {Math.round(target)} {unit}</span>
+      </div>
+      <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+        <div className={`h-full ${barColor}`} style={{ width: `${Math.min(100, pct)}%` }} />
+      </div>
+    </div>
+  );
+}
+function NutritionSummary({ totals, people }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {people.map((p, i) => (
+        <div key={i} className={cardCls}>
+          <div className="text-sm font-semibold text-stone-700 mb-2 font-mono">{p.name}</div>
+          <NutrientBar label="Kalorien" value={totals.kcal} target={p.targets.kcal} unit="kcal" />
+          <NutrientBar label="Eiweiß" value={totals.protein} target={p.targets.protein} unit="g" />
+          <NutrientBar label="Kohlenhydrate" value={totals.carbs} target={p.targets.carbs} unit="g" />
+          <NutrientBar label="Fett" value={totals.fat} target={p.targets.fat} unit="g" />
+        </div>
+      ))}
+    </div>
+  );
+}
+function StarRating({ value, onChange, size }) {
+  const s = size || 16;
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(n => (
+        <button key={n} type="button" onClick={(e) => { e.stopPropagation(); onChange(value === n ? null : n); }} className="p-0">
+          <Star size={s} className={(value || 0) >= n ? 'fill-amber-500 text-amber-500' : 'text-stone-300'} />
+        </button>
+      ))}
+    </div>
+  );
+}
+function RemoveButton({ onConfirm, size }) {
+  const [confirming, setConfirming] = useState(false);
+  useEffect(() => { if (confirming) { const t = setTimeout(() => setConfirming(false), 3000); return () => clearTimeout(t); } }, [confirming]);
+  return confirming ? (
+    <button type="button" onClick={(e) => { e.stopPropagation(); onConfirm(); }} className="p-1.5 text-rose-600 flex-shrink-0"><Trash2 size={size || 16} /></button>
+  ) : (
+    <button type="button" onClick={(e) => { e.stopPropagation(); setConfirming(true); }} className="p-1.5 text-stone-300 hover:text-stone-500 flex-shrink-0"><Trash2 size={size || 16} /></button>
+  );
+}
+
+/* ---------------------------------- Chrome ---------------------------------- */
+function TopBar() {
+  const { settings, profile } = useApp();
+  return (
+    <div className="bg-white border-b border-stone-200 no-print sticky top-0 z-30">
+      <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+        <span className="font-mono text-lg font-bold tracking-tight text-stone-900">KARTEI</span>
+        <span className="text-xs px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full flex items-center gap-1 font-mono">
+          <User size={11} /> {settings.people[profile.personIndex] && settings.people[profile.personIndex].name}
+        </span>
+      </div>
+    </div>
+  );
+}
+function BottomNav({ tab, setTab }) {
+  const items = [
+    { key: 'calendar', label: 'Plan', icon: Calendar },
+    { key: 'recipes', label: 'Rezepte', icon: Utensils },
+    { key: 'shopping', label: 'Liste', icon: ShoppingCart },
+    { key: 'cookbook', label: 'Buch', icon: BookOpen },
+    { key: 'settings', label: 'Einstellungen', icon: SettingsIcon },
+  ];
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 no-print z-30">
+      <div className="max-w-2xl mx-auto grid grid-cols-5">
+        {items.map(it => (
+          <button key={it.key} onClick={() => setTab(it.key)} className={`flex flex-col items-center gap-0.5 py-2.5 text-xs font-mono ${tab === it.key ? 'text-stone-900' : 'text-stone-400'}`}>
+            <it.icon size={19} />{it.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- Profile picker (first run) ---------------------------------- */
+function ProfilePicker({ settings, onChoose, onUpdateSettings }) {
+  const [names, setNames] = useState(settings.people.map(p => p.name));
+  return (
+    <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
+      <div className="max-w-sm w-full bg-white rounded-xl border border-stone-200 p-6 text-center">
+        <div className="w-12 h-12 rounded-lg bg-stone-900 text-white flex items-center justify-center mx-auto mb-3"><Utensils size={20} /></div>
+        <div className="font-mono text-xl font-bold tracking-tight mb-1">KARTEI</div>
+        <p className="text-sm text-stone-500 mb-4">Wer nutzt dieses Gerät?</p>
+        <div className="space-y-2 text-left">
+          {names.map((n, i) => (
+            <div key={i} className="flex gap-2">
+              <input value={n} onChange={e => { const next = [...names]; next[i] = e.target.value; setNames(next); }} className={inputCls} />
+              <button onClick={async () => {
+                const people = settings.people.map((p, idx) => ({ ...p, name: names[idx] || p.name }));
+                await onUpdateSettings({ people });
+                onChoose(i);
+              }} className="px-3 rounded-lg bg-stone-900 text-white font-mono uppercase tracking-wide text-xs font-semibold whitespace-nowrap">Das bin ich</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- Calendar tab ---------------------------------- */
+function MonthGrid({ viewDate, setViewDate, selectedDay, setSelectedDay }) {
+  const { mealplanIndex } = useApp();
+  const year = viewDate.getFullYear(), month = viewDate.getMonth();
+  const first = new Date(year, month, 1);
+  const startOffset = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+
+  return (
+    <div className={cardCls}>
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={() => setViewDate(new Date(year, month - 1, 1))} className="p-2 hover:bg-stone-100 rounded-lg"><ChevronLeft size={18} /></button>
+        <span className="font-mono font-semibold tracking-tight">{MONTHS[month].toUpperCase()} {year}</span>
+        <button onClick={() => setViewDate(new Date(year, month + 1, 1))} className="p-2 hover:bg-stone-100 rounded-lg"><ChevronRight size={18} /></button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs text-stone-400 mb-1 font-mono">
+        {WEEKDAYS.map(w => <div key={w}>{w}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />;
+          const key = dateKey(d);
+          const isSelected = key === selectedDay;
+          const isToday = key === todayKey();
+          const entry = mealplanIndex[key];
+          return (
+            <button key={i} onClick={() => setSelectedDay(key)}
+              className={`aspect-square rounded-lg flex flex-col items-center justify-center text-sm relative ${isSelected ? 'bg-stone-900 text-white' : isToday ? 'bg-stone-200 text-stone-900 font-semibold' : 'hover:bg-stone-100 text-stone-700'}`}>
+              {d.getDate()}
+              {entry && (
+                <div className="flex gap-0.5 mt-0.5 h-1">
+                  {MEAL_TIMES.map(mt => entry[mt.key] > 0 && <span key={mt.key} className={`w-1 h-1 rounded-full ${mt.dot}`} />)}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SlotRow({ course, recipe, multiplier, onPick, onRemove, onMultiplier, onClickRecipe }) {
+  const [localVal, setLocalVal] = useState(String(multiplier));
+
+  useEffect(() => {
+    setLocalVal(String(multiplier));
+  }, [multiplier]);
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setLocalVal(val);
+    if (val === '') return;
+    const parsed = parseFloat(val);
+    if (!isNaN(parsed) && parsed > 0) {
+      onMultiplier(parsed);
+    }
+  };
+
+  if (!recipe) {
+    return (
+      <button onClick={onPick} className="w-full flex items-center gap-2 p-3 rounded-lg border border-dashed border-stone-300 text-stone-400 hover:border-stone-500 hover:text-stone-700 text-sm">
+        <course.icon size={16} /> <span className="flex-1 text-left">{course.label}</span> <Plus size={16} />
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-stone-50 border border-stone-200">
+      <div onClick={onClickRecipe} className="flex-1 min-w-0 flex items-center gap-2 cursor-pointer hover:opacity-80">
+        {recipe.photo ? <img src={recipe.photo} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" /> : <div className="w-10 h-10 rounded-lg bg-stone-200 flex items-center justify-center flex-shrink-0"><course.icon size={16} className="text-stone-400" /></div>}
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-stone-400 font-mono uppercase flex items-center gap-1">
+            {course.label}{recipe.placeholder && <span className="text-amber-600">· ausfüllen</span>}
+          </div>
+          <div className="text-sm font-medium truncate">{recipe.title}</div>
+        </div>
+      </div>
+      <input type="number" step="0.5" min="0.1" value={localVal} onChange={handleInputChange} className="w-14 text-center text-sm border border-stone-300 rounded-lg py-1 focus:outline-none focus:ring-1 focus:ring-stone-900" />
+      <button onClick={onRemove} className="p-1.5 text-stone-400 hover:text-rose-500 flex-shrink-0"><X size={16} /></button>
+    </div>
+  );
+}
+
+function RecipePickerSheet({ onClose, onPick }) {
+  const { recipes, openAddRecipe } = useApp();
+  const [query, setQuery] = useState('');
+  const filtered = recipes.filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-full flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
+          <span className="font-mono font-semibold uppercase tracking-wide text-sm">Rezept wählen</span>
+          <button onClick={onClose}><X size={20} /></button>
+        </div>
+        <div className="p-3 flex-shrink-0">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rezept suchen..." className={inputCls + " pl-9"} />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-3 space-y-1 min-h-0">
+          {filtered.map(r => (
+            <button key={r.id} onClick={() => onPick(r.id)} className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 text-left">
+              {r.photo ? <img src={r.photo} className="w-9 h-9 rounded-lg object-cover" /> : <div className="w-9 h-9 rounded-lg bg-stone-100" />}
+              <span className="text-sm">{r.title}</span>
+            </button>
+          ))}
+          {filtered.length === 0 && <div className="text-center text-sm text-stone-400 py-6">Keine Rezepte gefunden</div>}
+        </div>
+        <div className="p-3 border-t border-stone-200 flex-shrink-0">
+          <button onClick={() => { onClose(); openAddRecipe({ onSaved: (r) => onPick(r.id) }); }} className={primaryBtnCls}>
+            <Plus size={14} /> Neues Rezept
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DayDetail({ plan, onChange }) {
+  const { recipes, settings, openRecipeDetail } = useApp();
+  const [pickerSlot, setPickerSlot] = useState(null);
+
+  const setSlot = (meal, course, recipeId, multiplier) => {
+    const next = { ...plan, [meal]: { ...plan[meal], [course]: recipeId ? { recipeId, multiplier: multiplier || 1 } : null } };
+    onChange(next);
+  };
+  const totals = useMemo(() => computeDayNutrition(plan, recipes), [plan, recipes]);
+
+  return (
+    <div className="space-y-3">
+      <NutritionSummary totals={totals} people={settings.people} />
+      {MEAL_TIMES.map(mt => (
+        <div key={mt.key} className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+          <div className={`px-3 py-1.5 inline-flex items-center gap-1.5 rounded-br-xl text-white text-xs font-mono uppercase tracking-wider ${mt.color}`}>
+            <mt.icon size={12} /> {mt.label}
+          </div>
+          <div className="p-3 pt-2.5 space-y-2">
+            {COURSES.map(co => {
+              const slot = plan[mt.key] && plan[mt.key][co.key];
+              const recipe = slot ? recipes.find(r => r.id === slot.recipeId) : null;
+              return (
+                <SlotRow key={co.key} course={co} recipe={recipe} multiplier={slot ? slot.multiplier : 1}
+                  onPick={() => setPickerSlot({ meal: mt.key, course: co.key })}
+                  onRemove={() => setSlot(mt.key, co.key, null)}
+                  onMultiplier={(m) => setSlot(mt.key, co.key, slot.recipeId, m)}
+                  onClickRecipe={() => recipe && openRecipeDetail({ recipe, multiplier: slot ? slot.multiplier : 1 })}
+                />
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      {pickerSlot && (
+        <RecipePickerSheet
+          onClose={() => setPickerSlot(null)}
+          onPick={(recipeId) => { setSlot(pickerSlot.meal, pickerSlot.course, recipeId, 1); setPickerSlot(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function WeekSummary({ selectedDay }) {
+  const { recipes, settings, getDayPlan } = useApp();
+  const [totals, setTotals] = useState(null);
+  const [y, m, d] = selectedDay.split('-').map(Number);
+  const monday = getMonday(new Date(y, m - 1, d));
+  const endDate = new Date(monday); endDate.setDate(monday.getDate() + (settings.showNextMonday ? 7 : 6));
+  const rangeLabel = `${monday.getDate()}.${monday.getMonth() + 1}. – ${endDate.getDate()}.${endDate.getMonth() + 1}.`;
+
+  useEffect(() => {
+    let alive = true;
+    setTotals(null);
+    (async () => {
+      const days = weekDatesFrom(monday, settings.showNextMonday);
+      const sums = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+      for (const day of days) {
+        const plan = await getDayPlan(dateKey(day));
+        const t = computeDayNutrition(plan, recipes);
+        for (const k of NUTRIENT_KEYS) sums[k] += t[k];
+      }
+      if (alive) setTotals(sums);
+    })();
+    return () => { alive = false; };
+  }, [selectedDay, recipes, settings.showNextMonday]);
+
+  if (!totals) return <div className={cardCls + " text-center text-stone-300"}><Loader2 className="animate-spin inline" size={18} /></div>;
+
+  const dayCount = settings.showNextMonday ? 8 : 7;
+  const weeklyPeople = settings.people.map(p => ({ ...p, targets: { kcal: p.targets.kcal * dayCount, protein: p.targets.protein * dayCount, carbs: p.targets.carbs * dayCount, fat: p.targets.fat * dayCount } }));
+  return (
+    <div className="space-y-2">
+      <div className="text-xs text-stone-400 font-mono px-1">WOCHE {rangeLabel}</div>
+      <NutritionSummary totals={totals} people={weeklyPeople} />
+    </div>
+  );
+}
+
+function WeekPlannerModal({ onClose }) {
+  const { recipes, settings, bookmarksRecipes, bookmarksPages, addRecipe, getDayPlan, saveDayPlan, showToast } = useApp();
+  const [motto, setMotto] = useState('');
+  const [running, setRunning] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [log, setLog] = useState([]);
+
+  const monday = getNextWeekMonday();
+  const days = weekDatesFrom(monday, settings.showNextMonday);
+  const sunday = days[days.length - 1];
+  const rangeLabel = `${monday.getDate()}.${monday.getMonth() + 1}. – ${sunday.getDate()}.${sunday.getMonth() + 1}.`;
+
+  const setEntry = (i, patch) => setLog(prev => prev.map((e, idx) => idx === i ? { ...e, ...patch } : e));
+
+  const start = async () => {
+    setStarted(true); setRunning(true);
+    const plans = {};
+    for (const d of days) plans[dateKey(d)] = await getDayPlan(dateKey(d));
+
+    const needDinner = days.filter(d => !plans[dateKey(d)].dinner.main);
+    const weekend = days.filter(d => d.getDay() === 6 || d.getDay() === 0);
+    const needBreakfast = weekend.filter(d => !plans[dateKey(d)].breakfast.main);
+
+    const dinnerTypes = ['firefox-direct', 'firefox-site', 'firefox-site', 'ai-search', 'ai-search', 'cookbook', 'cookbook'];
+    const queue = [];
+    needDinner.slice(0, 7).forEach((d, i) => queue.push({ type: dinnerTypes[i], day: d, meal: 'dinner' }));
+    needBreakfast.forEach(d => queue.push({ type: 'breakfast', day: d, meal: 'breakfast' }));
+
+    if (queue.length === 0) { setRunning(false); showToast('Alle Ziel-Slots sind bereits belegt'); return; }
+
+    setLog(queue.map(t => ({ label: `${LONG_WEEKDAYS[t.day.getDay()].slice(0, 2)} ${t.day.getDate()}.${t.day.getMonth() + 1}. – ${t.meal === 'dinner' ? 'Abendessen' : 'Frühstück'}`, status: 'pending', title: '' })));
+
+    const target = averageTargets(settings.people);
+    const chosen = [];
+    const usedUrls = new Set(recipes.map(r => r.source && r.source.url).filter(Boolean));
+    let directBm = bookmarksRecipes.find(b => looksLikeRecipePage(b) && !usedUrls.has(b.url));
+    let siteDomains = pickSiteDomains(bookmarksPages, 2);
+    let cookbookQueue = [...settings.cookbooks];
+
+    for (let i = 0; i < queue.length; i++) {
+      const task = queue[i];
+      try {
+        const isBreakfast = task.meal === 'breakfast';
+        const share = isBreakfast ? 0.25 : 0.35;
+        const kcalBudget = Math.round(target.kcal * share);
+        let recipe;
+
+        if (task.type === 'firefox-direct' && directBm) {
+          const result = await extractRecipeFromUrl(directBm.url);
+          recipe = buildRecipeFromExtraction(result, { type: 'firefox', url: directBm.url, label: 'Firefox-Favoriten' });
+          usedUrls.add(directBm.url);
+        } else if (task.type === 'firefox-site' && siteDomains.length) {
+          const domain = siteDomains.shift();
+          const q = `${motto ? motto + ' ' : ''}Hauptgericht Abendessen, ca. ${kcalBudget} kcal`;
+          const result = await searchRecipeOnSite(domain, q);
+          recipe = buildRecipeFromExtraction(result, { type: 'ai', url: result.sourceUrl || '', label: `Firefox-Website (${domain})` });
+        } else if (task.type === 'cookbook' && cookbookQueue.length) {
+          const cb = cookbookQueue.shift();
+          recipe = { title: `Rezept aus ${cb} wählen`, servings: 1, ingredients: [], steps: [], nutrition: null, photo: null, placeholder: true, source: { type: 'cookbook', cookbook: cb, label: cb } };
+        } else {
+          const dishHint = isBreakfast ? 'Frühstücksrezept' : 'Hauptgericht Abendessen';
+          const q = `${motto ? motto + ' ' : ''}${dishHint}, ca. ${kcalBudget} kcal${chosen.length ? `. Bitte nicht ähnlich zu: ${chosen.join(', ')}` : ''}`;
+          const result = await searchRecipeOnline(q);
+          recipe = buildRecipeFromExtraction(result, { type: 'ai', url: result.sourceUrl || '', label: 'KI-Websuche' });
+        }
+
+        const saved = await addRecipe(recipe);
+        chosen.push(saved.title);
+
+        const dk = dateKey(task.day);
+        const fresh = await getDayPlan(dk);
+        if (!fresh[task.meal].main) {
+          await saveDayPlan(dk, { ...fresh, [task.meal]: { ...fresh[task.meal], main: { recipeId: saved.id, multiplier: 1 } } });
+        }
+        setEntry(i, { status: 'done', title: saved.title });
+      } catch (e) {
+        setEntry(i, { status: 'error' });
+      }
+    }
+    setRunning(false);
+    showToast('Wochenplan aktualisiert');
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-full flex flex-col">
+        <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
+          <span className="font-mono font-semibold uppercase tracking-wide text-sm">Woche planen</span>
+          <button onClick={onClose}><X size={20} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 min-h-0 space-y-3">
+          <p className="text-sm text-stone-500">{rangeLabel} · Belegte Slots werden nicht überschrieben.</p>
+          {!started && (
+            <div className="space-y-3">
+              <div>
+                <label className={labelCls}>Motto / Ernährungsweise (optional)</label>
+                <input value={motto} onChange={e => setMotto(e.target.value)} placeholder="z. B. Low-Carb, Vegan, sommerlich" className={inputCls + " mt-1"} />
+              </div>
+              <div className="text-xs text-stone-500 bg-stone-100 rounded-lg p-3 leading-relaxed">
+                Geplant: 1× direkt aus Firefox-Favoriten, 2× per Websuche auf Firefox-Websites, 2× KI-Websuche, 2× Platzhalter aus Kochbüchern (jeweils Hauptspeise Abendessen) sowie 2× Frühstück für Sa/So. Nährwerte orientieren sich am Durchschnitt beider Tagesziele.
+              </div>
+              <button onClick={start} className={primaryBtnCls}><Sparkles size={14} /> Woche planen</button>
+            </div>
+          )}
+          {started && (
+            <div className="space-y-1.5">
+              {log.map((e, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm py-1.5 border-b border-stone-100 last:border-0">
+                  {e.status === 'pending' && <Loader2 size={14} className="animate-spin text-stone-300 flex-shrink-0" />}
+                  {e.status === 'done' && <Check size={14} className="text-emerald-600 flex-shrink-0" />}
+                  {e.status === 'error' && <AlertTriangle size={14} className="text-rose-500 flex-shrink-0" />}
+                  <span className="text-stone-400 font-mono text-xs w-28 flex-shrink-0">{e.label}</span>
+                  <span className="truncate">{e.title || (e.status === 'error' ? 'Fehlgeschlagen' : '…')}</span>
+                </div>
+              ))}
+              {!running && <button onClick={onClose} className={secondaryBtnCls + " mt-2"}>Fertig</button>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CalendarTab() {
+  const { getDayPlan, saveDayPlan, settings } = useApp();
+  const [viewDate, setViewDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState(todayKey());
+  const [dayPlan, setDayPlan] = useState(null);
+  const [dayLoading, setDayLoading] = useState(true);
+  const [mode, setMode] = useState(settings.defaultCalendarView || 'week');
+  const [plannerOpen, setPlannerOpen] = useState(false);
+
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+
+  const navigateCalendar = (direction) => {
+    const [y, m, d] = selectedDay.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    if (mode === 'day') {
+      date.setDate(date.getDate() + direction);
+    } else {
+      date.setDate(date.getDate() + (direction * 7));
+    }
+    const newKey = dateKey(date);
+    setSelectedDay(newKey);
+    setViewDate(date);
+  };
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+    touchEndX.current = null;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null || touchEndX.current === null) return;
+    const diffX = touchStartX.current - touchEndX.current;
+    const minDistance = 50;
+
+    if (diffX > minDistance) {
+      navigateCalendar(1);
+    } else if (diffX < -minDistance) {
+      navigateCalendar(-1);
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  useEffect(() => {
+    let alive = true;
+    setDayLoading(true);
+    getDayPlan(selectedDay).then(plan => { if (alive) { setDayPlan(plan); setDayLoading(false); } });
+    return () => { alive = false; };
+  }, [selectedDay]);
+
+  const handleChange = (plan) => { setDayPlan(plan); saveDayPlan(selectedDay, plan); };
+
+  return (
+    <div
+      className="space-y-4 touch-pan-y"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <MonthGrid viewDate={viewDate} setViewDate={setViewDate} selectedDay={selectedDay} setSelectedDay={setSelectedDay} />
+      <div className="flex items-center justify-between px-1">
+        <div className="text-sm text-stone-500 font-mono">{formatLongDate(selectedDay)}</div>
+        <div className="flex gap-1 bg-stone-100 rounded-lg p-0.5">
+          <button onClick={() => setMode('day')} className={`px-2.5 py-1 rounded-md text-xs font-mono ${mode === 'day' ? 'bg-white shadow-sm' : 'text-stone-500'}`}>Tag</button>
+          <button onClick={() => setMode('week')} className={`px-2.5 py-1 rounded-md text-xs font-mono ${mode === 'week' ? 'bg-white shadow-sm' : 'text-stone-500'}`}>Woche</button>
+        </div>
+      </div>
+      {mode === 'week' ? <WeekSummary selectedDay={selectedDay} /> : (
+        dayLoading || !dayPlan ? <div className="text-center py-8 text-stone-300"><Loader2 className="animate-spin inline" size={20} /></div> : <DayDetail plan={dayPlan} onChange={handleChange} />
+      )}
+      <button onClick={() => setPlannerOpen(true)} className={secondaryBtnCls}><Sparkles size={16} /> Nächste Woche automatisch planen</button>
+      {plannerOpen && <WeekPlannerModal onClose={() => setPlannerOpen(false)} />}
+    </div>
+  );
+}
+
+/* ---------------------------------- Add recipe flow ---------------------------------- */
+function SourcePicker({ onPick }) {
+  const items = [
+    { key: 'form', label: 'Manuell eingeben', icon: Edit2, desc: 'Rezept selbst eintippen' },
+    { key: 'firefox', label: 'Aus Firefox-Favoriten', icon: BookOpen, desc: 'Gespeicherte Favoriten durchsuchen' },
+    { key: 'cookbook', label: 'Aus Kochbuch', icon: Camera, desc: 'Titel, Seite & Foto erfassen' },
+    { key: 'ai', label: 'KI- oder Google-Suche', icon: Sparkles, desc: 'Rezept online finden lassen' },
+    { key: 'other', label: 'Weiteres', icon: Plus, desc: 'Aktivitäten wie Essen gehen, Urlaub, etc.' },
+  ];
+  return (
+    <div className="space-y-2">
+      {items.map(it => (
+        <button key={it.key} onClick={() => onPick(it.key)} className="w-full flex items-center gap-3 p-3 rounded-lg border border-stone-200 hover:border-stone-400 hover:bg-stone-50 text-left">
+          <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center text-stone-600 flex-shrink-0"><it.icon size={18} /></div>
+          <div>
+            <div className="text-sm font-medium">{it.label}</div>
+            <div className="text-xs text-stone-400">{it.desc}</div>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FirefoxImportPanel({ onBack, onNext }) {
+  const { bookmarksRecipes, bookmarksPages, saveBookmarksRecipes, saveBookmarksPages } = useApp();
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [category, setCategory] = useState('recipes');
+
+  const activeBookmarks = category === 'recipes' ? bookmarksRecipes : bookmarksPages;
+
+  const handleFile = async (file) => {
+    setError(null); setImporting(true);
+    try {
+      const parsed = await parseBookmarksFile(file);
+      if (parsed.length === 0) {
+        setError('Keine Links in der Datei gefunden.');
+      } else {
+        if (category === 'recipes') {
+          await saveBookmarksRecipes(parsed);
+        } else {
+          await saveBookmarksPages(parsed);
+        }
+      }
+    } catch (e) { setError('Datei konnte nicht gelesen werden.'); }
+    finally { setImporting(false); }
+  };
+
+  const filtered = activeBookmarks.filter(l => l.title.toLowerCase().includes(query.toLowerCase()) || l.url.toLowerCase().includes(query.toLowerCase()));
+
+  return (
+    <div className="space-y-3">
+      <button onClick={onBack} className="text-sm text-stone-400 flex items-center gap-1"><ChevronLeft size={14} /> Zurück</button>
+      
+      <div className="flex gap-1 bg-stone-100 rounded-lg p-0.5 w-full">
+        <button onClick={() => setCategory('recipes')} className={`flex-1 py-1.5 rounded-md text-xs font-mono ${category === 'recipes' ? 'bg-white shadow-sm font-semibold' : 'text-stone-500'}`}>Rezepte</button>
+        <button onClick={() => setCategory('pages')} className={`flex-1 py-1.5 rounded-md text-xs font-mono ${category === 'pages' ? 'bg-white shadow-sm font-semibold' : 'text-stone-500'}`}>Seiten</button>
+      </div>
+
+      {activeBookmarks.length === 0 ? (
+        <div>
+          <p className="text-sm text-stone-500 mb-3">Firefox → Bibliothek → Bookmarks → „Exportieren als HTML" – Datei hier hochladen. Wird dauerhaft in der Liste "{category === 'recipes' ? 'Rezepte' : 'Seiten'}" gespeichert.</p>
+          <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed border-stone-300 text-stone-400 cursor-pointer hover:border-stone-500">
+            {importing ? <Loader2 size={22} className="animate-spin" /> : <Upload size={22} />}
+            <span className="text-sm">Bookmarks-HTML auswählen ({category === 'recipes' ? 'Rezepte' : 'Seiten'})</span>
+            <input type="file" accept=".html,.htm" className="hidden" onChange={e => e.target.files[0] && handleFile(e.target.files[0])} />
+          </label>
+          {error && <p className="text-sm text-rose-500 mt-2">{error}</p>}
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-stone-400 font-mono">{activeBookmarks.length} {category === 'recipes' ? 'REZEPTE' : 'SEITEN'} GESPEICHERT</span>
+            <label className="text-xs text-stone-500 hover:text-stone-900 cursor-pointer font-mono uppercase tracking-wide">
+              Aktualisieren
+              <input type="file" accept=".html,.htm" className="hidden" onChange={e => e.target.files[0] && handleFile(e.target.files[0])} />
+            </label>
+          </div>
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Filtern..." className={inputCls + " mb-2"} />
+          <div className="max-h-72 overflow-y-auto space-y-1">
+            {filtered.map((l, i) => (
+              <button key={i} onClick={() => onNext({ title: l.title, source: { type: 'firefox', url: l.url, label: `Firefox-Favoriten (${category === 'recipes' ? 'Rezepte' : 'Seiten'})` } })} className="w-full text-left p-2.5 rounded-lg hover:bg-stone-50 border border-stone-100">
+                <div className="text-sm font-medium truncate">{l.title}</div>
+                <div className="text-xs text-stone-400 truncate">{l.url}</div>
+              </button>
+            ))}
+            {filtered.length === 0 && <div className="text-sm text-stone-400 text-center py-4">Keine Treffer</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CookbookPanel({ onBack, onNext }) {
+  const { settings, updateSettings } = useApp();
+  const [cookbook, setCookbook] = useState('');
+  const [newCookbook, setNewCookbook] = useState('');
+  const [title, setTitle] = useState('');
+  const [page, setPage] = useState('');
+  const [photo, setPhoto] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const handlePhoto = async (file) => {
+    setBusy(true);
+    try { setPhoto(await resizeImage(file)); } catch (e) { } finally { setBusy(false); }
+  };
+
+  const submit = async () => {
+    let cb = cookbook;
+    if (newCookbook.trim()) {
+      cb = newCookbook.trim();
+      if (!settings.cookbooks.includes(cb)) await updateSettings({ cookbooks: [...settings.cookbooks, cb] });
+    }
+    onNext({ title, photo, source: { type: 'cookbook', cookbook: cb, page, label: cb } });
+  };
+
+  return (
+    <div className="space-y-3">
+      <button onClick={onBack} className="text-sm text-stone-400 flex items-center gap-1"><ChevronLeft size={14} /> Zurück</button>
+      <p className="text-sm text-stone-500">Rezept im Buch suchen und hier eintragen.</p>
+      <div>
+        <label className={labelCls}>Kochbuch</label>
+        <select value={cookbook} onChange={e => setCookbook(e.target.value)} className={inputCls + " mt-1"}>
+          <option value="">– auswählen –</option>
+          {settings.cookbooks.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <input value={newCookbook} onChange={e => setNewCookbook(e.target.value)} placeholder="oder neues Kochbuch anlegen" className={inputCls + " mt-2"} />
+      </div>
+      <div>
+        <label className={labelCls}>Rezeptname</label>
+        <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls + " mt-1"} />
+      </div>
+      <div>
+        <label className={labelCls}>Seite</label>
+        <input value={page} onChange={e => setPage(e.target.value)} className={inputCls + " mt-1"} />
+      </div>
+      <div>
+        <label className={labelCls}>Foto (optional)</label>
+        <div className="mt-1">
+          {photo ? (
+            <div className="relative w-24 h-24">
+              <img src={photo} className="w-24 h-24 rounded-lg object-cover" />
+              <button onClick={() => setPhoto(null)} className="absolute -top-1.5 -right-1.5 bg-white rounded-full p-0.5 border border-stone-300"><X size={12} /></button>
+            </div>
+          ) : (
+            <label className="flex items-center justify-center w-24 h-24 rounded-lg border-2 border-dashed border-stone-300 text-stone-400 cursor-pointer">
+              {busy ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => e.target.files[0] && handlePhoto(e.target.files[0])} />
+            </label>
+          )}
+        </div>
+      </div>
+      <button disabled={!title || (!cookbook && !newCookbook.trim())} onClick={submit} className={primaryBtnCls}>Weiter</button>
+    </div>
+  );
+}
+
+function AIDirectSearch({ onNext }) {
+  const [query, setQuery] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const search = async () => {
+    if (!query.trim()) return;
+    setBusy(true); setError(null);
+    try {
+      const result = await searchRecipeOnline(query.trim());
+      onNext({ title: result.title || query, servingsText: result.servings ? String(result.servings) : '4', ingredientsText: (result.ingredients || []).join('\n'), stepsText: (result.steps || []).join('\n'), nutrition: result.nutrition || null, source: { type: 'ai', url: result.sourceUrl || '', label: 'KI-Websuche' } });
+    } catch (e) { setError('Suche fehlgeschlagen. Bitte manuell eingeben.'); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-stone-500">Claude durchsucht das Web nach einem passenden Rezept.</p>
+      <input value={query} onChange={e => setQuery(e.target.value)} placeholder="z. B. Spaghetti Carbonara" className={inputCls} onKeyDown={e => e.key === 'Enter' && search()} />
+      <button onClick={search} disabled={busy || !query.trim()} className={primaryBtnCls}>
+        {busy ? <><Loader2 size={14} className="animate-spin" /> Suche läuft</> : <><Sparkles size={14} /> Suchen</>}
+      </button>
+      {error && <p className="text-sm text-rose-500">{error}</p>}
+    </div>
+  );
+}
+
+function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
+  const iframeRef = useRef(null);
+  const [currentUrl, setCurrentUrl] = useState(initialUrl);
+  const [iframeUrl] = useState(() => `/api/proxy?url=${encodeURIComponent(initialUrl)}`);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [extracted, setExtracted] = useState(null);
+
+  const handleIframeLoad = () => {
+    if (!iframeRef.current || !iframeRef.current.contentWindow) return;
+    try {
+      const loc = iframeRef.current.contentWindow.location;
+      const searchParams = new URLSearchParams(loc.search);
+      const urlParam = searchParams.get('url');
+      if (urlParam) {
+        setCurrentUrl(urlParam);
+      } else {
+        setCurrentUrl(loc.href);
+      }
+    } catch (e) {
+      console.warn("Iframe location read blocked or failed", e);
+    }
+  };
+
+  const handleBack = () => {
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      try {
+        iframeRef.current.contentWindow.history.back();
+      } catch (e) {
+        console.warn("Iframe history back failed", e);
+      }
+    }
+  };
+
+  const handleSave = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await extractRecipeFromUrl(currentUrl);
+      setExtracted(result);
+    } catch (e) {
+      setError('Rezept-Extraktion fehlgeschlagen. Bitte andere Seite wählen oder manuell eingeben.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex flex-col z-50">
+      <div className="bg-stone-900 text-white p-3 flex items-center gap-3 flex-shrink-0">
+        <button onClick={handleBack} className="p-1.5 hover:bg-stone-800 rounded-lg text-stone-300 hover:text-white" title="Zurück">
+          <ChevronLeft size={20} />
+        </button>
+        <div className="flex-1 bg-stone-800 rounded-lg px-3 py-1.5 text-xs font-mono truncate text-stone-300 select-all">
+          {currentUrl}
+        </div>
+        {!extracted && (
+          <button onClick={handleSave} disabled={busy} className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 text-xs font-semibold px-3 disabled:opacity-50" title="Rezept speichern">
+            {busy ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+            <span>Speichern</span>
+          </button>
+        )}
+        <button onClick={onClose} className="p-1.5 hover:bg-stone-800 rounded-lg text-stone-300 hover:text-white" title="Schließen">
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="flex-1 bg-white relative overflow-hidden flex flex-col">
+        {busy && (
+          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white z-10 p-6 text-center">
+            <Loader2 size={36} className="animate-spin mb-3 text-emerald-400" />
+            <div className="font-mono text-sm font-semibold tracking-wide uppercase">KI-Extraktion läuft</div>
+            <div className="text-xs text-stone-300 mt-1 max-w-xs">Claude liest die Seite aus, extrahiert die Zutaten, Schritte und schätzt die Nährwerte...</div>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-rose-50 border-b border-rose-200 text-rose-800 p-3 text-xs flex justify-between items-center">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="font-bold underline">Ausblenden</button>
+          </div>
+        )}
+
+        {extracted ? (
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 max-w-xl mx-auto w-full">
+            <div className="text-center pb-2 border-b border-stone-200">
+              <span className="font-mono text-xs uppercase tracking-widest text-emerald-600 font-bold">Extrahiertes Rezept</span>
+              <h2 className="text-xl font-bold mt-1 text-stone-900">{extracted.title || 'Rezept'}</h2>
+              <p className="text-sm text-stone-500 mt-1">{extracted.servings || 4} Portionen</p>
+            </div>
+
+            {extracted.nutrition && (
+              <div className="grid grid-cols-4 gap-2 text-center">
+                {['kcal', 'protein', 'carbs', 'fat'].map(k => (
+                  <div key={k} className="bg-stone-50 rounded-lg py-2 border border-stone-200">
+                    <div className="text-sm font-bold font-mono text-stone-850">{extracted.nutrition[k] || 0}</div>
+                    <div className="text-[10px] uppercase text-stone-400 font-mono tracking-wider">{NUTRIENT_LABELS[k]}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {extracted.ingredients && extracted.ingredients.length > 0 && (
+              <div>
+                <h3 className="font-mono uppercase tracking-wide text-xs text-stone-400 mb-1.5 font-bold">Zutaten</h3>
+                <ul className="text-sm text-stone-700 space-y-1">
+                  {extracted.ingredients.map((ing, i) => (
+                    <li key={i} className="py-1 border-b border-stone-100 last:border-0">• {ing}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {extracted.steps && extracted.steps.length > 0 && (
+              <div>
+                <h3 className="font-mono uppercase tracking-wide text-xs text-stone-400 mb-1.5 font-bold">Zubereitung</h3>
+                <ol className="text-sm text-stone-700 space-y-2 list-decimal list-inside">
+                  {extracted.steps.map((step, i) => (
+                    <li key={i} className="pl-1 align-top leading-relaxed">{step}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-stone-200 flex gap-2">
+              <button onClick={() => setExtracted(null)} className="w-1/3 py-2.5 rounded-lg border border-stone-300 text-stone-600 text-sm font-medium hover:bg-stone-50">
+                Zurück
+              </button>
+              <button
+                onClick={() => {
+                  onSaveRecipe({
+                    title: extracted.title || 'Rezept',
+                    servingsText: extracted.servings ? String(extracted.servings) : '4',
+                    ingredientsText: (extracted.ingredients || []).join('\n'),
+                    stepsText: (extracted.steps || []).join('\n'),
+                    nutrition: extracted.nutrition || null,
+                    source: { type: 'ai', url: currentUrl, label: 'Google-Suche (KI)' }
+                  });
+                }}
+                className="flex-1 py-2.5 bg-stone-900 text-white rounded-lg font-semibold text-sm hover:bg-stone-850 active:scale-[0.99] flex items-center justify-center gap-2"
+              >
+                <Check size={16} /> Rezept ausführen &amp; Speichern
+              </button>
+            </div>
+          </div>
+        ) : (
+          <iframe
+            ref={iframeRef}
+            src={iframeUrl}
+            onLoad={handleIframeLoad}
+            className="w-full h-full border-0"
+            sandbox="allow-same-origin allow-forms allow-scripts"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GoogleLinkSearch({ onNext }) {
+  const [query, setQuery] = useState('');
+  const [browserUrl, setBrowserUrl] = useState(null);
+
+  const startSearch = () => {
+    if (!query.trim()) return;
+    const gUrl = `https://www.google.com/search?q=${encodeURIComponent(query.trim() + ' rezept')}`;
+    setBrowserUrl(gUrl);
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-stone-500">
+        Gib unten die Bezeichnung vom Rezept ein. Es öffnet sich ein In-App-Browser mit Google. Dort kannst du auf Rezepte klicken und diese per Klick auf "Speichern" automatisch einlesen.
+      </p>
+      <input
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        placeholder="z. B. Spaghetti Carbonara"
+        className={inputCls}
+        onKeyDown={e => e.key === 'Enter' && startSearch()}
+      />
+      <button onClick={startSearch} disabled={!query.trim()} className={primaryBtnCls}>
+        <Search size={14} /> Suchen
+      </button>
+
+      {browserUrl && (
+        <InAppBrowser
+          initialUrl={browserUrl}
+          onClose={() => setBrowserUrl(null)}
+          onSaveRecipe={(recipeData) => {
+            setBrowserUrl(null);
+            onNext(recipeData);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AISearchPanel({ onBack, onNext }) {
+  const [subTab, setSubTab] = useState('ai');
+  return (
+    <div className="space-y-3">
+      <button onClick={onBack} className="text-sm text-stone-400 flex items-center gap-1"><ChevronLeft size={14} /> Zurück</button>
+      <div className="flex gap-1 bg-stone-100 rounded-lg p-0.5 w-fit">
+        <button onClick={() => setSubTab('ai')} className={`px-3 py-1.5 rounded-md text-xs font-mono ${subTab === 'ai' ? 'bg-white shadow-sm' : 'text-stone-500'}`}>KI-Suche</button>
+        <button onClick={() => setSubTab('google')} className={`px-3 py-1.5 rounded-md text-xs font-mono ${subTab === 'google' ? 'bg-white shadow-sm' : 'text-stone-500'}`}>Google-Link</button>
+      </div>
+      {subTab === 'ai' ? <AIDirectSearch onNext={onNext} /> : <GoogleLinkSearch onNext={onNext} />}
+    </div>
+  );
+}
+
+function RecipeForm({ initial, onBack, backLabel, onSave }) {
+  const { showToast } = useApp();
+  const [title, setTitle] = useState((initial && initial.title) || '');
+  const [servingsText, setServingsText] = useState((initial && initial.servingsText) || '4');
+  const [ingredientsText, setIngredientsText] = useState((initial && initial.ingredientsText) || '');
+  const [stepsText, setStepsText] = useState((initial && initial.stepsText) || '');
+  const [nutrition, setNutrition] = useState((initial && initial.nutrition) || { kcal: '', protein: '', carbs: '', fat: '' });
+  const [photo, setPhoto] = useState((initial && initial.photo) || null);
+  const [busyPhoto, setBusyPhoto] = useState(false);
+  const [busyNutrition, setBusyNutrition] = useState(false);
+  const source = (initial && initial.source) || { type: 'manual', label: 'Manuell' };
+
+  const handlePhoto = async (file) => {
+    setBusyPhoto(true);
+    try { setPhoto(await resizeImage(file)); } catch (e) { showToast('Foto konnte nicht geladen werden', 'error'); }
+    finally { setBusyPhoto(false); }
+  };
+
+  const guessNutrition = async () => {
+    if (!ingredientsText.trim()) { showToast('Bitte zuerst Zutaten eintragen', 'error'); return; }
+    setBusyNutrition(true);
+    try {
+      const n = await estimateNutrition(ingredientsText, parseFloat(servingsText) || 1);
+      setNutrition({ kcal: Math.round(n.kcal) || '', protein: Math.round(n.protein) || '', carbs: Math.round(n.carbs) || '', fat: Math.round(n.fat) || '' });
+    } catch (e) { showToast('Schätzung fehlgeschlagen', 'error'); }
+    finally { setBusyNutrition(false); }
+  };
+
+  const save = () => {
+    if (!title.trim()) { showToast('Bitte einen Titel eingeben', 'error'); return; }
+    const recipe = {
+      title: title.trim(),
+      servings: parseFloat(servingsText) || 1,
+      ingredients: parseIngredientsText(ingredientsText),
+      steps: stepsText.split('\n').map(s => s.trim()).filter(Boolean),
+      nutrition: nutrition.kcal !== '' ? { kcal: +nutrition.kcal || 0, protein: +nutrition.protein || 0, carbs: +nutrition.carbs || 0, fat: +nutrition.fat || 0 } : null,
+      photo,
+      source,
+    };
+    onSave(recipe);
+  };
+
+  return (
+    <div className="space-y-3">
+      <button onClick={onBack} className="text-sm text-stone-400 flex items-center gap-1"><ChevronLeft size={14} /> {backLabel || 'Zurück'}</button>
+      {source.type !== 'manual' && (
+        <div className="text-xs bg-stone-100 text-stone-600 px-3 py-2 rounded-lg flex items-center gap-1.5 font-mono">
+          <Sparkles size={12} /> {source.label}{source.cookbook ? ` – ${source.cookbook}${source.page ? `, S. ${source.page}` : ''}` : ''}
+        </div>
+      )}
+      <div>
+        <label className={labelCls}>Titel</label>
+        <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls + " mt-1"} />
+      </div>
+      <div className="flex gap-3">
+        <div className="w-24">
+          <label className={labelCls}>Portionen</label>
+          <input type="number" value={servingsText} onChange={e => setServingsText(e.target.value)} className={inputCls + " mt-1"} />
+        </div>
+        <div className="flex-1">
+          <label className={labelCls}>Foto</label>
+          <div className="mt-1">
+            {photo ? (
+              <div className="relative w-10 h-10 inline-block">
+                <img src={photo} className="w-10 h-10 rounded-lg object-cover" />
+                <button onClick={() => setPhoto(null)} className="absolute -top-1.5 -right-1.5 bg-white rounded-full p-0.5 border border-stone-300"><X size={10} /></button>
+              </div>
+            ) : (
+              <label className="inline-flex items-center justify-center w-10 h-10 rounded-lg border-2 border-dashed border-stone-300 text-stone-400 cursor-pointer">
+                {busyPhoto ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handlePhoto(e.target.files[0])} />
+              </label>
+            )}
+          </div>
+        </div>
+      </div>
+      <div>
+        <label className={labelCls}>Zutaten – eine Zeile pro Zutat (z. B. „200 g Mehl")</label>
+        <textarea value={ingredientsText} onChange={e => setIngredientsText(e.target.value)} rows={5} className={inputCls + " mt-1 font-mono"} />
+      </div>
+      <div>
+        <label className={labelCls}>Zubereitung – ein Schritt pro Zeile</label>
+        <textarea value={stepsText} onChange={e => setStepsText(e.target.value)} rows={5} className={inputCls + " mt-1"} />
+      </div>
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className={labelCls}>Nährwerte / Portion</label>
+          <button onClick={guessNutrition} disabled={busyNutrition} className="text-xs text-stone-500 hover:text-stone-900 flex items-center gap-1 font-mono uppercase tracking-wide">
+            {busyNutrition ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} KI schätzen
+          </button>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          <NutritionInput label="kcal" value={nutrition.kcal} onChange={v => setNutrition({ ...nutrition, kcal: v })} />
+          <NutritionInput label="Eiw. g" value={nutrition.protein} onChange={v => setNutrition({ ...nutrition, protein: v })} />
+          <NutritionInput label="KH g" value={nutrition.carbs} onChange={v => setNutrition({ ...nutrition, carbs: v })} />
+          <NutritionInput label="Fett g" value={nutrition.fat} onChange={v => setNutrition({ ...nutrition, fat: v })} />
+        </div>
+      </div>
+      <button onClick={save} className={primaryBtnCls}>Speichern</button>
+    </div>
+  );
+}
+
+function OtherPickerPanel({ onBack, onSelect }) {
+  const options = ["Essen gehen", "Party", "bei Freunden", "Urlaub", "Bestellen", "Tiefkühl", "SinfOrMa"];
+  return (
+    <div className="space-y-3">
+      <button onClick={onBack} className="text-sm text-stone-400 flex items-center gap-1 mb-2"><ChevronLeft size={14} /> Zurück</button>
+      <div className="grid grid-cols-1 gap-2">
+        {options.map(opt => (
+          <button key={opt} onClick={() => onSelect(opt)} className="w-full text-left p-3 rounded-lg border border-stone-250 hover:border-stone-400 hover:bg-stone-50 text-sm font-medium">
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AddRecipeModal({ onClose, onSaved }) {
+  const { addRecipe, showToast } = useApp();
+  const [step, setStep] = useState('source');
+  const [draft, setDraft] = useState(null);
+  const goForm = (prefill) => { setDraft(prefill); setStep('form'); };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-full flex flex-col">
+        <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
+          <span className="font-mono font-semibold uppercase tracking-wide text-sm">Neues Rezept</span>
+          <button onClick={onClose}><X size={20} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
+          {step === 'source' && <SourcePicker onPick={setStep} />}
+          {step === 'firefox' && <FirefoxImportPanel onBack={() => setStep('source')} onNext={goForm} />}
+          {step === 'cookbook' && <CookbookPanel onBack={() => setStep('source')} onNext={goForm} />}
+          {step === 'ai' && <AISearchPanel onBack={() => setStep('source')} onNext={goForm} />}
+          {step === 'other' && (
+            <OtherPickerPanel
+              onBack={() => setStep('source')}
+              onSelect={async (title) => {
+                const recipe = {
+                  title,
+                  servings: 1,
+                  ingredients: [],
+                  steps: [],
+                  nutrition: null,
+                  source: { type: 'other', label: 'Weiteres' },
+                };
+                const saved = await addRecipe(recipe);
+                showToast(`${title} hinzugefügt`);
+                if (onSaved) onSaved(saved);
+                onClose();
+              }}
+            />
+          )}
+          {step === 'form' && <RecipeForm initial={draft} onBack={() => setStep('source')} onSave={async (recipe) => {
+            const saved = await addRecipe(recipe);
+            showToast('Rezept gespeichert');
+            if (onSaved) onSaved(saved);
+            onClose();
+          }} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- Recipes tab ---------------------------------- */
+function RecipeDetailModal({ recipe, multiplier = 1, onClose }) {
+  const { updateRecipe, deleteRecipe, showToast } = useApp();
+  const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => { if (confirmDelete) { const t = setTimeout(() => setConfirmDelete(false), 3000); return () => clearTimeout(t); } }, [confirmDelete]);
+
+  const formatIngredient = (ing) => {
+    if (ing.amount == null) return ing.raw || ing.name;
+    const scaledAmount = ing.amount * multiplier;
+    const formattedAmt = Math.round(scaledAmount * 100) / 100;
+    return `${formattedAmt} ${ing.unit || ''} ${ing.name}`.trim();
+  };
+
+  if (editing) {
+    return (
+      <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
+        <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-full flex flex-col">
+          <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
+            <span className="font-mono font-semibold uppercase tracking-wide text-sm">Rezept bearbeiten</span>
+            <button onClick={onClose}><X size={20} /></button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 min-h-0">
+            <RecipeForm
+              initial={{
+                title: recipe.title, servingsText: String(recipe.servings),
+                ingredientsText: ingredientsToText(recipe.ingredients), stepsText: recipe.steps.join('\n'),
+                nutrition: recipe.nutrition || { kcal: '', protein: '', carbs: '', fat: '' },
+                photo: recipe.photo, source: recipe.source,
+              }}
+              backLabel="Abbrechen"
+              onBack={() => setEditing(false)}
+              onSave={async (updated) => {
+                await updateRecipe(recipe.id, { title: updated.title, servings: updated.servings, ingredients: updated.ingredients, steps: updated.steps, nutrition: updated.nutrition, photo: updated.photo, placeholder: false });
+                showToast('Rezept aktualisiert');
+                onClose();
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-full flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
+          <span className="font-mono font-semibold truncate">{recipe.title}</span>
+          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+            <button onClick={() => setEditing(true)} className="text-stone-400 hover:text-stone-900"><Edit2 size={17} /></button>
+            <button onClick={onClose}><X size={20} /></button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+          {recipe.placeholder && (
+            <div className="text-xs bg-amber-50 text-amber-700 px-3 py-2 rounded-lg">Platzhalter – bitte über „Bearbeiten" ausfüllen.</div>
+          )}
+          {recipe.photo && <img src={recipe.photo} className="w-full h-40 object-cover rounded-lg" />}
+          <StarRating value={recipe.rating} onChange={(v) => updateRecipe(recipe.id, { rating: v })} size={20} />
+          <div className="flex flex-wrap gap-2 text-xs text-stone-500 font-mono">
+            {multiplier !== 1 ? (
+              <span className="px-2.5 py-1 bg-amber-100 text-amber-900 font-bold rounded-full">
+                {Math.round(recipe.servings * multiplier * 100) / 100} Portionen (Original: {recipe.servings})
+              </span>
+            ) : (
+              <span className="px-2 py-1 bg-stone-100 rounded-full">{recipe.servings} Portionen</span>
+            )}
+            {recipe.source && recipe.source.label && <span className="px-2 py-1 bg-stone-100 rounded-full">{recipe.source.label}</span>}
+            {recipe.source && recipe.source.url && <a href={recipe.source.url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 bg-stone-100 rounded-full flex items-center gap-1">Quelle <ExternalLink size={10} /></a>}
+          </div>
+          {recipe.nutrition && (
+            <div className="grid grid-cols-4 gap-2 text-center">
+              {NUTRIENT_KEYS.map(k => (
+                <div key={k} className="bg-stone-50 rounded-lg py-2">
+                  <div className="text-sm font-semibold font-mono">{Math.round((recipe.nutrition[k] || 0) * multiplier)}</div>
+                  <div className="text-xs text-stone-400">{NUTRIENT_LABELS[k]}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {recipe.ingredients.length > 0 && (
+            <div>
+              <div className={labelCls + " mb-1"}>Zutaten</div>
+              <ul className="text-sm text-stone-600 space-y-0.5">{recipe.ingredients.map((ing, i) => <li key={i}>• {formatIngredient(ing)}</li>)}</ul>
+            </div>
+          )}
+          {recipe.steps.length > 0 && (
+            <div>
+              <div className={labelCls + " mb-1"}>Zubereitung</div>
+              <ol className="text-sm text-stone-600 space-y-1 list-decimal list-inside">{recipe.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
+            </div>
+          )}
+          <button onClick={() => confirmDelete ? (deleteRecipe(recipe.id), onClose()) : setConfirmDelete(true)} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium ${confirmDelete ? 'border-rose-600 bg-rose-50 text-rose-700' : 'border-rose-200 text-rose-600'}`}>
+            <Trash2 size={16} /> {confirmDelete ? 'Wirklich löschen?' : 'Rezept löschen'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RecipesTab() {
+  const { recipes, openAddRecipe } = useApp();
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState(null);
+  const filtered = recipes.filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rezepte durchsuchen" className={inputCls + " pl-9"} />
+        </div>
+        <button onClick={() => openAddRecipe({})} className="px-4 rounded-lg bg-stone-900 text-white flex-shrink-0"><Plus size={18} /></button>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {filtered.map(r => (
+          <button key={r.id} onClick={() => setSelected(r)} className="bg-white rounded-xl border border-stone-200 overflow-hidden text-left">
+            {r.photo ? <img src={r.photo} className="w-full h-24 object-cover" /> : <div className="w-full h-24 bg-stone-100 flex items-center justify-center"><Utensils size={20} className="text-stone-300" /></div>}
+            <div className="p-2.5">
+              <div className="text-sm font-medium truncate flex items-center gap-1">{r.title}{r.placeholder && <span className="text-amber-500">●</span>}</div>
+              <div className="text-xs text-stone-400 font-mono">{r.nutrition ? `${r.nutrition.kcal} kcal` : 'keine Nährwerte'}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+      {filtered.length === 0 && <div className="text-center text-sm text-stone-400 py-10">Noch keine Rezepte – tippe auf + um eines hinzuzufügen.</div>}
+      {selected && <RecipeDetailModal recipe={selected} onClose={() => setSelected(null)} />}
+    </div>
+  );
+}
+
+/* ---------------------------------- Shopping tab ---------------------------------- */
+function ShoppingTab() {
+  const { recipes } = useApp();
+  const [start, setStart] = useState(todayKey());
+  const [days, setDays] = useState(7);
+  const [items, setItems] = useState(null);
+  const [checked, setChecked] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const generate = async () => {
+    setLoading(true);
+    const startDate = new Date(start + 'T00:00:00');
+    const usage = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(startDate); d.setDate(d.getDate() + i);
+      const plan = await storageGet(`mealplan:${dateKey(d)}`, true, null);
+      if (!plan) continue;
+      for (const mt of MEAL_KEYS) for (const co of COURSE_KEYS) {
+        const slot = plan[mt] && plan[mt][co];
+        if (slot) {
+          const recipe = recipes.find(r => r.id === slot.recipeId);
+          if (recipe) usage.push({ recipe, multiplier: slot.multiplier });
+        }
+      }
+    }
+    setItems(aggregateIngredients(usage));
+    setChecked({});
+    setLoading(false);
+  };
+
+  const listText = items ? items.map(i => `${i.amount ? Math.round(i.amount * 10) / 10 + ' ' + (i.unit || '') : ''} ${i.name}`.trim()).join('\n') : '';
+  const copyList = async () => { try { await navigator.clipboard.writeText(listText); } catch (e) { } };
+
+  return (
+    <div className="space-y-4">
+      <div className={cardCls + " space-y-3"}>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label className={labelCls}>Von</label>
+            <input type="date" value={start} onChange={e => setStart(e.target.value)} className={inputCls + " mt-1"} />
+          </div>
+          <div className="w-20">
+            <label className={labelCls}>Tage</label>
+            <input type="number" min="1" max="14" value={days} onChange={e => setDays(parseInt(e.target.value) || 1)} className={inputCls + " mt-1"} />
+          </div>
+        </div>
+        <button onClick={generate} disabled={loading} className={primaryBtnCls}>
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <ShoppingCart size={14} />} Liste erstellen
+        </button>
+      </div>
+
+      {items && (
+        <div className={cardCls}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-mono font-semibold uppercase tracking-wide text-sm">Zutaten ({items.length})</span>
+            <button onClick={copyList} className="text-xs text-stone-500 hover:text-stone-900 flex items-center gap-1 font-mono uppercase tracking-wide"><Copy size={12} /> Kopieren</button>
+          </div>
+          <div className="space-y-1 mb-3">
+            {items.map((it, i) => (
+              <label key={i} className="flex items-center gap-2 py-1.5 border-b border-stone-100 last:border-0">
+                <input type="checkbox" checked={!!checked[i]} onChange={() => setChecked({ ...checked, [i]: !checked[i] })} />
+                <span className={`text-sm flex-1 ${checked[i] ? 'line-through text-stone-300' : ''}`}>
+                  {it.amount ? `${Math.round(it.amount * 10) / 10} ${it.unit || ''} ` : ''}{it.name}
+                </span>
+              </label>
+            ))}
+            {items.length === 0 && <div className="text-sm text-stone-400 text-center py-4">Keine Zutaten im Zeitraum geplant.</div>}
+          </div>
+          {items.length > 0 && (
+            <div>
+              <label className={labelCls}>Zum Kopieren markieren</label>
+              <textarea readOnly value={listText} onClick={e => e.target.select()} rows={Math.min(10, items.length + 1)} className={inputCls + " mt-1 font-mono"} />
+            </div>
+          )}
+          <div className="mt-3 p-3 bg-stone-100 rounded-lg text-xs text-stone-600">
+            Direkter Import in Bring, Rewe oder Picnic ist hier technisch nicht möglich – Liste oben kopieren und dort manuell einfügen.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------- Cookbook tab ---------------------------------- */
+function CookbookTab() {
+  const { recipes, settings, updateSettings, updateRecipe, deleteRecipe, closeVolume, showToast } = useApp();
+  const volumes = settings.cookbookVolumes || [];
+  const openVol = volumes.find(v => !v.closedAt);
+  const [selectedVolId, setSelectedVolId] = useState((openVol && openVol.id) || (volumes[0] && volumes[0].id));
+  const [editTitle, setEditTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [closing, setClosing] = useState(false);
+  const [newVolTitle, setNewVolTitle] = useState('');
+
+  useEffect(() => { if (!selectedVolId && volumes[0]) setSelectedVolId(volumes[0].id); }, [volumes.length]);
+
+  const selectedVol = volumes.find(v => v.id === selectedVolId) || volumes[0];
+  const volRecipes = selectedVol ? recipes.filter(r => r.bookVolume === selectedVol.id) : [];
+
+  const saveTitle = () => {
+    const nextVols = volumes.map(v => v.id === selectedVol.id ? { ...v, title: titleDraft.trim() || v.title } : v);
+    updateSettings({ cookbookVolumes: nextVols });
+    setEditTitle(false);
+  };
+  const dateRangeLabel = (v) => {
+    const s = new Date(v.startedAt);
+    const startTxt = `${s.getDate()}.${s.getMonth() + 1}.${s.getFullYear()}`;
+    if (!v.closedAt) return `seit ${startTxt}`;
+    const e = new Date(v.closedAt);
+    return `${startTxt} – ${e.getDate()}.${e.getMonth() + 1}.${e.getFullYear()}`;
+  };
+
+  if (!selectedVol) return <div className="text-center text-sm text-stone-400 py-10">Lädt...</div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {volumes.slice().reverse().map(v => (
+          <button key={v.id} onClick={() => setSelectedVolId(v.id)} className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap ${v.id === selectedVolId ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600'}`}>
+            {v.title}{!v.closedAt && ' ●'}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-stone-900 rounded-xl p-8 text-center">
+        <div className="inline-block border-2 border-stone-700 px-6 py-4 rounded">
+          <div className="font-mono text-xs tracking-widest text-stone-500 mb-1">REZEPTSAMMLUNG</div>
+          {editTitle ? (
+            <div className="flex gap-2 justify-center items-center">
+              <input value={titleDraft} onChange={e => setTitleDraft(e.target.value)} className="px-2 py-1 rounded text-stone-900 text-sm" />
+              <button onClick={saveTitle} className="text-white"><Check size={16} /></button>
+            </div>
+          ) : (
+            <button onClick={() => { setTitleDraft(selectedVol.title); setEditTitle(true); }} className="flex items-center gap-2 mx-auto">
+              <span className="font-mono text-2xl font-bold text-white tracking-tight">{selectedVol.title}</span>
+              <Edit2 size={13} className="text-stone-500" />
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-stone-500 mt-3 font-mono">{volRecipes.length} REZEPTE · {dateRangeLabel(selectedVol).toUpperCase()}</p>
+      </div>
+
+      {!selectedVol.closedAt && (
+        closing ? (
+          <div className={cardCls + " space-y-2"}>
+            <label className={labelCls}>Titel für neues Kochbuch</label>
+            <input value={newVolTitle} onChange={e => setNewVolTitle(e.target.value)} placeholder={`Band ${volumes.length + 1}`} className={inputCls} />
+            <div className="flex gap-2">
+              <button onClick={() => setClosing(false)} className={secondaryBtnCls}>Abbrechen</button>
+              <button onClick={async () => { await closeVolume(newVolTitle); setClosing(false); setNewVolTitle(''); showToast('Neues Kochbuch gestartet'); }} className={primaryBtnCls}>Bestätigen</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => setClosing(true)} className={secondaryBtnCls}><BookOpen size={16} /> Kochbuch beenden &amp; neues starten</button>
+        )
+      )}
+
+      <button onClick={() => window.print()} className={secondaryBtnCls}>
+        <Printer size={16} /> Drucken / Als PDF speichern
+      </button>
+
+      <div id="cookbook-print" className="space-y-4">
+        {volRecipes.map(r => (
+          <div key={r.id} className="bg-white rounded-xl border border-stone-200 p-4 break-inside-avoid">
+            <div className="flex gap-3">
+              {r.photo && <img src={r.photo} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />}
+              <div className="flex-1 min-w-0">
+                <div className="font-mono font-semibold truncate flex items-center gap-1.5">
+                  {r.title}
+                  {r.placeholder && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-sans normal-case flex-shrink-0">Ausfüllen</span>}
+                </div>
+                <div className="text-xs text-stone-400 font-mono">{r.servings} Portionen{r.nutrition ? ` · ${r.nutrition.kcal} kcal/Portion` : ''}</div>
+                <StarRating value={r.rating} onChange={(v) => updateRecipe(r.id, { rating: v })} size={14} />
+              </div>
+              <div className="no-print"><RemoveButton onConfirm={() => deleteRecipe(r.id)} /></div>
+            </div>
+            {!r.placeholder && (
+              <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
+                <ul className="text-stone-600 space-y-0.5">{r.ingredients.map((ing, i) => <li key={i}>• {ing.raw}</li>)}</ul>
+                <ol className="text-stone-600 space-y-0.5 list-decimal list-inside">{r.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
+              </div>
+            )}
+          </div>
+        ))}
+        {volRecipes.length === 0 && <div className="text-center text-sm text-stone-400 py-10">Noch keine Rezepte in diesem Band.</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- Settings tab ---------------------------------- */
+function SettingsTab() {
+  const {
+    settings, updateSettings, profile,
+    bookmarksRecipes, bookmarksPages,
+    saveBookmarksRecipes, saveBookmarksPages,
+    clearBookmarksRecipes, clearBookmarksPages,
+    showToast
+  } = useApp();
+  const [people, setPeople] = useState(settings.people);
+  const [cookbookInput, setCookbookInput] = useState('');
+  const [bmBusy, setBmBusy] = useState(null);
+
+  useEffect(() => { setPeople(settings.people); }, [settings.people]);
+
+  const savePeople = async () => { await updateSettings({ people }); showToast('Gespeichert'); };
+  const addCookbook = async () => {
+    if (!cookbookInput.trim()) return;
+    await updateSettings({ cookbooks: [...settings.cookbooks, cookbookInput.trim()] });
+    setCookbookInput('');
+  };
+  const removeCookbook = async (c) => { await updateSettings({ cookbooks: settings.cookbooks.filter(x => x !== c) }); };
+  const switchProfile = async (idx) => {
+    await storageSet('profile', { personIndex: idx }, false);
+    window.location.reload();
+  };
+  const handleBookmarkUpload = async (file, type) => {
+    setBmBusy(type);
+    try {
+      const parsed = await parseBookmarksFile(file);
+      if (type === 'recipes') {
+        await saveBookmarksRecipes(parsed);
+      } else {
+        await saveBookmarksPages(parsed);
+      }
+      showToast('Favoriten aktualisiert');
+    }
+    catch (e) { showToast('Datei konnte nicht gelesen werden', 'error'); }
+    finally { setBmBusy(null); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide"><Users size={15} /> Personen &amp; Tagesziele</div>
+        {people.map((p, i) => (
+          <div key={i} className="mb-3 last:mb-0 p-3 bg-stone-50 rounded-lg">
+            <input value={p.name} onChange={e => { const next = [...people]; next[i] = { ...next[i], name: e.target.value }; setPeople(next); }} className={inputCls + " text-sm font-medium mb-2"} />
+            <div className="grid grid-cols-4 gap-2">
+              {NUTRIENT_KEYS.map(k => (
+                <div key={k}>
+                  <input type="number" value={p.targets[k]} onChange={e => { const next = [...people]; next[i] = { ...next[i], targets: { ...next[i].targets, [k]: parseInt(e.target.value) || 0 } }; setPeople(next); }} className="w-full px-2 py-1 rounded-lg border border-stone-300 text-sm text-center focus:outline-none focus:ring-1 focus:ring-stone-900" />
+                  <div className="text-xs text-stone-400 text-center mt-0.5 font-mono">{NUTRIENT_LABELS[k]}</div>
+                </div>
+              ))}
+            </div>
+            {profile.personIndex === i && <div className="text-xs text-stone-400 mt-1.5 font-mono">DIESES GERÄT</div>}
+          </div>
+        ))}
+        <button onClick={savePeople} className={primaryBtnCls + " mt-1"}>Speichern</button>
+      </div>
+
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide"><Calendar size={15} /> Kalender-Einstellungen</div>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Standardansicht</label>
+            <div className="flex gap-2 mt-1">
+              <button onClick={() => updateSettings({ defaultCalendarView: 'week' })} className={`flex-1 py-2 rounded-lg text-sm font-mono ${settings.defaultCalendarView !== 'day' ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600'}`}>Woche</button>
+              <button onClick={() => updateSettings({ defaultCalendarView: 'day' })} className={`flex-1 py-2 rounded-lg text-sm font-mono ${settings.defaultCalendarView === 'day' ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600'}`}>Tag</button>
+            </div>
+          </div>
+          <label className="flex items-center gap-2 py-1.5 cursor-pointer">
+            <input type="checkbox" checked={!!settings.showNextMonday} onChange={e => updateSettings({ showNextMonday: e.target.checked })} className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" />
+            <span className="text-sm text-stone-700">Nächsten Montag in Wochenansicht anzeigen (8 Tage)</span>
+          </label>
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 font-mono uppercase tracking-wide">Gerät zuordnen</div>
+        <div className="flex gap-2">
+          {settings.people.map((p, i) => (
+            <button key={i} onClick={() => switchProfile(i)} className={`flex-1 py-2 rounded-lg text-sm font-mono ${profile.personIndex === i ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600'}`}>{p.name}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 font-mono uppercase tracking-wide">Kochbücher (physisch)</div>
+        <div className="flex gap-2 mb-2">
+          <input value={cookbookInput} onChange={e => setCookbookInput(e.target.value)} placeholder="Titel hinzufügen" className={inputCls} onKeyDown={e => e.key === 'Enter' && addCookbook()} />
+          <button onClick={addCookbook} className="px-3 rounded-lg bg-stone-900 text-white flex-shrink-0"><Plus size={16} /></button>
+        </div>
+        <div className="space-y-1">
+          {settings.cookbooks.map(c => (
+            <div key={c} className="flex items-center justify-between px-3 py-2 bg-stone-50 rounded-lg text-sm">
+              {c} <button onClick={() => removeCookbook(c)}><X size={14} className="text-stone-400" /></button>
+            </div>
+          ))}
+          {settings.cookbooks.length === 0 && <div className="text-xs text-stone-400">Noch keine hinterlegt.</div>}
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 font-mono uppercase tracking-wide">Firefox-Favoriten: Rezepte</div>
+        <p className="text-xs text-stone-500 mb-2">{bookmarksRecipes.length} Rezepte gespeichert – Grundlage für Direkt-Import.</p>
+        <div className="flex gap-2 mb-4">
+          <label className={secondaryBtnCls + " cursor-pointer"}>
+            {bmBusy === 'recipes' ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} Aktualisieren
+            <input type="file" accept=".html,.htm" className="hidden" onChange={e => e.target.files[0] && handleBookmarkUpload(e.target.files[0], 'recipes')} />
+          </label>
+          {bookmarksRecipes.length > 0 && <button onClick={clearBookmarksRecipes} className="px-3 rounded-lg border border-stone-300 text-stone-500 text-sm flex-shrink-0">Leeren</button>}
+        </div>
+
+        <div className="text-sm font-semibold mb-2 font-mono uppercase tracking-wide border-t border-stone-100 pt-3">Firefox-Favoriten: Seiten</div>
+        <p className="text-xs text-stone-500 mb-2">{bookmarksPages.length} Koch-Webseiten gespeichert – Grundlage für Domänen-Suche im Wochenplaner.</p>
+        <div className="flex gap-2">
+          <label className={secondaryBtnCls + " cursor-pointer"}>
+            {bmBusy === 'pages' ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} Aktualisieren
+            <input type="file" accept=".html,.htm" className="hidden" onChange={e => e.target.files[0] && handleBookmarkUpload(e.target.files[0], 'pages')} />
+          </label>
+          {bookmarksPages.length > 0 && <button onClick={clearBookmarksPages} className="px-3 rounded-lg border border-stone-300 text-stone-500 text-sm flex-shrink-0">Leeren</button>}
+        </div>
+      </div>
+
+      <div className={cardCls + " text-xs text-stone-500 space-y-1.5"}>
+        <div className="font-semibold text-stone-700 text-sm mb-1 font-mono uppercase tracking-wide">Hinweise</div>
+        <p>Beide Personen öffnen denselben Artefakt-Link, damit die Daten synchron sind. Wer den Link hat, kann sie sehen und bearbeiten.</p>
+        <p>Direkte Anbindungen an Firefox-Konto, Bring, Rewe oder Picnic sind hier technisch nicht möglich (siehe Import-/Export-Funktionen als Alternative).</p>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- App ---------------------------------- */
+export default function App() {
+  const [loading, setLoading] = useState(true);
+  const [recipes, setRecipes] = useState([]);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [profile, setProfile] = useState(null);
+  const [mealplanIndex, setMealplanIndex] = useState({});
+  const [bookmarksRecipes, setBookmarksRecipes] = useState([]);
+  const [bookmarksPages, setBookmarksPages] = useState([]);
+  const [tab, setTab] = useState('calendar');
+  const [toast, setToast] = useState(null);
+  const [addModal, setAddModal] = useState(null);
+  const [recipeDetailModal, setRecipeDetailModal] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const [r, s, p, idx, bmRecipes, bmPages] = await Promise.all([
+        storageGet('recipes', true, []),
+        storageGet('settings', true, DEFAULT_SETTINGS),
+        storageGet('profile', false, null),
+        storageGet('mealplan_index', true, {}),
+        storageGet('firefox_bookmarks_recipes', true, []),
+        storageGet('firefox_bookmarks_pages', true, []),
+      ]);
+
+      let settingsNext = s, recipesNext = r, persistSettings = false, persistRecipes = false;
+      if (!settingsNext.cookbookVolumes || settingsNext.cookbookVolumes.length === 0) {
+        const vol = { id: uid(), title: settingsNext.coverTitle || 'Unser Kochbuch', startedAt: new Date().toISOString(), closedAt: null };
+        settingsNext = { ...settingsNext, cookbookVolumes: [vol] };
+        recipesNext = recipesNext.map(rec => rec.bookVolume ? rec : { ...rec, bookVolume: vol.id });
+        persistSettings = true; persistRecipes = true;
+      }
+      const fixedRecipes = recipesNext.map(rec => ('rating' in rec ? rec : { ...rec, rating: null, placeholder: !!rec.placeholder }));
+      if (fixedRecipes.some((rec, i) => rec !== recipesNext[i])) { recipesNext = fixedRecipes; persistRecipes = true; }
+
+      setRecipes(recipesNext); setSettings(settingsNext); setProfile(p); setMealplanIndex(idx);
+      setBookmarksRecipes(bmRecipes); setBookmarksPages(bmPages);
+      setLoading(false);
+      if (persistSettings) await storageSet('settings', settingsNext, true);
+      if (persistRecipes) await storageSet('recipes', recipesNext, true);
+    })();
+  }, []);
+
+  const showToast = (msg, type) => { setToast({ msg, type: type || 'info' }); setTimeout(() => setToast(null), 3000); };
+
+  const addRecipe = async (recipe) => {
+    const trimmedTitle = (recipe.title || '').trim().toLowerCase();
+    const existing = recipes.find(r => (r.title || '').trim().toLowerCase() === trimmedTitle);
+    if (existing) {
+      return existing;
+    }
+    const vol = currentOpenVolume(settings);
+    const full = {
+      rating: null, placeholder: false, photo: null,
+      ...recipe,
+      id: recipe.id || uid(),
+      createdAt: recipe.createdAt || new Date().toISOString(),
+      bookVolume: recipe.bookVolume || (vol && vol.id) || null,
+    };
+    const next = [...recipes, full];
+    setRecipes(next);
+    await storageSet('recipes', next, true);
+    return full;
+  };
+  const updateRecipe = async (id, patch) => {
+    const next = recipes.map(r => r.id === id ? { ...r, ...patch } : r);
+    setRecipes(next);
+    await storageSet('recipes', next, true);
+  };
+  const deleteRecipe = async (id) => {
+    const next = recipes.filter(r => r.id !== id);
+    setRecipes(next);
+    await storageSet('recipes', next, true);
+  };
+  const updateSettings = async (patch) => {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    await storageSet('settings', next, true);
+  };
+  const closeVolume = async (newTitle) => {
+    const vols = settings.cookbookVolumes || [];
+    const now = new Date().toISOString();
+    const updatedVols = vols.map(v => v.closedAt ? v : { ...v, closedAt: now });
+    const newVol = { id: uid(), title: (newTitle && newTitle.trim()) || `Band ${vols.length + 1}`, startedAt: now, closedAt: null };
+    await updateSettings({ cookbookVolumes: [...updatedVols, newVol] });
+  };
+  const chooseProfile = async (idx) => {
+    const next = { personIndex: idx };
+    setProfile(next);
+    await storageSet('profile', next, false);
+  };
+  const getDayPlan = (dk) => storageGet(`mealplan:${dk}`, true, emptyDayPlan());
+  const saveDayPlan = async (dk, plan) => {
+    await storageSet(`mealplan:${dk}`, plan, true);
+    const counts = mealTimeCounts(plan);
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const nextIndex = { ...mealplanIndex };
+    if (total > 0) nextIndex[dk] = counts; else delete nextIndex[dk];
+    setMealplanIndex(nextIndex);
+    await storageSet('mealplan_index', nextIndex, true);
+  };
+  const saveBookmarksRecipes = async (newLinks) => {
+    const map = new Map(bookmarksRecipes.map(b => [b.url, b]));
+    for (const l of newLinks) map.set(l.url, l);
+    const merged = Array.from(map.values());
+    setBookmarksRecipes(merged);
+    await storageSet('firefox_bookmarks_recipes', merged, true);
+  };
+  const clearBookmarksRecipes = async () => {
+    setBookmarksRecipes([]);
+    await storageSet('firefox_bookmarks_recipes', [], true);
+  };
+  const saveBookmarksPages = async (newLinks) => {
+    const map = new Map(bookmarksPages.map(b => [b.url, b]));
+    for (const l of newLinks) map.set(l.url, l);
+    const merged = Array.from(map.values());
+    setBookmarksPages(merged);
+    await storageSet('firefox_bookmarks_pages', merged, true);
+  };
+  const clearBookmarksPages = async () => {
+    setBookmarksPages([]);
+    await storageSet('firefox_bookmarks_pages', [], true);
+  };
+
+  if (loading) return <LoadingScreen />;
+  if (!profile) return <ProfilePicker settings={settings} onChoose={chooseProfile} onUpdateSettings={updateSettings} />;
+
+  return (
+    <AppCtx.Provider value={{
+      recipes, settings, profile, mealplanIndex,
+      bookmarksRecipes, bookmarksPages,
+      addRecipe, updateRecipe, deleteRecipe, updateSettings, closeVolume, showToast,
+      openAddRecipe: setAddModal, getDayPlan, saveDayPlan,
+      saveBookmarksRecipes, saveBookmarksPages,
+      clearBookmarksRecipes, clearBookmarksPages,
+      openRecipeDetail: setRecipeDetailModal,
+    }}>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #cookbook-print, #cookbook-print * { visibility: visible; }
+          #cookbook-print { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+      `}</style>
+      <div className="min-h-screen bg-stone-100 text-stone-800 font-sans pb-20">
+        <TopBar />
+        <main className="max-w-2xl mx-auto px-4 py-4">
+          {tab === 'calendar' && <CalendarTab />}
+          {tab === 'recipes' && <RecipesTab />}
+          {tab === 'shopping' && <ShoppingTab />}
+          {tab === 'cookbook' && <CookbookTab />}
+          {tab === 'settings' && <SettingsTab />}
+        </main>
+        <BottomNav tab={tab} setTab={setTab} />
+        {addModal && <AddRecipeModal onClose={() => setAddModal(null)} onSaved={addModal.onSaved} />}
+        {recipeDetailModal && (
+          <RecipeDetailModal
+            recipe={recipeDetailModal.recipe}
+            multiplier={recipeDetailModal.multiplier || 1}
+            onClose={() => setRecipeDetailModal(null)}
+          />
+        )}
+        {toast && <Toast toast={toast} />}
+      </div>
+    </AppCtx.Provider>
+  );
+}
