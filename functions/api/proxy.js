@@ -96,10 +96,44 @@ export async function onRequestGet(context) {
         element(el) {
           const src = el.getAttribute('src');
           if (src) {
+            const srcLower = src.toLowerCase();
+            if (
+              srcLower.includes('recaptcha') ||
+              srcLower.includes('turnstile') ||
+              srcLower.includes('hcaptcha') ||
+              srcLower.includes('cookiebot') ||
+              srcLower.includes('onetrust') ||
+              srcLower.includes('consent') ||
+              srcLower.includes('cookie-law') ||
+              srcLower.includes('doubleclick') ||
+              srcLower.includes('google-analytics') ||
+              srcLower.includes('googletagmanager')
+            ) {
+              el.remove();
+              return;
+            }
             try {
               const absUrl = new URL(src, targetUrl).toString();
               el.setAttribute('src', absUrl);
             } catch (e) {}
+          }
+        }
+      })
+      .on('div, section, dialog', {
+        element(el) {
+          const id = el.getAttribute('id') || '';
+          const cls = el.getAttribute('class') || '';
+          const combined = (id + ' ' + cls).toLowerCase();
+          if (
+            combined.includes('cookie-consent') ||
+            combined.includes('cookiebanner') ||
+            combined.includes('cookie-accept') ||
+            combined.includes('consent-modal') ||
+            combined.includes('onetrust-consent-sdk') ||
+            combined.includes('sp_message_container') ||
+            combined.includes('cmp-container')
+          ) {
+            el.remove();
           }
         }
       });

@@ -3,7 +3,7 @@ import {
   Calendar, ChevronLeft, ChevronRight, Plus, X, Search, ShoppingCart, BookOpen,
   Settings as SettingsIcon, Camera, Upload, Sparkles, Trash2, Edit2, Check,
   AlertTriangle, Utensils, Coffee, Cookie, Cake, Sun, Moon, Loader2, ExternalLink,
-  Copy, Printer, User, Users, Star, Save,
+  Copy, Printer, User, Users, Star, Save, Download,
 } from 'lucide-react';
 
 /* ---------------------------------- Design tokens ---------------------------------- */
@@ -43,6 +43,7 @@ const DEFAULT_SETTINGS = {
   cookbookVolumes: [],
   defaultCalendarView: 'week',
   showNextMonday: false,
+  aiProvider: 'gemini',
 };
 
 /* ---------------------------------- Helpers ---------------------------------- */
@@ -115,36 +116,263 @@ async function resizeImage(file, maxDim = 700, quality = 0.7) {
   });
 }
 
-async function callClaude(prompt, useSearch) {
-  const body = { model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] };
-  if (useSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error('API-Fehler');
-  const data = await res.json();
-  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
-  const first = text.indexOf('{'); const last = text.lastIndexOf('}');
-  if (first === -1 || last === -1) throw new Error('Keine JSON-Antwort erhalten');
-  return JSON.parse(text.slice(first, last + 1));
+function extractRecipeFromHtml(html, url) {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    let title = '';
+    let servings = 4;
+    let ingredients = [];
+    let steps = [];
+    let nutrition = null;
+
+    const cleanText = (t) => t ? t.replace(/\s+/g, ' ').trim() : '';
+
+    // --- STAGE 1: JSON-LD ---
+    const jsonLdScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+    for (const script of jsonLdScripts) {
+      try {
+        const json = JSON.parse(script.textContent);
+        
+        const findRecipe = (obj) => {
+          if (!obj) return null;
+          if (Array.isArray(obj)) {
+            for (const item of obj) {
+              const found = findRecipe(item);
+              if (found) return found;
+            }
+          } else if (typeof obj === 'object') {
+            if (obj['@type'] === 'Recipe' || (Array.isArray(obj['@type']) && obj['@type'].includes('Recipe'))) {
+              return obj;
+            }
+            if (obj['@graph']) {
+              return findRecipe(obj['@graph']);
+            }
+          }
+          return null;
+        };
+
+        const recipeObj = findRecipe(json);
+        if (recipeObj) {
+          title = cleanText(recipeObj.name || recipeObj.headline);
+          
+          if (recipeObj.recipeYield) {
+            const yieldStr = Array.isArray(recipeObj.recipeYield) ? recipeObj.recipeYield[0] : String(recipeObj.recipeYield);
+            const num = parseInt(yieldStr.match(/\d+/)?.[0] || '4');
+            servings = num;
+          }
+
+          if (recipeObj.recipeIngredient) {
+            ingredients = recipeObj.recipeIngredient.map(cleanText).filter(Boolean);
+          }
+
+          if (recipeObj.recipeInstructions) {
+            const parseInstructions = (instructions) => {
+              if (Array.isArray(instructions)) {
+                return instructions.map(inst => {
+                  if (typeof inst === 'string') return cleanText(inst);
+                  if (inst.text) return cleanText(inst.text);
+                  if (inst.itemListElement) return parseInstructions(inst.itemListElement);
+                  return '';
+                }).flat().filter(Boolean);
+              } else if (typeof instructions === 'string') {
+                return [cleanText(instructions)];
+              } else if (typeof instructions === 'object') {
+                if (instructions.text) return [cleanText(instructions.text)];
+                if (instructions.itemListElement) return parseInstructions(instructions.itemListElement);
+              }
+              return [];
+            };
+            steps = parseInstructions(recipeObj.recipeInstructions);
+          }
+
+          if (recipeObj.nutrition) {
+            const nut = recipeObj.nutrition;
+            nutrition = {
+              kcal: parseInt(nut.calories || nut.caloriesContent || '0') || 0,
+              protein: parseInt(nut.proteinContent || '0') || 0,
+              carbs: parseInt(nut.carbohydrateContent || '0') || 0,
+              fat: parseInt(nut.fatContent || '0') || 0
+            };
+          }
+
+          if (ingredients.length >= 3) {
+            return { title, servings, ingredients, steps, nutrition, sourceUrl: url };
+          }
+        }
+      } catch (e) {
+        console.warn('Error parsing JSON-LD script', e);
+      }
+    }
+
+    // --- STAGE 2: OpenGraph + Microdata ---
+    const ogTitle = doc.querySelector('meta[property="og:title"]');
+    if (ogTitle) title = cleanText(ogTitle.getAttribute('content'));
+    if (!title) {
+      const h1 = doc.querySelector('h1');
+      if (h1) title = cleanText(h1.textContent);
+    }
+
+    const itemPropIngs = doc.querySelectorAll('[itemprop="recipeIngredient"]');
+    if (itemPropIngs.length > 0) {
+      ingredients = Array.from(itemPropIngs).map(el => cleanText(el.textContent)).filter(Boolean);
+    }
+
+    const itemPropSteps = doc.querySelectorAll('[itemprop="recipeInstructions"]');
+    if (itemPropSteps.length > 0) {
+      steps = Array.from(itemPropSteps).map(el => cleanText(el.textContent)).filter(Boolean);
+    }
+
+    if (ingredients.length >= 3 && steps.length >= 2) {
+      return { title, servings, ingredients, steps, nutrition, sourceUrl: url };
+    }
+
+    // --- STAGE 3: Heuristic Scraping ---
+    const keywordsIng = ['zutaten', 'ingredients', 'einkaufszettel', 'was du brauchst'];
+    const keywordsStep = ['zubereitung', 'instructions', 'schritte', 'zubereiten', 'anleitung', 'directions'];
+
+    const allHeaders = Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div'));
+    
+    const findListsNearKeywords = (keywords) => {
+      let longestList = [];
+      for (const el of allHeaders) {
+        const text = el.textContent.toLowerCase();
+        if (keywords.some(kw => text.includes(kw))) {
+          let current = el.nextElementSibling;
+          let searchCount = 0;
+          while (current && searchCount < 4) {
+            const uls = current.tagName === 'UL' || current.tagName === 'OL' ? [current] : Array.from(current.querySelectorAll('ul, ol'));
+            for (const ul of uls) {
+              const items = Array.from(ul.querySelectorAll('li')).map(li => cleanText(li.textContent)).filter(Boolean);
+              if (items.length > longestList.length) {
+                longestList = items;
+              }
+            }
+            if (longestList.length === 0) {
+              const paragraphs = Array.from(current.querySelectorAll('p, div.step, div.ingredient')).map(p => cleanText(p.textContent)).filter(p => p.length > 5);
+              if (paragraphs.length > longestList.length) {
+                longestList = paragraphs;
+              }
+            }
+            current = current.nextElementSibling;
+            searchCount++;
+          }
+        }
+      }
+      return longestList;
+    };
+
+    if (ingredients.length < 3) {
+      ingredients = findListsNearKeywords(keywordsIng);
+    }
+    if (steps.length < 2) {
+      steps = findListsNearKeywords(keywordsStep);
+    }
+
+    return {
+      title: title || doc.title || 'Rezept',
+      servings,
+      ingredients,
+      steps,
+      nutrition,
+      sourceUrl: url
+    };
+  } catch (e) {
+    console.error('Error in extractRecipeFromHtml:', e);
+    return null;
+  }
 }
+
+async function callAI(prompt, useSearch = false, provider = 'gemini') {
+  let activeProvider = provider;
+  try {
+    const savedSettings = localStorage.getItem('shared_settings') || localStorage.getItem('settings');
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      if (parsed.value) {
+        const valObj = typeof parsed.value === 'string' ? JSON.parse(parsed.value) : parsed.value;
+        if (valObj && valObj.aiProvider) activeProvider = valObj.aiProvider;
+      } else if (parsed && parsed.aiProvider) {
+        activeProvider = parsed.aiProvider;
+      }
+    }
+  } catch (err) {}
+
+  const LOG_GROUP = `[AI-Call] ${new Date().toISOString()}`;
+  console.group(LOG_GROUP);
+  console.log('Provider:', activeProvider);
+  console.log('Prompt (erste 200 Zeichen):', prompt.slice(0, 200));
+  console.log('Web Search aktiv:', useSearch);
+  
+  try {
+    const res = await fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider: activeProvider, prompt, useSearch }),
+    });
+    
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => 'Kein Error-Body');
+      console.error('HTTP-Fehler:', res.status, res.statusText, errBody);
+      throw new Error(`AI-Worker HTTP ${res.status}: ${errBody.slice(0, 100)}`);
+    }
+    
+    const { text, error } = await res.json();
+    
+    if (error) {
+      console.error('Worker-Fehler:', error);
+      throw new Error(error);
+    }
+    
+    console.log('Antwort (erste 300 Zeichen):', text?.slice(0, 300));
+    
+    const first = text.indexOf('{');
+    const last = text.lastIndexOf('}');
+    if (first === -1 || last === -1) {
+      console.error('Kein JSON in Antwort gefunden. Vollständiger Text:', text);
+      throw new Error('Keine JSON-Antwort erhalten');
+    }
+    
+    const parsed = JSON.parse(text.slice(first, last + 1));
+    console.log('Geparste Felder:', Object.keys(parsed));
+    console.groupEnd();
+    return parsed;
+    
+  } catch (e) {
+    console.error('callAI fehlgeschlagen:', e.name, e.message);
+    console.groupEnd();
+    throw e;
+  }
+}
+
 const RECIPE_JSON_SCHEMA = '{"title": "...", "servings": Zahl, "ingredients": ["Menge Einheit Zutat", ...], "steps": ["Schritt 1", "Schritt 2", ...], "sourceUrl": "...", "nutrition": {"kcal": Zahl, "protein": Zahl, "carbs": Zahl, "fat": Zahl}}';
 
 async function estimateNutrition(ingredientsText, servings) {
   const prompt = `Schätze die Nährwerte PRO PORTION für ein Rezept mit ${servings} Portionen. Zutaten:\n${ingredientsText}\n\nAntworte NUR mit JSON, ohne weiteren Text, im Format: {"kcal": Zahl, "protein": Zahl, "carbs": Zahl, "fat": Zahl}`;
-  return callClaude(prompt, false);
+  return callAI(prompt, false);
 }
 async function searchRecipeOnline(query) {
   const prompt = `Suche im Web nach einem echten, existierenden Rezept für "${query}". Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz und knapp (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
-  return callClaude(prompt, true);
+  return callAI(prompt, true);
 }
 async function extractRecipeFromUrl(url) {
-  const prompt = `Finde den Inhalt dieser Rezept-Seite und extrahiere das Rezept daraus: ${url}\nFalls die Seite nicht direkt zugänglich ist, nutze eine Websuche, um ihren Inhalt zu finden. Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion falls nicht angegeben. "sourceUrl" = "${url}".`;
-  return callClaude(prompt, true);
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+  const html = await fetch(proxyUrl).then(r => r.text());
+  
+  const scraped = extractRecipeFromHtml(html, url);
+  if (scraped && scraped.ingredients.length >= 3 && scraped.steps.length >= 2) {
+    return scraped;
+  }
+  
+  return callAI(
+    `Extrahiere das Rezept aus dieser URL: ${url}\n\nHTML-Snippet (erste 8000 Zeichen):\n${html.slice(0, 8000)}\n\nAntworte NUR mit JSON im Format: ${RECIPE_JSON_SCHEMA}`,
+    true
+  );
 }
 async function searchRecipeOnSite(domain, query) {
   const prompt = `Suche auf der Website ${domain} (site:${domain}) nach einem passenden Rezept: ${query}. Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
-  return callClaude(prompt, true);
+  return callAI(prompt, true);
 }
 function buildRecipeFromExtraction(result, source) {
   return {
@@ -160,6 +388,16 @@ function buildRecipeFromExtraction(result, source) {
     source,
   };
 }
+
+function getRecipePreview(recipe) {
+  if (!recipe) return null;
+  if (recipe.photo) return recipe.photo;
+  if (recipe.source && typeof recipe.source.url === 'string' && recipe.source.url.trim() !== '') {
+    return `https://image.thum.io/get/width/400/crop/800/${recipe.source.url.trim()}`;
+  }
+  return null;
+}
+
 
 async function storageGet(key, shared, fallback) {
   try {
@@ -504,7 +742,7 @@ function SlotRow({ course, recipe, multiplier, onPick, onRemove, onMultiplier, o
   return (
     <div className="flex items-center gap-2 p-2.5 rounded-lg bg-stone-50 border border-stone-200">
       <div onClick={onClickRecipe} className="flex-1 min-w-0 flex items-center gap-2 cursor-pointer hover:opacity-80">
-        {recipe.photo ? <img src={recipe.photo} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" /> : <div className="w-10 h-10 rounded-lg bg-stone-200 flex items-center justify-center flex-shrink-0"><course.icon size={16} className="text-stone-400" /></div>}
+        {getRecipePreview(recipe) ? <img src={getRecipePreview(recipe)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" /> : <div className="w-10 h-10 rounded-lg bg-stone-200 flex items-center justify-center flex-shrink-0"><course.icon size={16} className="text-stone-400" /></div>}
         <div className="flex-1 min-w-0">
           <div className="text-xs text-stone-400 font-mono uppercase flex items-center gap-1">
             {course.label}{recipe.placeholder && <span className="text-amber-600">· ausfüllen</span>}
@@ -538,7 +776,7 @@ function RecipePickerSheet({ onClose, onPick }) {
         <div className="flex-1 overflow-y-auto px-3 space-y-1 min-h-0">
           {filtered.map(r => (
             <button key={r.id} onClick={() => onPick(r.id)} className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 text-left">
-              {r.photo ? <img src={r.photo} className="w-9 h-9 rounded-lg object-cover" /> : <div className="w-9 h-9 rounded-lg bg-stone-100" />}
+              {getRecipePreview(r) ? <img src={getRecipePreview(r)} className="w-9 h-9 rounded-lg object-cover" /> : <div className="w-9 h-9 rounded-lg bg-stone-100" />}
               <span className="text-sm">{r.title}</span>
             </button>
           ))}
@@ -599,8 +837,9 @@ function DayDetail({ plan, onChange }) {
 }
 
 function WeekSummary({ selectedDay }) {
-  const { recipes, settings, getDayPlan } = useApp();
+  const { recipes, settings, getDayPlan, openRecipeDetail } = useApp();
   const [totals, setTotals] = useState(null);
+  const [plans, setPlans] = useState([]);
   const [y, m, d] = selectedDay.split('-').map(Number);
   const monday = getMonday(new Date(y, m - 1, d));
   const endDate = new Date(monday); endDate.setDate(monday.getDate() + (settings.showNextMonday ? 7 : 6));
@@ -609,18 +848,26 @@ function WeekSummary({ selectedDay }) {
   useEffect(() => {
     let alive = true;
     setTotals(null);
+    setPlans([]);
     (async () => {
-      const days = weekDatesFrom(monday, settings.showNextMonday);
+      const [yVal, mVal, dVal] = selectedDay.split('-').map(Number);
+      const mon = getMonday(new Date(yVal, mVal - 1, dVal));
+      const days = weekDatesFrom(mon, settings.showNextMonday);
       const sums = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+      const loadedPlans = [];
       for (const day of days) {
         const plan = await getDayPlan(dateKey(day));
+        loadedPlans.push({ day, plan });
         const t = computeDayNutrition(plan, recipes);
         for (const k of NUTRIENT_KEYS) sums[k] += t[k];
       }
-      if (alive) setTotals(sums);
+      if (alive) {
+        setTotals(sums);
+        setPlans(loadedPlans);
+      }
     })();
     return () => { alive = false; };
-  }, [selectedDay, recipes, settings.showNextMonday]);
+  }, [selectedDay, recipes, settings.showNextMonday, getDayPlan]);
 
   if (!totals) return <div className={cardCls + " text-center text-stone-300"}><Loader2 className="animate-spin inline" size={18} /></div>;
 
@@ -630,6 +877,77 @@ function WeekSummary({ selectedDay }) {
     <div className="space-y-2">
       <div className="text-xs text-stone-400 font-mono px-1">WOCHE {rangeLabel}</div>
       <NutritionSummary totals={totals} people={weeklyPeople} />
+      
+      <div className="space-y-3 mt-4">
+        {plans.map(({ day, plan }) => {
+          const formattedDate = formatLongDate(dateKey(day));
+          const plannedSlots = [];
+          if (plan) {
+            for (const mt of MEAL_TIMES) {
+              for (const co of COURSES) {
+                const slot = plan[mt.key] && plan[mt.key][co.key];
+                if (slot) {
+                  const recipe = recipes.find(r => r.id === slot.recipeId);
+                  if (recipe) {
+                    plannedSlots.push({ meal: mt, course: co, slot, recipe });
+                  }
+                }
+              }
+            }
+          }
+          
+          return (
+            <div key={dateKey(day)} className="bg-white rounded-xl border border-stone-200 p-4 space-y-3">
+              <div className="text-sm font-semibold text-stone-700 font-mono border-b border-stone-100 pb-1.5 flex justify-between items-center">
+                <span>{formattedDate}</span>
+                {plannedSlots.length > 0 && (
+                  <span className="text-xs font-normal text-stone-400">
+                    {plannedSlots.length} {plannedSlots.length === 1 ? 'Gericht' : 'Gerichte'}
+                  </span>
+                )}
+              </div>
+              
+              {plannedSlots.length === 0 ? (
+                <div className="text-xs text-stone-400 italic py-1 px-1">Keine Gerichte geplant</div>
+              ) : (
+                <div className="space-y-2">
+                  {plannedSlots.map(({ meal, course, slot, recipe }) => {
+                    const preview = getRecipePreview(recipe);
+                    return (
+                      <div 
+                        key={`${meal.key}-${course.key}`} 
+                        onClick={() => openRecipeDetail({ recipe, multiplier: slot.multiplier })}
+                        className="flex items-center justify-between p-2 rounded-lg bg-stone-50 border border-stone-200/60 cursor-pointer hover:border-stone-400 hover:bg-stone-100/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {preview ? (
+                            <img src={preview} className="w-10 h-10 rounded-md object-cover flex-shrink-0 border border-stone-200" alt="" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-md bg-stone-200/70 flex items-center justify-center flex-shrink-0">
+                              <course.icon size={14} className="text-stone-400" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-[10px] text-stone-400 font-mono uppercase tracking-wider flex items-center gap-1">
+                              {meal.label} ({course.label})
+                            </div>
+                            <div className="text-sm font-medium text-stone-800 truncate">{recipe.title}</div>
+                          </div>
+                        </div>
+                        {slot.multiplier !== 1 && (
+                          <span className="text-xs font-mono text-stone-500 bg-stone-200/80 px-2 py-0.5 rounded ml-2 flex-shrink-0">
+                            x{slot.multiplier}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -936,7 +1254,7 @@ function FirefoxImportPanel({ onBack, onNext }) {
 }
 
 function CookbookPanel({ onBack, onNext }) {
-  const { settings, updateSettings } = useApp();
+  const { settings, updateSettings, showToast } = useApp();
   const [cookbook, setCookbook] = useState('');
   const [newCookbook, setNewCookbook] = useState('');
   const [title, setTitle] = useState('');
@@ -953,10 +1271,21 @@ function CookbookPanel({ onBack, onNext }) {
     let cb = cookbook;
     if (newCookbook.trim()) {
       cb = newCookbook.trim();
-      if (!settings.cookbooks.includes(cb)) await updateSettings({ cookbooks: [...settings.cookbooks, cb] });
+      const exists = settings.cookbooks.some(c => (typeof c === 'string' ? c : c.title) === cb);
+      if (exists) {
+        showToast('Dieses Kochbuch existiert bereits!', 'error');
+        return;
+      }
+      await updateSettings({ cookbooks: [...settings.cookbooks, { title: cb, addedAt: Date.now() }] });
     }
     onNext({ title, photo, source: { type: 'cookbook', cookbook: cb, page, label: cb } });
   };
+
+  const sortedCookbooks = [...settings.cookbooks].sort((a, b) => {
+    const titleA = (typeof a === 'string' ? a : a.title).toLowerCase();
+    const titleB = (typeof b === 'string' ? b : b.title).toLowerCase();
+    return titleA.localeCompare(titleB);
+  });
 
   return (
     <div className="space-y-3">
@@ -966,7 +1295,10 @@ function CookbookPanel({ onBack, onNext }) {
         <label className={labelCls}>Kochbuch</label>
         <select value={cookbook} onChange={e => setCookbook(e.target.value)} className={inputCls + " mt-1"}>
           <option value="">– auswählen –</option>
-          {settings.cookbooks.map(c => <option key={c} value={c}>{c}</option>)}
+          {sortedCookbooks.map(c => {
+            const val = typeof c === 'string' ? c : c.title;
+            return <option key={val} value={val}>{val}</option>;
+          })}
         </select>
         <input value={newCookbook} onChange={e => setNewCookbook(e.target.value)} placeholder="oder neues Kochbuch anlegen" className={inputCls + " mt-2"} />
       </div>
@@ -1061,18 +1393,29 @@ function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
   const handleSave = async () => {
     setBusy(true);
     setError(null);
+    console.group(`[handleSave] ${currentUrl}`);
+    console.log('Starte Rezept-Extraktion...');
+    
     try {
       const result = await extractRecipeFromUrl(currentUrl);
+      console.log('Extraktion erfolgreich:', result.title, '|', result.ingredients?.length, 'Zutaten');
+      
+      const screenshot = `https://image.thum.io/get/width/600/crop/800/${currentUrl}`;
+      result.photo = screenshot;
+      
       setExtracted(result);
     } catch (e) {
-      setError('Rezept-Extraktion fehlgeschlagen. Bitte andere Seite wählen oder manuell eingeben.');
+      const msg = e.message || 'Unbekannter Fehler';
+      console.error('[handleSave] Fehler:', e.name, msg, e.stack);
+      setError(`Extraktion fehlgeschlagen: ${msg}. Bitte andere Seite wählen oder manuell eingeben.`);
     } finally {
       setBusy(false);
+      console.groupEnd();
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex flex-col z-50">
+    <div className="fixed inset-0 bg-black/60 flex flex-col z-50 animate-fade-in">
       <div className="bg-stone-900 text-white p-3 flex items-center gap-3 flex-shrink-0">
         <button onClick={handleBack} className="p-1.5 hover:bg-stone-800 rounded-lg text-stone-300 hover:text-white" title="Zurück">
           <ChevronLeft size={20} />
@@ -1160,12 +1503,13 @@ function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
                     ingredientsText: (extracted.ingredients || []).join('\n'),
                     stepsText: (extracted.steps || []).join('\n'),
                     nutrition: extracted.nutrition || null,
-                    source: { type: 'ai', url: currentUrl, label: 'Google-Suche (KI)' }
+                    photo: extracted.photo || null,
+                    source: { type: 'ai', url: currentUrl, label: 'In-App-Browser' }
                   });
                 }}
                 className="flex-1 py-2.5 bg-stone-900 text-white rounded-lg font-semibold text-sm hover:bg-stone-850 active:scale-[0.99] flex items-center justify-center gap-2"
               >
-                <Check size={16} /> Rezept ausführen &amp; Speichern
+                <Check size={16} /> Rezept übernehmen &amp; Speichern
               </button>
             </div>
           </div>
@@ -1189,14 +1533,14 @@ function GoogleLinkSearch({ onNext }) {
 
   const startSearch = () => {
     if (!query.trim()) return;
-    const gUrl = `https://www.google.com/search?q=${encodeURIComponent(query.trim() + ' rezept')}`;
+    const gUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query.trim() + ' rezept')}`;
     setBrowserUrl(gUrl);
   };
 
   return (
     <div className="space-y-3">
       <p className="text-sm text-stone-500">
-        Gib unten die Bezeichnung vom Rezept ein. Es öffnet sich ein In-App-Browser mit Google. Dort kannst du auf Rezepte klicken und diese per Klick auf "Speichern" automatisch einlesen.
+        Gib unten die Bezeichnung vom Rezept ein. Es öffnet sich ein werbefreier In-App-Browser mit DuckDuckGo. Dort kannst du auf Rezepte klicken und diese per Klick auf „Speichern“ direkt einlesen.
       </p>
       <input
         value={query}
@@ -1223,16 +1567,141 @@ function GoogleLinkSearch({ onNext }) {
   );
 }
 
+function URLPasteSearch({ onNext }) {
+  const { showToast } = useApp();
+  const [urlInput, setUrlInput] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [extracted, setExtracted] = useState(null);
+
+  const handleImport = async () => {
+    if (!urlInput.trim()) {
+      showToast('Bitte eine gültige URL eingeben', 'error');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setExtracted(null);
+    try {
+      const result = await extractRecipeFromUrl(urlInput.trim());
+      result.photo = `https://image.thum.io/get/width/600/crop/800/${urlInput.trim()}`;
+      setExtracted(result);
+    } catch (e) {
+      setError('Rezept-Extraktion fehlgeschlagen. Die Seite blockiert eventuell automatische Zugriffe oder das Rezept-Format wurde nicht erkannt.');
+      showToast('Import fehlgeschlagen', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (extracted) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center pb-2 border-b border-stone-200">
+          <span className="font-mono text-xs uppercase tracking-widest text-emerald-600 font-bold">Extrahiertes Rezept</span>
+          <h2 className="text-xl font-bold mt-1 text-stone-900">{extracted.title || 'Rezept'}</h2>
+          <p className="text-sm text-stone-500 mt-1">{extracted.servings || 4} Portionen</p>
+        </div>
+
+        {extracted.nutrition && (
+          <div className="grid grid-cols-4 gap-2 text-center">
+            {NUTRIENT_KEYS.map(k => (
+              <div key={k} className="bg-stone-50 rounded-lg py-2 border border-stone-200">
+                <div className="text-sm font-bold font-mono text-stone-850">{extracted.nutrition[k] || 0}</div>
+                <div className="text-[10px] uppercase text-stone-450 font-mono tracking-wider">{NUTRIENT_LABELS[k]}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {extracted.ingredients && extracted.ingredients.length > 0 && (
+          <div>
+            <h3 className="font-mono uppercase tracking-wide text-xs text-stone-400 mb-1.5 font-bold">Zutaten</h3>
+            <ul className="text-sm text-stone-700 space-y-1">
+              {extracted.ingredients.map((ing, i) => (
+                <li key={i} className="py-1 border-b border-stone-100 last:border-0">• {ing}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {extracted.steps && extracted.steps.length > 0 && (
+          <div>
+            <h3 className="font-mono uppercase tracking-wide text-xs text-stone-400 mb-1.5 font-bold">Zubereitung</h3>
+            <ol className="text-sm text-stone-700 space-y-2 list-decimal list-inside">
+              {extracted.steps.map((step, i) => (
+                <li key={i} className="pl-1 align-top leading-relaxed">{step}</li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        <div className="pt-4 border-t border-stone-200 flex gap-2">
+          <button onClick={() => setExtracted(null)} className="w-1/3 py-2.5 rounded-lg border border-stone-300 text-stone-600 text-sm font-medium hover:bg-stone-50">
+            Zurück
+          </button>
+          <button
+            onClick={() => {
+              onNext({
+                title: extracted.title || 'Rezept',
+                servingsText: extracted.servings ? String(extracted.servings) : '4',
+                ingredientsText: (extracted.ingredients || []).join('\n'),
+                stepsText: (extracted.steps || []).join('\n'),
+                nutrition: extracted.nutrition || null,
+                photo: extracted.photo || null,
+                source: { type: 'ai', url: urlInput.trim(), label: 'Webseiten-Import' }
+              });
+            }}
+            className="flex-1 py-2.5 bg-stone-900 text-white rounded-lg font-semibold text-sm hover:bg-stone-850 active:scale-[0.99] flex items-center justify-center gap-2"
+          >
+            <Check size={16} /> Rezept übernehmen &amp; Speichern
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-stone-500">
+        Füge hier die Webadresse (URL) eines Rezeptes ein (z. B. von Chefkoch, Blogs, etc.).
+      </p>
+      <input
+        value={urlInput}
+        onChange={e => setUrlInput(e.target.value)}
+        placeholder="https://www.chefkoch.de/rezepte/..."
+        className={inputCls}
+        onKeyDown={e => e.key === 'Enter' && handleImport()}
+      />
+      <button 
+        onClick={handleImport} 
+        disabled={busy || !urlInput.trim()} 
+        className={primaryBtnCls}
+      >
+        {busy ? (
+          <><Loader2 size={15} className="animate-spin" /> Claude extrahiert...</>
+        ) : (
+          <><Download size={15} /> Rezept importieren</>
+        )}
+      </button>
+      {error && <p className="text-sm text-rose-500 mt-2">{error}</p>}
+    </div>
+  );
+}
+
 function AISearchPanel({ onBack, onNext }) {
   const [subTab, setSubTab] = useState('ai');
   return (
     <div className="space-y-3">
       <button onClick={onBack} className="text-sm text-stone-400 flex items-center gap-1"><ChevronLeft size={14} /> Zurück</button>
       <div className="flex gap-1 bg-stone-100 rounded-lg p-0.5 w-fit">
-        <button onClick={() => setSubTab('ai')} className={`px-3 py-1.5 rounded-md text-xs font-mono ${subTab === 'ai' ? 'bg-white shadow-sm' : 'text-stone-500'}`}>KI-Suche</button>
-        <button onClick={() => setSubTab('google')} className={`px-3 py-1.5 rounded-md text-xs font-mono ${subTab === 'google' ? 'bg-white shadow-sm' : 'text-stone-500'}`}>Google-Link</button>
+        <button onClick={() => setSubTab('ai')} className={`px-3 py-1.5 rounded-md text-xs font-mono ${subTab === 'ai' ? 'bg-white shadow-sm font-semibold text-stone-800' : 'text-stone-500'}`}>KI-Suche</button>
+        <button onClick={() => setSubTab('google')} className={`px-3 py-1.5 rounded-md text-xs font-mono ${subTab === 'google' ? 'bg-white shadow-sm font-semibold text-stone-800' : 'text-stone-500'}`}>Browser</button>
+        <button onClick={() => setSubTab('link')} className={`px-3 py-1.5 rounded-md text-xs font-mono ${subTab === 'link' ? 'bg-white shadow-sm font-semibold text-stone-800' : 'text-stone-500'}`}>Link Import</button>
       </div>
-      {subTab === 'ai' ? <AIDirectSearch onNext={onNext} /> : <GoogleLinkSearch onNext={onNext} />}
+      {subTab === 'ai' && <AIDirectSearch onNext={onNext} />}
+      {subTab === 'google' && <GoogleLinkSearch onNext={onNext} />}
+      {subTab === 'link' && <URLPasteSearch onNext={onNext} />}
     </div>
   );
 }
@@ -1410,6 +1879,7 @@ function RecipeDetailModal({ recipe, multiplier = 1, onClose }) {
   const { updateRecipe, deleteRecipe, showToast } = useApp();
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [fullScreen, setFullScreen] = useState(false);
 
   useEffect(() => { if (confirmDelete) { const t = setTimeout(() => setConfirmDelete(false), 3000); return () => clearTimeout(t); } }, [confirmDelete]);
 
@@ -1450,6 +1920,64 @@ function RecipeDetailModal({ recipe, multiplier = 1, onClose }) {
     );
   }
 
+  if (fullScreen) {
+    if (recipe.photo) {
+      return (
+        <div 
+          className="fixed inset-0 bg-black/95 flex items-center justify-center z-[100] cursor-zoom-out animate-fade-in"
+          onClick={() => setFullScreen(false)}
+        >
+          <img 
+            src={recipe.photo} 
+            className="max-w-full max-h-full object-contain p-4 select-none animate-scale-up" 
+            alt={recipe.title} 
+          />
+          <button 
+            className="absolute top-4 right-4 text-white hover:text-stone-300 bg-black/55 p-2.5 rounded-full transition-colors hover:bg-black/75"
+            onClick={(e) => { e.stopPropagation(); setFullScreen(false); }}
+          >
+            <X size={24} />
+          </button>
+        </div>
+      );
+    } else if (recipe.source?.url) {
+      const preview = getRecipePreview(recipe);
+      return (
+        <div 
+          className="fixed inset-0 bg-black/95 flex flex-col z-[100] animate-fade-in"
+          onClick={() => setFullScreen(false)}
+        >
+          <div className="bg-stone-900 text-white p-3 flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setFullScreen(false)} className="p-1.5 hover:bg-stone-800 rounded-lg text-stone-300 hover:text-white" title="Zurück">
+              <ChevronLeft size={20} />
+            </button>
+            <div className="flex-1 bg-stone-800 rounded-lg px-3 py-1.5 text-xs font-mono truncate text-stone-300 select-all">
+              {recipe.source.url}
+            </div>
+            <a href={recipe.source.url} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 text-xs font-semibold px-3 flex-shrink-0" title="Website öffnen">
+              <ExternalLink size={14} />
+              <span>Website öffnen</span>
+            </a>
+            <button onClick={() => setFullScreen(false)} className="p-1.5 hover:bg-stone-800 rounded-lg text-stone-300 hover:text-white" title="Schließen">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center overflow-hidden cursor-zoom-out p-4">
+            {preview ? (
+              <img 
+                src={preview} 
+                className="max-w-full max-h-full object-contain select-none animate-scale-up" 
+                alt={recipe.title} 
+              />
+            ) : (
+              <div className="text-stone-400 font-mono text-sm">Keine Vorschau verfügbar</div>
+            )}
+          </div>
+        </div>
+      );
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-full flex flex-col" onClick={e => e.stopPropagation()}>
@@ -1464,7 +1992,39 @@ function RecipeDetailModal({ recipe, multiplier = 1, onClose }) {
           {recipe.placeholder && (
             <div className="text-xs bg-amber-50 text-amber-700 px-3 py-2 rounded-lg">Platzhalter – bitte über „Bearbeiten" ausfüllen.</div>
           )}
-          {recipe.photo && <img src={recipe.photo} className="w-full h-40 object-cover rounded-lg" />}
+          {getRecipePreview(recipe) && (
+            <div 
+              className={`relative group overflow-hidden rounded-lg border border-stone-200 ${
+                recipe.source?.url ? 'cursor-pointer' : 'cursor-zoom-in'
+              }`}
+              onClick={() => {
+                if (recipe.source?.url) {
+                  window.open(recipe.source.url, '_blank', 'noopener,noreferrer');
+                } else {
+                  setFullScreen(true);
+                }
+              }}
+              title={recipe.source?.url ? 'Website in neuem Tab öffnen' : 'Bild vergrößern'}
+            >
+              <img 
+                src={getRecipePreview(recipe)} 
+                className="w-full h-40 object-cover" 
+                alt={recipe.title} 
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                {recipe.source?.url ? (
+                  <ExternalLink size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-sm" />
+                ) : (
+                  <Search size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-sm" />
+                )}
+              </div>
+              {recipe.source?.url && (
+                <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-[10px] text-white font-mono px-2 py-0.5 rounded flex items-center gap-1">
+                  <ExternalLink size={10} /> {recipe.photo ? 'Link öffnen' : 'Website-Vorschau'}
+                </div>
+              )}
+            </div>
+          )}
           <StarRating value={recipe.rating} onChange={(v) => updateRecipe(recipe.id, { rating: v })} size={20} />
           <div className="flex flex-wrap gap-2 text-xs text-stone-500 font-mono">
             {multiplier !== 1 ? (
@@ -1526,7 +2086,7 @@ function RecipesTab() {
       <div className="grid grid-cols-2 gap-3">
         {filtered.map(r => (
           <button key={r.id} onClick={() => setSelected(r)} className="bg-white rounded-xl border border-stone-200 overflow-hidden text-left">
-            {r.photo ? <img src={r.photo} className="w-full h-24 object-cover" /> : <div className="w-full h-24 bg-stone-100 flex items-center justify-center"><Utensils size={20} className="text-stone-300" /></div>}
+            {getRecipePreview(r) ? <img src={getRecipePreview(r)} className="w-full h-24 object-cover" /> : <div className="w-full h-24 bg-stone-100 flex items-center justify-center"><Utensils size={20} className="text-stone-300" /></div>}
             <div className="p-2.5">
               <div className="text-sm font-medium truncate flex items-center gap-1">{r.title}{r.placeholder && <span className="text-amber-500">●</span>}</div>
               <div className="text-xs text-stone-400 font-mono">{r.nutrition ? `${r.nutrition.kcal} kcal` : 'keine Nährwerte'}</div>
@@ -1705,7 +2265,7 @@ function CookbookTab() {
         {volRecipes.map(r => (
           <div key={r.id} className="bg-white rounded-xl border border-stone-200 p-4 break-inside-avoid">
             <div className="flex gap-3">
-              {r.photo && <img src={r.photo} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />}
+              {getRecipePreview(r) && <img src={getRecipePreview(r)} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />}
               <div className="flex-1 min-w-0">
                 <div className="font-mono font-semibold truncate flex items-center gap-1.5">
                   {r.title}
@@ -1742,16 +2302,25 @@ function SettingsTab() {
   const [people, setPeople] = useState(settings.people);
   const [cookbookInput, setCookbookInput] = useState('');
   const [bmBusy, setBmBusy] = useState(null);
-
+  const [cookbookSort, setCookbookSort] = useState('date-desc');
   useEffect(() => { setPeople(settings.people); }, [settings.people]);
 
   const savePeople = async () => { await updateSettings({ people }); showToast('Gespeichert'); };
   const addCookbook = async () => {
-    if (!cookbookInput.trim()) return;
-    await updateSettings({ cookbooks: [...settings.cookbooks, cookbookInput.trim()] });
+    const titleToAdd = cookbookInput.trim();
+    if (!titleToAdd) return;
+    const exists = settings.cookbooks.some(c => (typeof c === 'string' ? c : c.title) === titleToAdd);
+    if (exists) {
+      showToast('Dieses Kochbuch existiert bereits!', 'error');
+      return;
+    }
+    await updateSettings({ cookbooks: [...settings.cookbooks, { title: titleToAdd, addedAt: Date.now() }] });
     setCookbookInput('');
   };
-  const removeCookbook = async (c) => { await updateSettings({ cookbooks: settings.cookbooks.filter(x => x !== c) }); };
+  const removeCookbook = async (c) => {
+    const cTitle = typeof c === 'string' ? c : c.title;
+    await updateSettings({ cookbooks: settings.cookbooks.filter(x => (typeof x === 'string' ? x : x.title) !== cTitle) });
+  };
   const switchProfile = async (idx) => {
     await storageSet('profile', { personIndex: idx }, false);
     window.location.reload();
@@ -1770,6 +2339,23 @@ function SettingsTab() {
     catch (e) { showToast('Datei konnte nicht gelesen werden', 'error'); }
     finally { setBmBusy(null); }
   };
+
+  const sortedCookbooks = [...settings.cookbooks].sort((a, b) => {
+    const titleA = (typeof a === 'string' ? a : a.title).toLowerCase();
+    const titleB = (typeof b === 'string' ? b : b.title).toLowerCase();
+    const dateA = typeof a === 'string' ? 0 : a.addedAt || 0;
+    const dateB = typeof b === 'string' ? 0 : b.addedAt || 0;
+
+    if (cookbookSort === 'alpha-asc') {
+      return titleA.localeCompare(titleB);
+    } else if (cookbookSort === 'alpha-desc') {
+      return titleB.localeCompare(titleA);
+    } else if (cookbookSort === 'date-asc') {
+      return dateA - dateB || titleA.localeCompare(titleB);
+    } else { // 'date-desc'
+      return dateB - dateA || titleA.localeCompare(titleB);
+    }
+  });
 
   return (
     <div className="space-y-4">
@@ -1810,6 +2396,34 @@ function SettingsTab() {
       </div>
 
       <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
+          <Sparkles size={15} className="text-amber-500" /> KI-Einstellungen
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>KI-Anbieter</label>
+            <div className="flex gap-2 mt-1">
+              <button 
+                onClick={() => updateSettings({ aiProvider: 'gemini' })} 
+                className={`flex-1 py-2 rounded-lg text-sm font-mono ${settings.aiProvider !== 'claude' ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600'}`}
+              >
+                Gemini (Standard)
+              </button>
+              <button 
+                onClick={() => updateSettings({ aiProvider: 'claude' })} 
+                className={`flex-1 py-2 rounded-lg text-sm font-mono ${settings.aiProvider === 'claude' ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600'}`}
+              >
+                Claude (Fallback)
+              </button>
+            </div>
+          </div>
+          <p className="text-xs text-stone-500 leading-normal">
+            API-Keys werden ausschließlich im Cloudflare Worker hinterlegt – niemals im Browser sichtbar.
+          </p>
+        </div>
+      </div>
+
+      <div className={cardCls}>
         <div className="text-sm font-semibold mb-2 font-mono uppercase tracking-wide">Gerät zuordnen</div>
         <div className="flex gap-2">
           {settings.people.map((p, i) => (
@@ -1819,17 +2433,35 @@ function SettingsTab() {
       </div>
 
       <div className={cardCls}>
-        <div className="text-sm font-semibold mb-2 font-mono uppercase tracking-wide">Kochbücher (physisch)</div>
+        <div className="flex justify-between items-center mb-2">
+          <div className="text-sm font-semibold font-mono uppercase tracking-wide">Kochbücher (physisch)</div>
+          {settings.cookbooks.length > 1 && (
+            <select 
+              value={cookbookSort} 
+              onChange={e => setCookbookSort(e.target.value)} 
+              className="text-xs border-0 bg-transparent text-stone-500 font-mono focus:ring-0 focus:outline-none cursor-pointer hover:text-stone-900 pr-6 py-0.5"
+            >
+              <option value="date-desc">Neueste zuerst</option>
+              <option value="date-asc">Älteste zuerst</option>
+              <option value="alpha-asc">A-Z (aufsteigend)</option>
+              <option value="alpha-desc">Z-A (absteigend)</option>
+            </select>
+          )}
+        </div>
         <div className="flex gap-2 mb-2">
           <input value={cookbookInput} onChange={e => setCookbookInput(e.target.value)} placeholder="Titel hinzufügen" className={inputCls} onKeyDown={e => e.key === 'Enter' && addCookbook()} />
           <button onClick={addCookbook} className="px-3 rounded-lg bg-stone-900 text-white flex-shrink-0"><Plus size={16} /></button>
         </div>
         <div className="space-y-1">
-          {settings.cookbooks.map(c => (
-            <div key={c} className="flex items-center justify-between px-3 py-2 bg-stone-50 rounded-lg text-sm">
-              {c} <button onClick={() => removeCookbook(c)}><X size={14} className="text-stone-400" /></button>
-            </div>
-          ))}
+          {sortedCookbooks.map(c => {
+            const val = typeof c === 'string' ? c : c.title;
+            return (
+              <div key={val} className="flex items-center justify-between px-3 py-2 bg-stone-50 rounded-lg text-sm">
+                <span>{val}</span>
+                <button onClick={() => removeCookbook(c)} title="Entfernen"><X size={14} className="text-stone-400 hover:text-rose-500" /></button>
+              </div>
+            );
+          })}
           {settings.cookbooks.length === 0 && <div className="text-xs text-stone-400">Noch keine hinterlegt.</div>}
         </div>
       </div>
@@ -1856,10 +2488,22 @@ function SettingsTab() {
         </div>
       </div>
 
+
       <div className={cardCls + " text-xs text-stone-500 space-y-1.5"}>
         <div className="font-semibold text-stone-700 text-sm mb-1 font-mono uppercase tracking-wide">Hinweise</div>
         <p>Beide Personen öffnen denselben Artefakt-Link, damit die Daten synchron sind. Wer den Link hat, kann sie sehen und bearbeiten.</p>
         <p>Direkte Anbindungen an Firefox-Konto, Bring, Rewe oder Picnic sind hier technisch nicht möglich (siehe Import-/Export-Funktionen als Alternative).</p>
+      </div>
+
+      <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
+        <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.3.3</div>
+        <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
+          Codename: Dampfnudel 🍮
+        </div>
+        <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.1 (Dampfnudel) · v1.3.3 (Erdbeertorte 🍓)
+        </div>
       </div>
     </div>
   );
@@ -1891,6 +2535,23 @@ export default function App() {
       ]);
 
       let settingsNext = s, recipesNext = r, persistSettings = false, persistRecipes = false;
+      if (!settingsNext.cookbooks) {
+        settingsNext = { ...settingsNext, cookbooks: [] };
+        persistSettings = true;
+      } else if (settingsNext.cookbooks.length > 0) {
+        let migrated = false;
+        const migratedCookbooks = settingsNext.cookbooks.map(c => {
+          if (typeof c === 'string') {
+            migrated = true;
+            return { title: c, addedAt: Date.now() };
+          }
+          return c;
+        });
+        if (migrated) {
+          settingsNext = { ...settingsNext, cookbooks: migratedCookbooks };
+          persistSettings = true;
+        }
+      }
       if (!settingsNext.cookbookVolumes || settingsNext.cookbookVolumes.length === 0) {
         const vol = { id: uid(), title: settingsNext.coverTitle || 'Unser Kochbuch', startedAt: new Date().toISOString(), closedAt: null };
         settingsNext = { ...settingsNext, cookbookVolumes: [vol] };
