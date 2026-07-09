@@ -533,6 +533,45 @@ async function parseBookmarksFile(file) {
   return anchors.map(a => ({ title: a.textContent.trim() || a.getAttribute('href'), url: a.getAttribute('href') })).filter(l => l.url && l.url.startsWith('http'));
 }
 
+/* ---------------------------------- Long Press Hook ---------------------------------- */
+function useLongPress(onLongPress, onClick, delay = 500) {
+  const timeoutRef = useRef(null);
+  const isLongPressRef = useRef(false);
+
+  const start = (e) => {
+    // Prevent default context menu on touch devices so it doesn't pop up
+    isLongPressRef.current = false;
+    timeoutRef.current = setTimeout(() => {
+      onLongPress(e);
+      isLongPressRef.current = true;
+    }, delay);
+  };
+
+  const stop = (e) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    if (!isLongPressRef.current && onClick) {
+      onClick(e);
+    }
+  };
+
+  const cancel = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+  };
+
+  return {
+    onMouseDown: start,
+    onMouseUp: stop,
+    onMouseLeave: cancel,
+    onTouchStart: start,
+    onTouchEnd: stop,
+    onTouchCancel: cancel,
+  };
+}
+
 /* ---------------------------------- Context ---------------------------------- */
 const AppCtx = createContext(null);
 function useApp() { return useContext(AppCtx); }
@@ -715,7 +754,7 @@ function MonthGrid({ viewDate, setViewDate, selectedDay, setSelectedDay }) {
   );
 }
 
-function SlotRow({ course, recipe, multiplier, onPick, onRemove, onMultiplier, onClickRecipe }) {
+function SlotRow({ course, recipe, multiplier, onPick, onRemove, onMultiplier, onClickRecipe, onLongPressRecipe }) {
   const [localVal, setLocalVal] = useState(String(multiplier));
 
   useEffect(() => {
@@ -732,6 +771,15 @@ function SlotRow({ course, recipe, multiplier, onPick, onRemove, onMultiplier, o
     }
   };
 
+  const longPressHandlers = useLongPress(
+    () => {
+      if (onLongPressRecipe) onLongPressRecipe();
+    },
+    () => {
+      if (onClickRecipe) onClickRecipe();
+    }
+  );
+
   if (!recipe) {
     return (
       <button onClick={onPick} className="w-full flex items-center gap-2 p-3 rounded-lg border border-dashed border-stone-300 text-stone-400 hover:border-stone-500 hover:text-stone-700 text-sm">
@@ -741,7 +789,7 @@ function SlotRow({ course, recipe, multiplier, onPick, onRemove, onMultiplier, o
   }
   return (
     <div className="flex items-center gap-2 p-2.5 rounded-lg bg-stone-50 border border-stone-200">
-      <div onClick={onClickRecipe} className="flex-1 min-w-0 flex items-center gap-2 cursor-pointer hover:opacity-80">
+      <div {...longPressHandlers} className="flex-1 min-w-0 flex items-center gap-2 cursor-pointer hover:opacity-80">
         {getRecipePreview(recipe) ? <img src={getRecipePreview(recipe)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" /> : <div className="w-10 h-10 rounded-lg bg-stone-200 flex items-center justify-center flex-shrink-0"><course.icon size={16} className="text-stone-400" /></div>}
         <div className="flex-1 min-w-0">
           <div className="text-xs text-stone-400 font-mono uppercase flex items-center gap-1">
@@ -792,8 +840,8 @@ function RecipePickerSheet({ onClose, onPick }) {
   );
 }
 
-function DayDetail({ plan, onChange }) {
-  const { recipes, settings, openRecipeDetail } = useApp();
+function DayDetail({ plan, onChange, selectedDay }) {
+  const { recipes, settings, openRecipeDetail, openMoveMeal } = useApp();
   const [pickerSlot, setPickerSlot] = useState(null);
 
   const setSlot = (meal, course, recipeId, multiplier) => {
@@ -820,6 +868,7 @@ function DayDetail({ plan, onChange }) {
                   onRemove={() => setSlot(mt.key, co.key, null)}
                   onMultiplier={(m) => setSlot(mt.key, co.key, slot.recipeId, m)}
                   onClickRecipe={() => recipe && openRecipeDetail({ recipe, multiplier: slot ? slot.multiplier : 1 })}
+                  onLongPressRecipe={() => slot && openMoveMeal({ sourceDate: selectedDay, mealKey: mt.key, courseKey: co.key, recipeId: slot.recipeId, multiplier: slot.multiplier })}
                 />
               );
             })}
@@ -836,8 +885,48 @@ function DayDetail({ plan, onChange }) {
   );
 }
 
+function PlannedMealItem({ meal, course, slot, recipe, onLongPressRecipe, onClickRecipe }) {
+  const longPressHandlers = useLongPress(
+    () => {
+      if (onLongPressRecipe) onLongPressRecipe();
+    },
+    () => {
+      if (onClickRecipe) onClickRecipe();
+    }
+  );
+
+  const preview = getRecipePreview(recipe);
+  return (
+    <div 
+      {...longPressHandlers}
+      className="flex items-center justify-between p-2 rounded-lg bg-stone-50 border border-stone-200/60 cursor-pointer hover:border-stone-400 hover:bg-stone-100/50 transition-colors"
+    >
+      <div className="flex items-center gap-2.5 min-w-0">
+        {preview ? (
+          <img src={preview} className="w-10 h-10 rounded-md object-cover flex-shrink-0 border border-stone-200" alt="" />
+        ) : (
+          <div className="w-10 h-10 rounded-md bg-stone-200/70 flex items-center justify-center flex-shrink-0">
+            <course.icon size={14} className="text-stone-400" />
+          </div>
+        )}
+        <div className="min-w-0">
+          <div className="text-[10px] text-stone-400 font-mono uppercase tracking-wider flex items-center gap-1">
+            {meal.label} ({course.label})
+          </div>
+          <div className="text-sm font-medium text-stone-800 truncate">{recipe.title}</div>
+        </div>
+      </div>
+      {slot.multiplier !== 1 && (
+        <span className="text-xs font-mono text-stone-500 bg-stone-200/80 px-2 py-0.5 rounded ml-2 flex-shrink-0">
+          x{slot.multiplier}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function WeekSummary({ selectedDay }) {
-  const { recipes, settings, getDayPlan, openRecipeDetail } = useApp();
+  const { recipes, settings, getDayPlan, openRecipeDetail, openMoveMeal, refreshKey } = useApp();
   const [totals, setTotals] = useState(null);
   const [plans, setPlans] = useState([]);
   const [y, m, d] = selectedDay.split('-').map(Number);
@@ -867,7 +956,7 @@ function WeekSummary({ selectedDay }) {
       }
     })();
     return () => { alive = false; };
-  }, [selectedDay, recipes, settings.showNextMonday, getDayPlan]);
+  }, [selectedDay, recipes, settings.showNextMonday, getDayPlan, refreshKey]);
 
   if (!totals) return <div className={cardCls + " text-center text-stone-300"}><Loader2 className="animate-spin inline" size={18} /></div>;
 
@@ -911,37 +1000,17 @@ function WeekSummary({ selectedDay }) {
                 <div className="text-xs text-stone-400 italic py-1 px-1">Keine Gerichte geplant</div>
               ) : (
                 <div className="space-y-2">
-                  {plannedSlots.map(({ meal, course, slot, recipe }) => {
-                    const preview = getRecipePreview(recipe);
-                    return (
-                      <div 
-                        key={`${meal.key}-${course.key}`} 
-                        onClick={() => openRecipeDetail({ recipe, multiplier: slot.multiplier })}
-                        className="flex items-center justify-between p-2 rounded-lg bg-stone-50 border border-stone-200/60 cursor-pointer hover:border-stone-400 hover:bg-stone-100/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {preview ? (
-                            <img src={preview} className="w-10 h-10 rounded-md object-cover flex-shrink-0 border border-stone-200" alt="" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-md bg-stone-200/70 flex items-center justify-center flex-shrink-0">
-                              <course.icon size={14} className="text-stone-400" />
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="text-[10px] text-stone-400 font-mono uppercase tracking-wider flex items-center gap-1">
-                              {meal.label} ({course.label})
-                            </div>
-                            <div className="text-sm font-medium text-stone-800 truncate">{recipe.title}</div>
-                          </div>
-                        </div>
-                        {slot.multiplier !== 1 && (
-                          <span className="text-xs font-mono text-stone-500 bg-stone-200/80 px-2 py-0.5 rounded ml-2 flex-shrink-0">
-                            x{slot.multiplier}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {plannedSlots.map(({ meal, course, slot, recipe }) => (
+                    <PlannedMealItem
+                      key={`${meal.key}-${course.key}`}
+                      meal={meal}
+                      course={course}
+                      slot={slot}
+                      recipe={recipe}
+                      onClickRecipe={() => openRecipeDetail({ recipe, multiplier: slot.multiplier })}
+                      onLongPressRecipe={() => openMoveMeal({ sourceDate: dateKey(day), mealKey: meal.key, courseKey: course.key, recipeId: slot.recipeId, multiplier: slot.multiplier })}
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -1077,7 +1146,7 @@ function WeekPlannerModal({ onClose }) {
 }
 
 function CalendarTab() {
-  const { getDayPlan, saveDayPlan, settings } = useApp();
+  const { getDayPlan, saveDayPlan, settings, refreshKey } = useApp();
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(todayKey());
   const [dayPlan, setDayPlan] = useState(null);
@@ -1129,7 +1198,7 @@ function CalendarTab() {
     setDayLoading(true);
     getDayPlan(selectedDay).then(plan => { if (alive) { setDayPlan(plan); setDayLoading(false); } });
     return () => { alive = false; };
-  }, [selectedDay]);
+  }, [selectedDay, refreshKey]);
 
   const handleChange = (plan) => { setDayPlan(plan); saveDayPlan(selectedDay, plan); };
 
@@ -1149,7 +1218,7 @@ function CalendarTab() {
         </div>
       </div>
       {mode === 'week' ? <WeekSummary selectedDay={selectedDay} /> : (
-        dayLoading || !dayPlan ? <div className="text-center py-8 text-stone-300"><Loader2 className="animate-spin inline" size={20} /></div> : <DayDetail plan={dayPlan} onChange={handleChange} />
+        dayLoading || !dayPlan ? <div className="text-center py-8 text-stone-300"><Loader2 className="animate-spin inline" size={20} /></div> : <DayDetail plan={dayPlan} onChange={handleChange} selectedDay={selectedDay} />
       )}
       <button onClick={() => setPlannerOpen(true)} className={secondaryBtnCls}><Sparkles size={16} /> Nächste Woche automatisch planen</button>
       {plannerOpen && <WeekPlannerModal onClose={() => setPlannerOpen(false)} />}
@@ -2499,10 +2568,92 @@ function SettingsTab() {
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
         <div className="text-lg font-bold text-stone-800 mt-1">v1.3.3</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
-          Codename: Dampfnudel 🍮
+          Codename: Dampfnudel 🥟
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.1 (Dampfnudel) · v1.3.3 (Erdbeertorte 🍓)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.3 (Dampfnudel)
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- Move Meal Modal ---------------------------------- */
+function MoveMealModal({ data, onClose }) {
+  const { getDayPlan, saveDayPlan, recipes, showToast, triggerRefresh } = useApp();
+  const [targetDate, setTargetDate] = useState(data.sourceDate);
+  const [targetMeal, setTargetMeal] = useState(data.mealKey);
+  const [targetCourse, setTargetCourse] = useState(data.courseKey);
+  const [busy, setBusy] = useState(false);
+
+  const recipe = recipes.find(r => r.id === data.recipeId);
+
+  const handleMove = async () => {
+    if (!targetDate) return;
+    setBusy(true);
+    try {
+      // 1. Remove from source
+      const sourcePlan = await getDayPlan(data.sourceDate);
+      if (sourcePlan[data.mealKey]) {
+        sourcePlan[data.mealKey][data.courseKey] = null;
+      }
+      await saveDayPlan(data.sourceDate, sourcePlan);
+
+      // 2. Add to target
+      const targetPlan = await getDayPlan(targetDate);
+      if (!targetPlan[targetMeal]) {
+        targetPlan[targetMeal] = { snack: null, main: null, dessert: null };
+      }
+      targetPlan[targetMeal][targetCourse] = { recipeId: data.recipeId, multiplier: data.multiplier || 1 };
+      await saveDayPlan(targetDate, targetPlan);
+
+      showToast("Essen verschoben");
+      triggerRefresh();
+      onClose();
+    } catch (e) {
+      console.error(e);
+      showToast("Verschieben fehlgeschlagen", "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-full flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
+          <span className="font-mono font-semibold uppercase tracking-wide text-sm">Essen verschieben</span>
+          <button onClick={onClose}><X size={20} /></button>
+        </div>
+        <div className="p-4 space-y-4">
+          <div>
+            <div className="text-xs text-stone-400 font-mono uppercase">Gericht</div>
+            <div className="text-sm font-semibold text-stone-850 mt-0.5">{recipe?.title || "Unbekannt"}</div>
+          </div>
+          <div>
+            <label className={labelCls}>Ziel-Datum</label>
+            <input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className={inputCls + " mt-1"} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Mahlzeit</label>
+              <select value={targetMeal} onChange={e => setTargetMeal(e.target.value)} className={inputCls + " mt-1 bg-white"}>
+                {MEAL_TIMES.map(mt => <option key={mt.key} value={mt.key}>{mt.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Gang</label>
+              <select value={targetCourse} onChange={e => setTargetCourse(e.target.value)} className={inputCls + " mt-1 bg-white"}>
+                {COURSES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button onClick={onClose} className={secondaryBtnCls} disabled={busy}>Abbrechen</button>
+            <button onClick={handleMove} className={primaryBtnCls} disabled={busy || !targetDate}>
+              {busy ? "Verschiebe..." : "Verschieben"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2522,6 +2673,8 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [addModal, setAddModal] = useState(null);
   const [recipeDetailModal, setRecipeDetailModal] = useState(null);
+  const [moveMealModal, setMoveMealModal] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -2662,6 +2815,9 @@ export default function App() {
       saveBookmarksRecipes, saveBookmarksPages,
       clearBookmarksRecipes, clearBookmarksPages,
       openRecipeDetail: setRecipeDetailModal,
+      openMoveMeal: setMoveMealModal,
+      refreshKey,
+      triggerRefresh: () => setRefreshKey(prev => prev + 1),
     }}>
       <style>{`
         @media print {
@@ -2686,6 +2842,12 @@ export default function App() {
             recipe={recipeDetailModal.recipe}
             multiplier={recipeDetailModal.multiplier || 1}
             onClose={() => setRecipeDetailModal(null)}
+          />
+        )}
+        {moveMealModal && (
+          <MoveMealModal
+            data={moveMealModal}
+            onClose={() => setMoveMealModal(null)}
           />
         )}
         {toast && <Toast toast={toast} />}
