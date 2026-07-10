@@ -3,7 +3,7 @@ import {
   Calendar, ChevronLeft, ChevronRight, Plus, X, Search, ShoppingCart, BookOpen,
   Settings as SettingsIcon, Camera, Upload, Sparkles, Trash2, Edit2, Check,
   AlertTriangle, Utensils, Coffee, Cookie, Cake, Sun, Moon, Loader2, ExternalLink,
-  Copy, Printer, User, Users, Star, Save, Download,
+  Copy, Printer, User, Users, Star, Save, Download, Bell,
 } from 'lucide-react';
 
 /* ---------------------------------- Design tokens ---------------------------------- */
@@ -44,6 +44,11 @@ const DEFAULT_SETTINGS = {
   defaultCalendarView: 'week',
   showNextMonday: false,
   aiProvider: 'gemini',
+  notificationEnabled: false,
+  notificationDay: 1, // 1 = Montag
+  notificationTime: '18:00',
+  snoozedUntil: null,
+  lastNotifiedAt: null,
 };
 
 /* ---------------------------------- Helpers ---------------------------------- */
@@ -375,6 +380,7 @@ async function searchRecipeOnSite(domain, query) {
   return callAI(prompt, true);
 }
 function buildRecipeFromExtraction(result, source) {
+  if (!result) return { title: 'Unbekanntes Rezept', servings: 1, ingredients: [], steps: [], nutrition: null, photo: null, source };
   return {
     title: result.title || 'Rezept',
     servings: result.servings || 1,
@@ -1040,9 +1046,15 @@ function WeekPlannerModal({ onClose }) {
     const plans = {};
     for (const d of days) plans[dateKey(d)] = await getDayPlan(dateKey(d));
 
-    const needDinner = days.filter(d => !plans[dateKey(d)].dinner.main);
+    const needDinner = days.filter(d => {
+      const plan = plans[dateKey(d)];
+      return !plan || !plan.dinner || !plan.dinner.main;
+    });
     const weekend = days.filter(d => d.getDay() === 6 || d.getDay() === 0);
-    const needBreakfast = weekend.filter(d => !plans[dateKey(d)].breakfast.main);
+    const needBreakfast = weekend.filter(d => {
+      const plan = plans[dateKey(d)];
+      return !plan || !plan.breakfast || !plan.breakfast.main;
+    });
 
     const dinnerTypes = ['firefox-direct', 'firefox-site', 'firefox-site', 'ai-search', 'ai-search', 'cookbook', 'cookbook'];
     const queue = [];
@@ -1079,7 +1091,8 @@ function WeekPlannerModal({ onClose }) {
           recipe = buildRecipeFromExtraction(result, { type: 'ai', url: result.sourceUrl || '', label: `Firefox-Website (${domain})` });
         } else if (task.type === 'cookbook' && cookbookQueue.length) {
           const cb = cookbookQueue.shift();
-          recipe = { title: `Rezept aus ${cb} wählen`, servings: 1, ingredients: [], steps: [], nutrition: null, photo: null, placeholder: true, source: { type: 'cookbook', cookbook: cb, label: cb } };
+          const cookbookTitle = typeof cb === 'string' ? cb : cb.title;
+          recipe = { title: `Rezept aus ${cookbookTitle} wählen`, servings: 1, ingredients: [], steps: [], nutrition: null, photo: null, placeholder: true, source: { type: 'cookbook', cookbook: cookbookTitle, label: cookbookTitle } };
         } else {
           const dishHint = isBreakfast ? 'Frühstücksrezept' : 'Hauptgericht Abendessen';
           const q = `${motto ? motto + ' ' : ''}${dishHint}, ca. ${kcalBudget} kcal${chosen.length ? `. Bitte nicht ähnlich zu: ${chosen.join(', ')}` : ''}`;
@@ -1146,13 +1159,12 @@ function WeekPlannerModal({ onClose }) {
 }
 
 function CalendarTab() {
-  const { getDayPlan, saveDayPlan, settings, refreshKey } = useApp();
+  const { getDayPlan, saveDayPlan, settings, refreshKey, plannerOpen, setPlannerOpen } = useApp();
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(todayKey());
   const [dayPlan, setDayPlan] = useState(null);
   const [dayLoading, setDayLoading] = useState(true);
   const [mode, setMode] = useState(settings.defaultCalendarView || 'week');
-  const [plannerOpen, setPlannerOpen] = useState(false);
 
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
@@ -2375,6 +2387,21 @@ function SettingsTab() {
   useEffect(() => { setPeople(settings.people); }, [settings.people]);
 
   const savePeople = async () => { await updateSettings({ people }); showToast('Gespeichert'); };
+  const handleNotificationToggle = async (enabled) => {
+    if (enabled) {
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'denied') {
+          showToast('Mitteilungsberechtigung wurde blockiert. Bitte in den Browsereinstellungen freigeben.', 'error');
+        } else if (permission === 'default') {
+          showToast('Mitteilungsberechtigung ist erforderlich für System-Mitteilungen.', 'warning');
+        }
+      } else {
+        showToast('Dieser Browser unterstützt keine System-Mitteilungen.', 'warning');
+      }
+    }
+    await updateSettings({ notificationEnabled: enabled });
+  };
   const addCookbook = async () => {
     const titleToAdd = cookbookInput.trim();
     if (!titleToAdd) return;
@@ -2461,6 +2488,53 @@ function SettingsTab() {
             <input type="checkbox" checked={!!settings.showNextMonday} onChange={e => updateSettings({ showNextMonday: e.target.checked })} className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" />
             <span className="text-sm text-stone-700">Nächsten Montag in Wochenansicht anzeigen (8 Tage)</span>
           </label>
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
+          <Bell size={15} /> Erinnerungen
+        </div>
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 py-1.5 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={!!settings.notificationEnabled} 
+              onChange={e => handleNotificationToggle(e.target.checked)} 
+              className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" 
+            />
+            <span className="text-sm text-stone-700">Erinnerungen aktivieren</span>
+          </label>
+          
+          {settings.notificationEnabled && (
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className={labelCls}>Wochentag</label>
+                <select 
+                  value={settings.notificationDay ?? 1} 
+                  onChange={e => updateSettings({ notificationDay: parseInt(e.target.value) })}
+                  className={inputCls + " text-sm font-mono mt-1"}
+                >
+                  <option value={1}>Montag</option>
+                  <option value={2}>Dienstag</option>
+                  <option value={3}>Mittwoch</option>
+                  <option value={4}>Donnerstag</option>
+                  <option value={5}>Freitag</option>
+                  <option value={6}>Samstag</option>
+                  <option value={0}>Sonntag</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Uhrzeit</label>
+                <input 
+                  type="time" 
+                  value={settings.notificationTime || '18:00'} 
+                  onChange={e => updateSettings({ notificationTime: e.target.value })}
+                  className={inputCls + " text-sm font-mono mt-1"}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -2566,12 +2640,54 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.3.3</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.4.0</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
-          Codename: Dampfnudel 🥟
+          Codename: Erbsensuppe 🍲
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.3 (Dampfnudel)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.0 (Erbsensuppe)
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- Reminder Modal ---------------------------------- */
+function ReminderModal({ onClose, onAction }) {
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-4">
+      <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl space-y-4 border border-stone-200 animate-scale-up">
+        <div className="flex items-center gap-3">
+          <div className="bg-stone-100 p-2.5 rounded-full text-stone-700">
+            <Bell size={24} className="animate-bounce" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-stone-800 font-mono uppercase tracking-wide text-xs">Erinnerung</h3>
+            <p className="text-[10px] text-stone-400 font-mono">Tischplan Speiseplaner</p>
+          </div>
+        </div>
+        <div className="text-stone-700 font-semibold text-base py-1">
+          Rezepte in Tischplan eintragen
+        </div>
+        <div className="space-y-2 pt-2">
+          <button 
+            onClick={() => onAction('generate')} 
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-stone-900 text-white font-mono uppercase tracking-wide text-xs font-semibold hover:bg-stone-850 active:scale-[0.99]"
+          >
+            Plan automatisch generieren
+          </button>
+          <button 
+            onClick={() => onAction('ok')} 
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-stone-300 text-stone-700 text-sm font-medium hover:bg-stone-50 active:scale-[0.99]"
+          >
+            OK
+          </button>
+          <button 
+            onClick={() => onAction('snooze')} 
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs text-stone-450 hover:text-stone-900 hover:underline font-mono uppercase tracking-wider text-center"
+          >
+            Verschieben (1 Stunde)
+          </button>
         </div>
       </div>
     </div>
@@ -2618,11 +2734,30 @@ function MoveMealModal({ data, onClose }) {
     }
   };
 
+  const handleDelete = async () => {
+    setBusy(true);
+    try {
+      const sourcePlan = await getDayPlan(data.sourceDate);
+      if (sourcePlan[data.mealKey]) {
+        sourcePlan[data.mealKey][data.courseKey] = null;
+      }
+      await saveDayPlan(data.sourceDate, sourcePlan);
+
+      showToast("Essen gelöscht");
+      triggerRefresh();
+      onClose();
+    } catch (e) {
+      console.error(e);
+      showToast("Löschen fehlgeschlagen", "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-full flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
-          <span className="font-mono font-semibold uppercase tracking-wide text-sm">Essen verschieben</span>
+        <div className="p-4 border-b border-stone-200 flex items-center justify-end flex-shrink-0">
           <button onClick={onClose}><X size={20} /></button>
         </div>
         <div className="p-4 space-y-4">
@@ -2650,6 +2785,9 @@ function MoveMealModal({ data, onClose }) {
           </div>
           <div className="flex gap-3 pt-2">
             <button onClick={onClose} className={secondaryBtnCls} disabled={busy}>Abbrechen</button>
+            <button onClick={handleDelete} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-rose-200 text-rose-600 text-sm font-medium active:scale-[0.99] disabled:opacity-40 hover:bg-rose-50/50" disabled={busy}>
+              <Trash2 size={14} /> Löschen
+            </button>
             <button onClick={handleMove} className={primaryBtnCls} disabled={busy || !targetDate}>
               {busy ? "Verschiebe..." : "Verschieben"}
             </button>
@@ -2675,6 +2813,18 @@ export default function App() {
   const [recipeDetailModal, setRecipeDetailModal] = useState(null);
   const [moveMealModal, setMoveMealModal] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [plannerOpen, setPlannerOpen] = useState(false);
+
+  const recipesRef = useRef([]);
+  const mealplanIndexRef = useRef({});
+
+  useEffect(() => {
+    recipesRef.current = recipes;
+  }, [recipes]);
+
+  useEffect(() => {
+    mealplanIndexRef.current = mealplanIndex;
+  }, [mealplanIndex]);
 
   useEffect(() => {
     (async () => {
@@ -2715,6 +2865,8 @@ export default function App() {
       if (fixedRecipes.some((rec, i) => rec !== recipesNext[i])) { recipesNext = fixedRecipes; persistRecipes = true; }
 
       setRecipes(recipesNext); setSettings(settingsNext); setProfile(p); setMealplanIndex(idx);
+      recipesRef.current = recipesNext;
+      mealplanIndexRef.current = idx;
       setBookmarksRecipes(bmRecipes); setBookmarksPages(bmPages);
       setLoading(false);
       if (persistSettings) await storageSet('settings', settingsNext, true);
@@ -2725,8 +2877,9 @@ export default function App() {
   const showToast = (msg, type) => { setToast({ msg, type: type || 'info' }); setTimeout(() => setToast(null), 3000); };
 
   const addRecipe = async (recipe) => {
+    const currentRecipes = recipesRef.current;
     const trimmedTitle = (recipe.title || '').trim().toLowerCase();
-    const existing = recipes.find(r => (r.title || '').trim().toLowerCase() === trimmedTitle);
+    const existing = currentRecipes.find(r => (r.title || '').trim().toLowerCase() === trimmedTitle);
     if (existing) {
       return existing;
     }
@@ -2738,19 +2891,22 @@ export default function App() {
       createdAt: recipe.createdAt || new Date().toISOString(),
       bookVolume: recipe.bookVolume || (vol && vol.id) || null,
     };
-    const next = [...recipes, full];
+    const next = [...currentRecipes, full];
     setRecipes(next);
+    recipesRef.current = next;
     await storageSet('recipes', next, true);
     return full;
   };
   const updateRecipe = async (id, patch) => {
-    const next = recipes.map(r => r.id === id ? { ...r, ...patch } : r);
+    const next = recipesRef.current.map(r => r.id === id ? { ...r, ...patch } : r);
     setRecipes(next);
+    recipesRef.current = next;
     await storageSet('recipes', next, true);
   };
   const deleteRecipe = async (id) => {
-    const next = recipes.filter(r => r.id !== id);
+    const next = recipesRef.current.filter(r => r.id !== id);
     setRecipes(next);
+    recipesRef.current = next;
     await storageSet('recipes', next, true);
   };
   const updateSettings = async (patch) => {
@@ -2775,9 +2931,10 @@ export default function App() {
     await storageSet(`mealplan:${dk}`, plan, true);
     const counts = mealTimeCounts(plan);
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
-    const nextIndex = { ...mealplanIndex };
+    const nextIndex = { ...mealplanIndexRef.current };
     if (total > 0) nextIndex[dk] = counts; else delete nextIndex[dk];
     setMealplanIndex(nextIndex);
+    mealplanIndexRef.current = nextIndex;
     await storageSet('mealplan_index', nextIndex, true);
   };
   const saveBookmarksRecipes = async (newLinks) => {
@@ -2803,6 +2960,109 @@ export default function App() {
     await storageSet('firefox_bookmarks_pages', [], true);
   };
 
+  const [showReminder, setShowReminder] = useState(false);
+
+  // Handle actions from notifications (native or in-app)
+  const handleNotificationAction = async (action) => {
+    setShowReminder(false);
+    if (action === 'generate') {
+      setTab('calendar');
+      setPlannerOpen(true);
+    } else if (action === 'snooze') {
+      const snoozeTime = Date.now() + 60 * 60 * 1000; // 1 hour
+      await updateSettings({ snoozedUntil: snoozeTime });
+      showToast('Erinnerung um 1 Stunde verschoben');
+    } else if (action === 'ok') {
+      setTab('calendar');
+    }
+  };
+
+  // 1. Listen for URL search parameters (e.g. from opened notification link)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    if (action) {
+      handleNotificationAction(action);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [settings]);
+
+  // 2. Listen for messages from Service Worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const handler = (event) => {
+        if (event.data && event.data.action) {
+          handleNotificationAction(event.data.action);
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handler);
+      return () => navigator.serviceWorker.removeEventListener('message', handler);
+    }
+  }, [settings]);
+
+  // 3. Background schedule check loop (checks every 15s)
+  useEffect(() => {
+    if (!settings.notificationEnabled) return;
+
+    const interval = setInterval(async () => {
+      const now = new Date();
+      const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const currentHourMin = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+      let shouldNotify = false;
+
+      // Regular check
+      if (currentDay === parseInt(settings.notificationDay) && currentHourMin === settings.notificationTime) {
+        const lastNotifiedDate = settings.lastNotifiedAt ? new Date(settings.lastNotifiedAt) : null;
+        const alreadyNotified = lastNotifiedDate &&
+          lastNotifiedDate.getDate() === now.getDate() &&
+          lastNotifiedDate.getHours() === now.getHours() &&
+          lastNotifiedDate.getMinutes() === now.getMinutes();
+
+        if (!alreadyNotified) {
+          shouldNotify = true;
+        }
+      }
+
+      // Snooze check
+      if (settings.snoozedUntil && Date.now() >= settings.snoozedUntil) {
+        shouldNotify = true;
+      }
+
+      if (shouldNotify) {
+        // Update notification state to prevent multiple fires
+        await updateSettings({
+          lastNotifiedAt: Date.now(),
+          snoozedUntil: null
+        });
+
+        // Trigger native notification
+        if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+          const reg = await navigator.serviceWorker.ready;
+          reg.showNotification('Rezepte in Tischplan eintragen', {
+            body: 'Wochenplan verwalten oder automatisch generieren.',
+            icon: '/icon.svg',
+            badge: '/icon.svg',
+            tag: 'tischplan-reminder',
+            actions: [
+              { action: 'generate', title: 'Plan automatisch generieren' },
+              { action: 'ok', title: 'OK' },
+              { action: 'snooze', title: 'Verschieben' }
+            ],
+            requireInteraction: true
+          });
+        }
+
+        // Show in-app modal if active
+        if (document.visibilityState === 'visible') {
+          setShowReminder(true);
+        }
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [settings]);
+
   if (loading) return <LoadingScreen />;
   if (!profile) return <ProfilePicker settings={settings} onChoose={chooseProfile} onUpdateSettings={updateSettings} />;
 
@@ -2818,6 +3078,7 @@ export default function App() {
       openMoveMeal: setMoveMealModal,
       refreshKey,
       triggerRefresh: () => setRefreshKey(prev => prev + 1),
+      plannerOpen, setPlannerOpen,
     }}>
       <style>{`
         @media print {
@@ -2848,6 +3109,12 @@ export default function App() {
           <MoveMealModal
             data={moveMealModal}
             onClose={() => setMoveMealModal(null)}
+          />
+        )}
+        {showReminder && (
+          <ReminderModal
+            onClose={() => setShowReminder(false)}
+            onAction={handleNotificationAction}
           />
         )}
         {toast && <Toast toast={toast} />}
