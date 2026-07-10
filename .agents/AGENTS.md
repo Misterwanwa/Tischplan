@@ -10,7 +10,8 @@ Es gibt aktuell folgende Versionen und Codenamen:
 - **1.0.x**: Apfelkuchen
 - **1.1.x**: Brokkoliauflauf
 - **1.2.x**: Cacio e Pepe
-- **1.3.x**: Dampfnudel (Aktueller Stand ist v1.3.3)
+- **1.3.x**: Dampfnudel
+- **1.4.x**: Erbsensuppe (Aktueller Stand ist v1.4.0)
 
 Wird nur ein Patch gemacht und keine neue Funktion hinzugefügt, so muss die Version um eins hochgezählt werden, aber der Codename bleibt gleich. Dabei wird an der Stelle hinter dem zweiten Punkt hochgezählt, die in den obengenannten Beispielen mit einem x als Platzhalter steht.
 
@@ -18,7 +19,16 @@ Jeder Prompt, der Versionen anzeigt, ändert oder hochzählt, muss sich an diese
 
 Ist unklar, wie hochzuzählen ist oder wie die nächste Version heißen soll, so muss im Zweifel immer der Nutzer mit der askUser Methode gefragt werden.
 
-Die Versionsnummer befindet sich in der main.py in der Variable "VERSION". 
+Die Versionsnummer befindet sich in der main.py in der Variable "VERSION" (oder in package.json/App.jsx bei React-Versionen). 
+
+# Git & Deployment (GitHub-Push)
+Nach jeder Änderung am Programm (sobald Code verändert, hinzugefügt oder korrigiert wurde) müssen die Änderungen zwingend committet und auf GitHub in den remote Branch (z. B. `main`) gepusht werden.
+
+**Vorgaben für den Ablauf:**
+1. Nach Code-Änderungen immer ein erfolgreiches Build (`npm run build`) verifizieren.
+2. Alle geänderten Dateien stagen (`git add .` oder gezielte Auswahl).
+3. Einen aussagekräftigen Commit-Text verfassen.
+4. Sofort `git push` ausführen, um das automatische Cloudflare Pages Deployment anzustoßen, damit die Änderungen live gehen.
 
 # Dateistruktur und Namenskonvention
 
