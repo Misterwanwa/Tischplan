@@ -846,7 +846,7 @@ function SlotRow({ course, recipe, multiplier, onPick, onRemove, onMultiplier, o
 function RecipePickerSheet({ onClose, onPick }) {
   const { recipes, openAddRecipe } = useApp();
   const [query, setQuery] = useState('');
-  const filtered = recipes.filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
+  const filtered = recipes.filter(r => !r.doNotSaveInBook).filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-full flex flex-col" onClick={e => e.stopPropagation()}>
@@ -971,7 +971,7 @@ function WeekAddMealModal({ date, onClose }) {
   const [query, setQuery] = useState('');
 
   const formattedDate = formatLongDate(dateKey(date));
-  const filtered = recipes.filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
+  const filtered = recipes.filter(r => !r.doNotSaveInBook).filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
 
   const handlePick = async (recipeId) => {
     const dk = dateKey(date);
@@ -1927,6 +1927,7 @@ function AISearchPanel({ onBack, onNext }) {
 function RecipeForm({ initial, onBack, backLabel, onSave }) {
   const { showToast } = useApp();
   const [title, setTitle] = useState((initial && initial.title) || '');
+  const [doNotSaveInBook, setDoNotSaveInBook] = useState((initial && initial.doNotSaveInBook) || false);
   const [servingsText, setServingsText] = useState((initial && initial.servingsText) || '4');
   const [ingredientsText, setIngredientsText] = useState((initial && initial.ingredientsText) || '');
   const [stepsText, setStepsText] = useState((initial && initial.stepsText) || '');
@@ -1962,6 +1963,7 @@ function RecipeForm({ initial, onBack, backLabel, onSave }) {
       nutrition: nutrition.kcal !== '' ? { kcal: +nutrition.kcal || 0, protein: +nutrition.protein || 0, carbs: +nutrition.carbs || 0, fat: +nutrition.fat || 0 } : null,
       photo,
       source,
+      doNotSaveInBook,
     };
     onSave(recipe);
   };
@@ -1978,6 +1980,15 @@ function RecipeForm({ initial, onBack, backLabel, onSave }) {
         <label className={labelCls}>Titel</label>
         <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls + " mt-1"} />
       </div>
+      <label className="flex items-center gap-2 py-1 cursor-pointer">
+        <input 
+          type="checkbox" 
+          checked={doNotSaveInBook} 
+          onChange={e => setDoNotSaveInBook(e.target.checked)} 
+          className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" 
+        />
+        <span className="text-sm text-stone-700">Rezept soll nicht im Kochbuch gespeichert werden</span>
+      </label>
       <div className="flex gap-3">
         <div className="w-24">
           <label className={labelCls}>Portionen</label>
@@ -2400,7 +2411,7 @@ function RecipesTab() {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
   const [manageRecipe, setManageRecipe] = useState(null);
-  const filtered = recipes.filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
+  const filtered = recipes.filter(r => !r.doNotSaveInBook).filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
 
   return (
     <div className="space-y-3">
@@ -2522,7 +2533,7 @@ function CookbookTab() {
   useEffect(() => { if (!selectedVolId && volumes[0]) setSelectedVolId(volumes[0].id); }, [volumes.length]);
 
   const selectedVol = volumes.find(v => v.id === selectedVolId) || volumes[0];
-  const volRecipes = selectedVol ? recipes.filter(r => r.bookVolume === selectedVol.id) : [];
+  const volRecipes = selectedVol ? recipes.filter(r => r.bookVolume === selectedVol.id && !r.doNotSaveInBook) : [];
 
   const saveTitle = () => {
     const nextVols = volumes.map(v => v.id === selectedVol.id ? { ...v, title: titleDraft.trim() || v.title } : v);
