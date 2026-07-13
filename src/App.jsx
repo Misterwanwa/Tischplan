@@ -49,6 +49,7 @@ const DEFAULT_SETTINGS = {
   notificationTime: '18:00',
   snoozedUntil: null,
   lastNotifiedAt: null,
+  cookbookSort: 'date-desc',
 };
 
 /* ---------------------------------- Helpers ---------------------------------- */
@@ -679,14 +680,18 @@ function RemoveButton({ onConfirm, size }) {
 
 /* ---------------------------------- Chrome ---------------------------------- */
 function TopBar() {
-  const { settings, profile } = useApp();
+  const { settings, profile, setProfile } = useApp();
   return (
     <div className="bg-white border-b border-stone-200 no-print sticky top-0 z-30">
       <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
         <span className="font-mono text-lg font-bold tracking-tight text-stone-900">KARTEI</span>
-        <span className="text-xs px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full flex items-center gap-1 font-mono">
+        <button
+          onClick={() => setProfile(null)}
+          className="text-xs px-2.5 py-1 bg-stone-100 hover:bg-stone-200 text-stone-600 hover:text-stone-900 rounded-full flex items-center gap-1 font-mono transition-colors active:scale-95"
+          title="Benutzer wechseln"
+        >
           <User size={11} /> {settings.people[profile.personIndex] && settings.people[profile.personIndex].name}
-        </span>
+        </button>
       </div>
     </div>
   );
@@ -954,8 +959,100 @@ function PlannedMealItem({ meal, course, slot, recipe, onLongPressRecipe, onClic
   );
 }
 
+function WeekAddMealModal({ date, onClose }) {
+  const { recipes, getDayPlan, saveDayPlan, triggerRefresh, openAddRecipe } = useApp();
+  const [selectedMeal, setSelectedMeal] = useState('dinner');
+  const [selectedCourse, setSelectedCourse] = useState('main');
+  const [query, setQuery] = useState('');
+
+  const formattedDate = formatLongDate(dateKey(date));
+  const filtered = recipes.filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
+
+  const handlePick = async (recipeId) => {
+    const dk = dateKey(date);
+    const plan = await getDayPlan(dk);
+    const next = { 
+      ...plan, 
+      [selectedMeal]: { 
+        ...plan[selectedMeal], 
+        [selectedCourse]: { recipeId, multiplier: 1 } 
+      } 
+    };
+    await saveDayPlan(dk, next);
+    triggerRefresh();
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
+          <div>
+            <span className="font-mono font-semibold uppercase tracking-wide text-sm block">Gericht hinzufügen</span>
+            <span className="text-xs text-stone-400 font-mono">{formattedDate}</span>
+          </div>
+          <button onClick={onClose} className="text-stone-450 hover:text-stone-750 transition-colors"><X size={20} /></button>
+        </div>
+        <div className="p-3 border-b border-stone-100 flex-shrink-0 space-y-3">
+          <div>
+            <label className={labelCls + " mb-1 block"}>Mahlzeit</label>
+            <div className="grid grid-cols-3 gap-2">
+              {MEAL_TIMES.map(mt => (
+                <button
+                  key={mt.key}
+                  type="button"
+                  onClick={() => setSelectedMeal(mt.key)}
+                  className={`py-1.5 rounded-lg text-xs font-semibold font-mono uppercase border tracking-wider transition-colors ${selectedMeal === mt.key ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'}`}
+                >
+                  {mt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className={labelCls + " mb-1 block"}>Gang</label>
+            <div className="grid grid-cols-3 gap-2">
+              {COURSES.map(co => (
+                <button
+                  key={co.key}
+                  type="button"
+                  onClick={() => setSelectedCourse(co.key)}
+                  className={`py-1.5 rounded-lg text-xs font-semibold font-mono uppercase border tracking-wider transition-colors ${selectedCourse === co.key ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'}`}
+                >
+                  {co.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="p-3 flex-shrink-0">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rezept suchen..." className={inputCls + " pl-9"} />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-3 space-y-1 min-h-0">
+          {filtered.map(r => (
+            <button key={r.id} onClick={() => handlePick(r.id)} className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 text-left">
+              {getRecipePreview(r) ? <img src={getRecipePreview(r)} className="w-9 h-9 rounded-lg object-cover" /> : <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center"><Utensils size={14} className="text-stone-300" /></div>}
+              <span className="text-sm">{r.title}</span>
+            </button>
+          ))}
+          {filtered.length === 0 && <div className="text-center text-sm text-stone-400 py-6">Keine Rezepte gefunden</div>}
+        </div>
+        <div className="p-3 border-t border-stone-200 flex-shrink-0">
+          <button onClick={() => { onClose(); openAddRecipe({ onSaved: (r) => handlePick(r.id) }); }} className={primaryBtnCls}>
+            <Plus size={14} /> Neues Rezept
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WeekSummary({ selectedDay }) {
-  const { recipes, settings, getDayPlan, openRecipeDetail, openMoveMeal, refreshKey } = useApp();
+  const { recipes, settings, getDayPlan, saveDayPlan, triggerRefresh, openRecipeDetail, openMoveMeal, refreshKey } = useApp();
+  const [addMealModal, setAddMealModal] = useState(null);
   const [totals, setTotals] = useState(null);
   const [plans, setPlans] = useState([]);
   const [y, m, d] = selectedDay.split('-').map(Number);
@@ -1018,11 +1115,16 @@ function WeekSummary({ selectedDay }) {
             <div key={dateKey(day)} className="bg-white rounded-xl border border-stone-200 p-4 space-y-3">
               <div className="text-sm font-semibold text-stone-700 font-mono border-b border-stone-100 pb-1.5 flex justify-between items-center">
                 <span>{formattedDate}</span>
-                {plannedSlots.length > 0 && (
-                  <span className="text-xs font-normal text-stone-400">
-                    {plannedSlots.length} {plannedSlots.length === 1 ? 'Gericht' : 'Gerichte'}
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {plannedSlots.length > 0 && (
+                    <span className="text-xs font-normal text-stone-400">
+                      {plannedSlots.length} {plannedSlots.length === 1 ? 'Gericht' : 'Gerichte'}
+                    </span>
+                  )}
+                  <button onClick={() => setAddMealModal({ date: day })} className="text-stone-400 hover:text-stone-700 p-0.5 rounded transition-colors" title="Gericht hinzufügen">
+                    <Plus size={14} />
+                  </button>
+                </div>
               </div>
               
               {plannedSlots.length === 0 ? (
@@ -1046,6 +1148,12 @@ function WeekSummary({ selectedDay }) {
           );
         })}
       </div>
+      {addMealModal && (
+        <WeekAddMealModal
+          date={addMealModal.date}
+          onClose={() => setAddMealModal(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1115,7 +1223,8 @@ function WeekPlannerModal({ onClose }) {
         } else if (task.type === 'cookbook' && cookbookQueue.length) {
           const cb = cookbookQueue.shift();
           const cookbookTitle = typeof cb === 'string' ? cb : cb.title;
-          recipe = { title: `Rezept aus ${cookbookTitle} wählen`, servings: 1, ingredients: [], steps: [], nutrition: null, photo: null, placeholder: true, source: { type: 'cookbook', cookbook: cookbookTitle, label: cookbookTitle } };
+          setEntry(i, { status: 'done', title: `Hinweis: Rezept aus „${cookbookTitle}“ wählen` });
+          continue;
         } else {
           const dishHint = isBreakfast ? 'Frühstücksrezept' : 'Hauptgericht Abendessen';
           const q = `${motto ? motto + ' ' : ''}${dishHint}, ca. ${kcalBudget} kcal${chosen.length ? `. Bitte nicht ähnlich zu: ${chosen.join(', ')}` : ''}`;
@@ -2172,10 +2281,120 @@ function RecipeDetailModal({ recipe, multiplier = 1, onClose }) {
   );
 }
 
+function RecipeGridItem({ recipe, onClick, onLongPress }) {
+  const handlers = useLongPress(
+    () => onLongPress(recipe),
+    () => onClick(recipe)
+  );
+  return (
+    <div 
+      {...handlers} 
+      className="bg-white rounded-xl border border-stone-200 overflow-hidden text-left cursor-pointer hover:border-stone-400 hover:bg-stone-50 transition-colors"
+    >
+      {getRecipePreview(recipe) ? (
+        <img src={getRecipePreview(recipe)} className="w-full h-24 object-cover" alt="" />
+      ) : (
+        <div className="w-full h-24 bg-stone-100 flex items-center justify-center">
+          <Utensils size={20} className="text-stone-300" />
+        </div>
+      )}
+      <div className="p-2.5">
+        <div className="text-sm font-medium truncate flex items-center gap-1">
+          {recipe.title}
+          {recipe.placeholder && <span className="text-amber-500">●</span>}
+        </div>
+        <div className="text-xs text-stone-400 font-mono">
+          {recipe.nutrition ? `${recipe.nutrition.kcal} kcal` : 'keine Nährwerte'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ManageRecipeModal({ recipe, onClose }) {
+  const { updateRecipe, deleteRecipe, showToast } = useApp();
+  const [title, setTitle] = useState(recipe.title);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    try {
+      await updateRecipe(recipe.id, { title: title.trim() });
+      showToast('Rezept umbenannt');
+      onClose();
+    } catch (err) {
+      showToast('Fehler beim Umbenennen', 'error');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteRecipe(recipe.id);
+      showToast('Rezept gelöscht');
+      onClose();
+    } catch (err) {
+      showToast('Fehler beim Löschen', 'error');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md p-4 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center pb-2 border-b border-stone-150">
+          <span className="font-mono font-semibold uppercase tracking-wide text-sm">Rezept verwalten</span>
+          <button onClick={onClose} className="text-stone-400 hover:text-stone-700"><X size={20} /></button>
+        </div>
+        <form onSubmit={handleSave} className="space-y-3">
+          <div>
+            <label className={labelCls}>Name des Rezepts</label>
+            <input 
+              value={title} 
+              onChange={e => setTitle(e.target.value)} 
+              className={inputCls + " mt-1"} 
+              required 
+            />
+          </div>
+          <button type="submit" className={primaryBtnCls}>Speichern</button>
+        </form>
+        <div className="pt-2 border-t border-stone-100">
+          {confirmDelete ? (
+            <div className="flex gap-2">
+              <button 
+                type="button"
+                onClick={handleDelete} 
+                className="flex-1 py-2.5 rounded-lg bg-rose-600 text-white font-mono uppercase tracking-wide text-xs font-semibold hover:bg-rose-700 transition-colors"
+              >
+                Ja, endgültig löschen
+              </button>
+              <button 
+                type="button"
+                onClick={() => setConfirmDelete(false)} 
+                className="flex-1 py-2.5 rounded-lg border border-stone-300 text-stone-700 text-sm font-medium hover:bg-stone-50 transition-colors"
+              >
+                Nein, Abbrechen
+              </button>
+            </div>
+          ) : (
+            <button 
+              type="button"
+              onClick={() => setConfirmDelete(true)} 
+              className="w-full py-2.5 rounded-lg border border-rose-200 text-rose-600 text-xs font-mono uppercase tracking-wide font-semibold hover:bg-rose-50 transition-colors"
+            >
+              Rezept löschen
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RecipesTab() {
   const { recipes, openAddRecipe } = useApp();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
+  const [manageRecipe, setManageRecipe] = useState(null);
   const filtered = recipes.filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
 
   return (
@@ -2189,17 +2408,17 @@ function RecipesTab() {
       </div>
       <div className="grid grid-cols-2 gap-3">
         {filtered.map(r => (
-          <button key={r.id} onClick={() => setSelected(r)} className="bg-white rounded-xl border border-stone-200 overflow-hidden text-left">
-            {getRecipePreview(r) ? <img src={getRecipePreview(r)} className="w-full h-24 object-cover" /> : <div className="w-full h-24 bg-stone-100 flex items-center justify-center"><Utensils size={20} className="text-stone-300" /></div>}
-            <div className="p-2.5">
-              <div className="text-sm font-medium truncate flex items-center gap-1">{r.title}{r.placeholder && <span className="text-amber-500">●</span>}</div>
-              <div className="text-xs text-stone-400 font-mono">{r.nutrition ? `${r.nutrition.kcal} kcal` : 'keine Nährwerte'}</div>
-            </div>
-          </button>
+          <RecipeGridItem
+            key={r.id}
+            recipe={r}
+            onClick={(recipe) => setSelected(recipe)}
+            onLongPress={(recipe) => setManageRecipe(recipe)}
+          />
         ))}
       </div>
       {filtered.length === 0 && <div className="text-center text-sm text-stone-400 py-10">Noch keine Rezepte – tippe auf + um eines hinzuzufügen.</div>}
       {selected && <RecipeDetailModal recipe={selected} onClose={() => setSelected(null)} />}
+      {manageRecipe && <ManageRecipeModal recipe={manageRecipe} onClose={() => setManageRecipe(null)} />}
     </div>
   );
 }
@@ -2278,9 +2497,6 @@ function ShoppingTab() {
               <textarea readOnly value={listText} onClick={e => e.target.select()} rows={Math.min(10, items.length + 1)} className={inputCls + " mt-1 font-mono"} />
             </div>
           )}
-          <div className="mt-3 p-3 bg-stone-100 rounded-lg text-xs text-stone-600">
-            Direkter Import in Bring, Rewe oder Picnic ist hier technisch nicht möglich – Liste oben kopieren und dort manuell einfügen.
-          </div>
         </div>
       )}
     </div>
@@ -2406,7 +2622,8 @@ function SettingsTab() {
   const [people, setPeople] = useState(settings.people);
   const [cookbookInput, setCookbookInput] = useState('');
   const [bmBusy, setBmBusy] = useState(null);
-  const [cookbookSort, setCookbookSort] = useState('date-desc');
+  const cookbookSort = settings.cookbookSort || 'date-desc';
+  const setCookbookSort = async (val) => { await updateSettings({ cookbookSort: val }); };
   useEffect(() => { setPeople(settings.people); }, [settings.people]);
 
   const savePeople = async () => { await updateSettings({ people }); showToast('Gespeichert'); };
@@ -2655,20 +2872,16 @@ function SettingsTab() {
       </div>
 
 
-      <div className={cardCls + " text-xs text-stone-500 space-y-1.5"}>
-        <div className="font-semibold text-stone-700 text-sm mb-1 font-mono uppercase tracking-wide">Hinweise</div>
-        <p>Beide Personen öffnen denselben Artefakt-Link, damit die Daten synchron sind. Wer den Link hat, kann sie sehen und bearbeiten.</p>
-        <p>Direkte Anbindungen an Firefox-Konto, Bring, Rewe oder Picnic sind hier technisch nicht möglich (siehe Import-/Export-Funktionen als Alternative).</p>
-      </div>
+
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.4.1</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.5.0</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
-          Codename: Erbsensuppe 🍲
+          Codename: Flammkuchen 🍕
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.0 (Flammkuchen)
         </div>
       </div>
     </div>
@@ -3091,7 +3304,7 @@ export default function App() {
 
   return (
     <AppCtx.Provider value={{
-      recipes, settings, profile, mealplanIndex,
+      recipes, settings, profile, setProfile, mealplanIndex,
       bookmarksRecipes, bookmarksPages,
       addRecipe, updateRecipe, deleteRecipe, updateSettings, closeVolume, showToast,
       openAddRecipe: setAddModal, getDayPlan, saveDayPlan,
