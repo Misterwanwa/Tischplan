@@ -781,8 +781,8 @@ function MonthGrid({ viewDate, setViewDate, selectedDay, setSelectedDay }) {
               className={`aspect-square rounded-lg flex flex-col items-center justify-center text-sm relative ${isSelected ? 'bg-stone-900 text-white' : isToday ? 'bg-stone-200 text-stone-900 font-semibold' : 'hover:bg-stone-100 text-stone-700'}`}>
               {d.getDate()}
               {entry && (
-                <div className="flex gap-0.5 mt-0.5 h-1">
-                  {MEAL_TIMES.map(mt => entry[mt.key] > 0 && <span key={mt.key} className={`w-1 h-1 rounded-full ${mt.dot}`} />)}
+                <div className="flex justify-center mt-0.5 h-1">
+                  <span className={`w-1 h-1 rounded-full ${isSelected ? 'bg-stone-300' : 'bg-stone-400'}`} />
                 </div>
               )}
             </button>
@@ -2881,12 +2881,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.5.0</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.5.2</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Flammkuchen 🍕
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.0 (Flammkuchen)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.2 (Flammkuchen)
         </div>
       </div>
     </div>
