@@ -2936,35 +2936,49 @@ function MoveMealModal({ data, onClose }) {
   const [targetDate, setTargetDate] = useState(data.sourceDate);
   const [targetMeal, setTargetMeal] = useState(data.mealKey);
   const [targetCourse, setTargetCourse] = useState(data.courseKey);
+  const [multiplier, setMultiplier] = useState(String(data.multiplier || 1));
   const [busy, setBusy] = useState(false);
 
   const recipe = recipes.find(r => r.id === data.recipeId);
+  const isSameSlot = targetDate === data.sourceDate && targetMeal === data.mealKey && targetCourse === data.courseKey;
 
   const handleMove = async () => {
     if (!targetDate) return;
     setBusy(true);
     try {
-      // 1. Remove from source
-      const sourcePlan = await getDayPlan(data.sourceDate);
-      if (sourcePlan[data.mealKey]) {
-        sourcePlan[data.mealKey][data.courseKey] = null;
-      }
-      await saveDayPlan(data.sourceDate, sourcePlan);
+      const parsedMultiplier = parseFloat(multiplier) || 1;
 
-      // 2. Add to target
-      const targetPlan = await getDayPlan(targetDate);
-      if (!targetPlan[targetMeal]) {
-        targetPlan[targetMeal] = { snack: null, main: null, dessert: null };
-      }
-      targetPlan[targetMeal][targetCourse] = { recipeId: data.recipeId, multiplier: data.multiplier || 1 };
-      await saveDayPlan(targetDate, targetPlan);
+      if (isSameSlot) {
+        const plan = await getDayPlan(data.sourceDate);
+        if (!plan[targetMeal]) {
+          plan[targetMeal] = { snack: null, main: null, dessert: null };
+        }
+        plan[targetMeal][targetCourse] = { recipeId: data.recipeId, multiplier: parsedMultiplier };
+        await saveDayPlan(data.sourceDate, plan);
+        showToast("Menge aktualisiert");
+      } else {
+        // 1. Remove from source
+        const sourcePlan = await getDayPlan(data.sourceDate);
+        if (sourcePlan[data.mealKey]) {
+          sourcePlan[data.mealKey][data.courseKey] = null;
+        }
+        await saveDayPlan(data.sourceDate, sourcePlan);
 
-      showToast("Essen verschoben");
+        // 2. Add to target
+        const targetPlan = await getDayPlan(targetDate);
+        if (!targetPlan[targetMeal]) {
+          targetPlan[targetMeal] = { snack: null, main: null, dessert: null };
+        }
+        targetPlan[targetMeal][targetCourse] = { recipeId: data.recipeId, multiplier: parsedMultiplier };
+        await saveDayPlan(targetDate, targetPlan);
+        showToast("Essen verschoben");
+      }
+
       triggerRefresh();
       onClose();
     } catch (e) {
       console.error(e);
-      showToast("Verschieben fehlgeschlagen", "error");
+      showToast(isSameSlot ? "Speichern fehlgeschlagen" : "Verschieben fehlgeschlagen", "error");
     } finally {
       setBusy(false);
     }
@@ -3002,6 +3016,17 @@ function MoveMealModal({ data, onClose }) {
             <div className="text-sm font-semibold text-stone-850 mt-0.5">{recipe?.title || "Unbekannt"}</div>
           </div>
           <div>
+            <label className={labelCls}>Menge (x-fach)</label>
+            <input 
+              type="number" 
+              step="0.5" 
+              min="0.1" 
+              value={multiplier} 
+              onChange={e => setMultiplier(e.target.value)} 
+              className={inputCls + " mt-1 font-mono"} 
+            />
+          </div>
+          <div>
             <label className={labelCls}>Ziel-Datum</label>
             <input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className={inputCls + " mt-1"} />
           </div>
@@ -3025,7 +3050,7 @@ function MoveMealModal({ data, onClose }) {
               <Trash2 size={14} /> Löschen
             </button>
             <button onClick={handleMove} className={primaryBtnCls} disabled={busy || !targetDate}>
-              {busy ? "Verschiebe..." : "Verschieben"}
+              {busy ? (isSameSlot ? "Speichere..." : "Verschiebe...") : (isSameSlot ? "Speichern" : "Verschieben")}
             </button>
           </div>
         </div>
