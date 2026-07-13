@@ -545,60 +545,65 @@ function useLongPress(onLongPress, onClick, delay = 500) {
   const timeoutRef = useRef(null);
   const isLongPressRef = useRef(false);
   const startCoordsRef = useRef({ x: 0, y: 0 });
-  const hasMovedRef = useRef(false);
 
   const start = (e) => {
     isLongPressRef.current = false;
-    hasMovedRef.current = false;
     const touch = e.touches ? e.touches[0] : e;
     startCoordsRef.current = { x: touch.clientX, y: touch.clientY };
 
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
-      if (!hasMovedRef.current) {
-        onLongPress(e);
-        isLongPressRef.current = true;
-      }
+      onLongPress(e);
+      isLongPressRef.current = true;
     }, delay);
   };
 
   const move = (e) => {
-    if (hasMovedRef.current) return;
     const touch = e.touches ? e.touches[0] : e;
     const dx = touch.clientX - startCoordsRef.current.x;
     const dy = touch.clientY - startCoordsRef.current.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > 10) {
-      hasMovedRef.current = true;
+    if (dist > 15) {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
-    }
-  };
-
-  const stop = (e) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    if (!isLongPressRef.current && !hasMovedRef.current && onClick) {
-      onClick(e);
     }
   };
 
   const cancel = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  };
+
+  const handleClick = (e) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (isLongPressRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      isLongPressRef.current = false;
+      return;
+    }
+    if (onClick) {
+      onClick(e);
     }
   };
 
   return {
     onMouseDown: start,
     onMouseMove: move,
-    onMouseUp: stop,
+    onMouseUp: cancel,
     onMouseLeave: cancel,
     onTouchStart: start,
     onTouchMove: move,
-    onTouchEnd: stop,
+    onTouchEnd: cancel,
     onTouchCancel: cancel,
+    onClick: handleClick,
   };
 }
 
