@@ -2104,11 +2104,59 @@ function AddRecipeModal({ onClose, onSaved }) {
 }
 
 /* ---------------------------------- Recipes tab ---------------------------------- */
-function RecipeDetailModal({ recipe, multiplier = 1, onClose }) {
-  const { updateRecipe, deleteRecipe, showToast } = useApp();
+function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
+  const { recipes, updateRecipe, deleteRecipe, showToast } = useApp();
+  const recipe = recipes.find(r => r.id === initialRecipe.id) || initialRecipe;
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [fullScreen, setFullScreen] = useState(false);
+
+  const [isWakeLocked, setIsWakeLocked] = useState(false);
+  const wakeLockRef = useRef(null);
+
+  const toggleWakeLock = async () => {
+    if (!('wakeLock' in navigator)) {
+      showToast('Wake Lock nicht unterstützt');
+      return;
+    }
+    try {
+      if (!isWakeLocked) {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+        setIsWakeLocked(true);
+        showToast('Bildschirm bleibt aktiv 🔆');
+      } else {
+        if (wakeLockRef.current) {
+          await wakeLockRef.current.release();
+          wakeLockRef.current = null;
+        }
+        setIsWakeLocked(false);
+        showToast('Bildschirm-Ruhezustand aktiv 💤');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Fehler bei Bildschirmsteuerung');
+    }
+  };
+
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (wakeLockRef.current !== null && document.visibilityState === 'visible') {
+        try {
+          wakeLockRef.current = await navigator.wakeLock.request('screen');
+        } catch (err) {
+          console.error("Re-acquiring wake lock failed:", err);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release();
+      }
+    };
+  }, []);
 
   useEffect(() => { if (confirmDelete) { const t = setTimeout(() => setConfirmDelete(false), 3000); return () => clearTimeout(t); } }, [confirmDelete]);
 
@@ -2254,7 +2302,21 @@ function RecipeDetailModal({ recipe, multiplier = 1, onClose }) {
               )}
             </div>
           )}
-          <StarRating value={recipe.rating} onChange={(v) => updateRecipe(recipe.id, { rating: v })} size={20} />
+          <div className="flex items-center justify-between">
+            <StarRating value={recipe.rating} onChange={(v) => updateRecipe(recipe.id, { rating: v })} size={20} />
+            <button
+              onClick={toggleWakeLock}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono border transition-colors ${
+                isWakeLocked
+                  ? 'bg-amber-500 text-white border-amber-500 animate-pulse'
+                  : 'bg-stone-50 text-stone-500 border-stone-200 hover:bg-stone-100 hover:text-stone-700'
+              }`}
+              title={isWakeLocked ? 'Bildschirm-Ruhezustand zulassen' : 'Verhindern, dass der Bildschirm ausgeht'}
+            >
+              <Sun size={12} className={isWakeLocked ? 'animate-spin' : ''} />
+              <span>{isWakeLocked ? 'Wach aktiv' : 'Wach bleiben'}</span>
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2 text-xs text-stone-500 font-mono">
             {multiplier !== 1 ? (
               <span className="px-2.5 py-1 bg-amber-100 text-amber-900 font-bold rounded-full">
@@ -2892,12 +2954,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.5.4</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.5.5</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Flammkuchen 🍕
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.4 (Flammkuchen)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.5 (Flammkuchen)
         </div>
       </div>
     </div>
