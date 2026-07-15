@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useContext, createContext, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useContext, createContext, useRef, useCallback } from 'react';
 import {
   Calendar, ChevronLeft, ChevronRight, Plus, X, Search, ShoppingCart, BookOpen,
   Settings as SettingsIcon, Camera, Upload, Sparkles, Trash2, Edit2, Check,
@@ -2954,12 +2954,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.5.6</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.5.7</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Flammkuchen 🍕
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.5 (Flammkuchen)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.6 (Flammkuchen)
         </div>
       </div>
     </div>
@@ -3265,8 +3265,8 @@ export default function App() {
     setProfile(next);
     await storageSet('profile', next, false);
   };
-  const getDayPlan = (dk) => storageGet(`mealplan:${dk}`, true, emptyDayPlan());
-  const saveDayPlan = async (dk, plan) => {
+  const getDayPlan = useCallback((dk) => storageGet(`mealplan:${dk}`, true, emptyDayPlan()), []);
+  const saveDayPlan = useCallback(async (dk, plan) => {
     await storageSet(`mealplan:${dk}`, plan, true);
     const counts = mealTimeCounts(plan);
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -3275,7 +3275,8 @@ export default function App() {
     setMealplanIndex(nextIndex);
     mealplanIndexRef.current = nextIndex;
     await storageSet('mealplan_index', nextIndex, true);
-  };
+  }, []);
+  const triggerRefresh = useCallback(() => setRefreshKey(prev => prev + 1), []);
   const saveBookmarksRecipes = async (newLinks) => {
     const map = new Map(bookmarksRecipes.map(b => [b.url, b]));
     for (const l of newLinks) map.set(l.url, l);
@@ -3416,7 +3417,7 @@ export default function App() {
       openRecipeDetail: setRecipeDetailModal,
       openMoveMeal: setMoveMealModal,
       refreshKey,
-      triggerRefresh: () => setRefreshKey(prev => prev + 1),
+      triggerRefresh,
       plannerOpen, setPlannerOpen,
     }}>
       <style>{`
