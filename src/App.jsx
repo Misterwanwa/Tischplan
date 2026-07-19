@@ -969,6 +969,7 @@ function WeekAddMealModal({ date, onClose }) {
   const [selectedMeal, setSelectedMeal] = useState('dinner');
   const [selectedCourse, setSelectedCourse] = useState('main');
   const [query, setQuery] = useState('');
+  const [overwriteTarget, setOverwriteTarget] = useState(null);
 
   const formattedDate = formatLongDate(dateKey(date));
   const filtered = recipes.filter(r => !r.doNotSaveInBook).filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
@@ -976,6 +977,18 @@ function WeekAddMealModal({ date, onClose }) {
   const handlePick = async (recipeId) => {
     const dk = dateKey(date);
     const plan = await getDayPlan(dk);
+    const existingSlot = plan[selectedMeal] && plan[selectedMeal][selectedCourse];
+    if (existingSlot) {
+      const existingRecipe = recipes.find(r => r.id === existingSlot.recipeId);
+      const existingTitle = existingRecipe ? existingRecipe.title : 'Unbekanntes Rezept';
+      setOverwriteTarget({ recipeId, existingTitle, plan });
+    } else {
+      await executeSave(recipeId, plan);
+    }
+  };
+
+  const executeSave = async (recipeId, plan) => {
+    const dk = dateKey(date);
     const next = { 
       ...plan, 
       [selectedMeal]: { 
@@ -989,69 +1002,111 @@ function WeekAddMealModal({ date, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
-      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
-          <div>
-            <span className="font-mono font-semibold uppercase tracking-wide text-sm block">Gericht hinzufügen</span>
-            <span className="text-xs text-stone-400 font-mono">{formattedDate}</span>
+    <>
+      <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+        <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
+            <div>
+              <span className="font-mono font-semibold uppercase tracking-wide text-sm block">Gericht hinzufügen</span>
+              <span className="text-xs text-stone-400 font-mono">{formattedDate}</span>
+            </div>
+            <button onClick={onClose} className="text-stone-450 hover:text-stone-750 transition-colors"><X size={20} /></button>
           </div>
-          <button onClick={onClose} className="text-stone-450 hover:text-stone-750 transition-colors"><X size={20} /></button>
-        </div>
-        <div className="p-3 border-b border-stone-100 flex-shrink-0 space-y-3">
-          <div>
-            <label className={labelCls + " mb-1 block"}>Mahlzeit</label>
-            <div className="grid grid-cols-3 gap-2">
-              {MEAL_TIMES.map(mt => (
-                <button
-                  key={mt.key}
-                  type="button"
-                  onClick={() => setSelectedMeal(mt.key)}
-                  className={`py-1.5 rounded-lg text-xs font-semibold font-mono uppercase border tracking-wider transition-colors ${selectedMeal === mt.key ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'}`}
-                >
-                  {mt.label}
-                </button>
-              ))}
+          <div className="p-3 border-b border-stone-100 flex-shrink-0 space-y-3">
+            <div>
+              <label className={labelCls + " mb-1 block"}>Mahlzeit</label>
+              <div className="grid grid-cols-3 gap-2">
+                {MEAL_TIMES.map(mt => (
+                  <button
+                    key={mt.key}
+                    type="button"
+                    onClick={() => setSelectedMeal(mt.key)}
+                    className={`py-1.5 rounded-lg text-xs font-semibold font-mono uppercase border tracking-wider transition-colors ${selectedMeal === mt.key ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'}`}
+                  >
+                    {mt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className={labelCls + " mb-1 block"}>Gang</label>
+              <div className="grid grid-cols-3 gap-2">
+                {COURSES.map(co => (
+                  <button
+                    key={co.key}
+                    type="button"
+                    onClick={() => setSelectedCourse(co.key)}
+                    className={`py-1.5 rounded-lg text-xs font-semibold font-mono uppercase border tracking-wider transition-colors ${selectedCourse === co.key ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'}`}
+                  >
+                    {co.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          <div>
-            <label className={labelCls + " mb-1 block"}>Gang</label>
-            <div className="grid grid-cols-3 gap-2">
-              {COURSES.map(co => (
-                <button
-                  key={co.key}
-                  type="button"
-                  onClick={() => setSelectedCourse(co.key)}
-                  className={`py-1.5 rounded-lg text-xs font-semibold font-mono uppercase border tracking-wider transition-colors ${selectedCourse === co.key ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'}`}
-                >
-                  {co.label}
-                </button>
-              ))}
+          <div className="p-3 flex-shrink-0">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rezept suchen..." className={inputCls + " pl-9"} />
             </div>
           </div>
-        </div>
-        <div className="p-3 flex-shrink-0">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rezept suchen..." className={inputCls + " pl-9"} />
+          <div className="flex-1 overflow-y-auto px-3 space-y-1 min-h-0">
+            {filtered.map(r => (
+              <button key={r.id} onClick={() => handlePick(r.id)} className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 text-left">
+                {getRecipePreview(r) ? <img src={getRecipePreview(r)} className="w-9 h-9 rounded-lg object-cover" /> : <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center"><Utensils size={14} className="text-stone-300" /></div>}
+                <span className="text-sm">{r.title}</span>
+              </button>
+            ))}
+            {filtered.length === 0 && <div className="text-center text-sm text-stone-400 py-6">Keine Rezepte gefunden</div>}
           </div>
-        </div>
-        <div className="flex-1 overflow-y-auto px-3 space-y-1 min-h-0">
-          {filtered.map(r => (
-            <button key={r.id} onClick={() => handlePick(r.id)} className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 text-left">
-              {getRecipePreview(r) ? <img src={getRecipePreview(r)} className="w-9 h-9 rounded-lg object-cover" /> : <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center"><Utensils size={14} className="text-stone-300" /></div>}
-              <span className="text-sm">{r.title}</span>
+          <div className="p-3 border-t border-stone-200 flex-shrink-0">
+            <button onClick={() => { onClose(); openAddRecipe({ onSaved: (r) => handlePick(r.id) }); }} className={primaryBtnCls}>
+              <Plus size={14} /> Neues Rezept
             </button>
-          ))}
-          {filtered.length === 0 && <div className="text-center text-sm text-stone-400 py-6">Keine Rezepte gefunden</div>}
-        </div>
-        <div className="p-3 border-t border-stone-200 flex-shrink-0">
-          <button onClick={() => { onClose(); openAddRecipe({ onSaved: (r) => handlePick(r.id) }); }} className={primaryBtnCls}>
-            <Plus size={14} /> Neues Rezept
-          </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {overwriteTarget && (
+        <div className="fixed inset-0 bg-black/45 flex items-center justify-center z-[60] p-4 animate-fade-in">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-stone-200 animate-scale-up" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="bg-amber-50 p-2.5 rounded-full text-amber-600 animate-pulse">
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-stone-850 font-mono uppercase tracking-wide text-xs">Eintrag überschreiben?</h3>
+                <p className="text-[10px] text-stone-400 font-mono">Planungskonflikt</p>
+              </div>
+            </div>
+            <p className="text-sm text-stone-600 leading-relaxed">
+              Für <strong>{formattedDate}</strong> ({MEAL_TIMES.find(m => m.key === selectedMeal)?.label} – {COURSES.find(c => c.key === selectedCourse)?.label}) ist bereits das Rezept <span className="font-medium text-stone-900">„{overwriteTarget.existingTitle}“</span> geplant.
+              <br /><br />
+              Möchtest du es überschreiben?
+            </p>
+            <div className="flex gap-2 pt-2">
+              <button 
+                type="button"
+                onClick={async () => {
+                  await executeSave(overwriteTarget.recipeId, overwriteTarget.plan);
+                  setOverwriteTarget(null);
+                }} 
+                className="flex-1 py-2 rounded-lg bg-stone-900 text-white font-mono uppercase tracking-wide text-xs font-semibold active:scale-[0.99] hover:bg-stone-850 transition-colors"
+              >
+                Ja
+              </button>
+              <button 
+                type="button"
+                onClick={() => setOverwriteTarget(null)} 
+                className="flex-1 py-2 rounded-lg border border-stone-300 text-stone-700 text-sm font-medium active:scale-[0.99] hover:bg-stone-50 transition-colors"
+              >
+                Nein
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -2954,12 +3009,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.5.7</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.6.0</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
-          Codename: Flammkuchen 🍕
+          Codename: Gyros 🥙
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.6 (Flammkuchen)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros)
         </div>
       </div>
     </div>
