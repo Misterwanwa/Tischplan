@@ -2163,12 +2163,221 @@ function AddRecipeModal({ onClose, onSaved }) {
 }
 
 /* ---------------------------------- Recipes tab ---------------------------------- */
+/* ---------------------------------- Cook Mode Modal (Instagram Story Slide Style) ---------------------------------- */
+function parseTimersFromText(text) {
+  if (!text) return [];
+  const regex = /\b(\d+(?:[.,]\d+)?)\s*(min|minute|minuten|std|stunde|stunden|sek|sekunde|sekunden)\b/gi;
+  const timers = [];
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const rawVal = parseFloat(match[1].replace(',', '.'));
+    const unit = match[2].toLowerCase();
+    let seconds = 0;
+    if (unit.startsWith('std') || unit.startsWith('stunde')) seconds = rawVal * 3600;
+    else if (unit.startsWith('sek')) seconds = rawVal;
+    else seconds = rawVal * 60;
+
+    timers.push({
+      label: match[0],
+      seconds: Math.round(seconds),
+    });
+  }
+  return timers;
+}
+
+function StepTimer({ durationSeconds, label }) {
+  const [timeLeft, setTimeLeft] = useState(durationSeconds);
+  const [isRunning, setIsRunning] = useState(false);
+
+  useEffect(() => {
+    let interval = null;
+    if (isRunning && timeLeft > 0) {
+      interval = setInterval(() => setTimeLeft(t => t - 1), 1000);
+    } else if (timeLeft === 0 && isRunning) {
+      setIsRunning(false);
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Timer abgelaufen! 🔔', { body: `Der Timer (${label}) ist fertig!` });
+      }
+    }
+    return () => clearInterval(interval);
+  }, [isRunning, timeLeft, label]);
+
+  const formatTime = (sec) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between shadow-sm my-3">
+      <div className="flex items-center gap-2">
+        <Clock className={`text-amber-600 ${isRunning ? 'animate-spin' : ''}`} size={18} />
+        <div>
+          <div className="text-xs font-mono uppercase text-amber-800 font-semibold">{label}</div>
+          <div className="text-xl font-bold font-mono text-amber-950">{formatTime(timeLeft)}</div>
+        </div>
+      </div>
+      <div className="flex gap-1.5">
+        <button
+          onClick={() => setIsRunning(!isRunning)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-bold text-white shadow ${isRunning ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+        >
+          {isRunning ? 'Pause' : 'Start'}
+        </button>
+        <button
+          onClick={() => { setIsRunning(false); setTimeLeft(durationSeconds); }}
+          className="px-2.5 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold bg-stone-200 text-stone-700 hover:bg-stone-300"
+        >
+          <RotateCcw size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CookModeModal({ recipe, multiplier = 1, onClose }) {
+  const [stepIdx, setStepIdx] = useState(0);
+  const steps = recipe.steps || [];
+  const totalSteps = steps.length;
+  const currentStepText = steps[stepIdx] || '';
+
+  // Auto screen wake lock during cook mode
+  useEffect(() => {
+    let wakeLock = null;
+    if ('wakeLock' in navigator) {
+      navigator.wakeLock.request('screen').then(wl => { wakeLock = wl; }).catch(() => {});
+    }
+    return () => {
+      if (wakeLock) wakeLock.release();
+    };
+  }, []);
+
+  const detectedTimers = useMemo(() => parseTimersFromText(currentStepText), [currentStepText]);
+
+  const formatIngredient = (ing) => {
+    if (ing.amount == null) return ing.raw || ing.name;
+    const scaledAmount = ing.amount * multiplier;
+    const formattedAmt = Math.round(scaledAmount * 100) / 100;
+    return `${formattedAmt} ${ing.unit || ''} ${ing.name}`.trim();
+  };
+
+  const nextStep = () => {
+    if (stepIdx < totalSteps - 1) setStepIdx(s => s + 1);
+  };
+  const prevStep = () => {
+    if (stepIdx > 0) setStepIdx(s => s - 1);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-stone-950/95 flex flex-col z-[100] animate-fade-in text-white select-none">
+      {/* Top Header & Story Progress Bars */}
+      <div className="p-4 space-y-3 bg-stone-900 border-b border-stone-800">
+        {/* Story Progress Indicators */}
+        <div className="flex gap-1.5 w-full">
+          {steps.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                i === stepIdx ? 'bg-amber-500 shadow-sm' : i < stepIdx ? 'bg-emerald-500' : 'bg-stone-700'
+              }`}
+            />
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-mono uppercase px-2 py-0.5 rounded-full font-semibold">
+              Schritt {stepIdx + 1} / {totalSteps}
+            </span>
+            <h3 className="font-bold text-base text-white truncate max-w-[200px] sm:max-w-xs">{recipe.title}</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-full bg-stone-800 text-stone-300 hover:text-white hover:bg-stone-700">
+            <X size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* Main Story Slide Container */}
+      <div className="flex-1 overflow-y-auto p-4 max-w-xl mx-auto w-full flex flex-col justify-between space-y-4">
+        {/* Step Instruction Text */}
+        <div className="bg-stone-900 border border-stone-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <div className="text-xs font-mono uppercase tracking-widest text-amber-400">Anweisung</div>
+          <p className="text-lg sm:text-xl font-medium text-stone-100 leading-relaxed font-sans">
+            {currentStepText}
+          </p>
+
+          {/* Timers */}
+          {detectedTimers.length > 0 && (
+            <div className="pt-2 border-t border-stone-800">
+              {detectedTimers.map((t, idx) => (
+                <StepTimer key={idx} durationSeconds={t.seconds} label={t.label} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Step Ingredients List */}
+        {recipe.ingredients && recipe.ingredients.length > 0 && (
+          <div className="bg-stone-900/60 border border-stone-800 rounded-2xl p-4 shadow">
+            <div className="text-xs font-mono uppercase tracking-wider text-stone-400 mb-2 flex items-center gap-1.5">
+              <Utensils size={14} className="text-amber-400" /> Benötigte Zutaten ({recipe.servings * multiplier} Portionen)
+            </div>
+            <ul className="grid grid-cols-2 gap-1.5 text-xs text-stone-200">
+              {recipe.ingredients.map((ing, i) => {
+                const formatted = formatIngredient(ing);
+                const isMentioned = currentStepText.toLowerCase().includes((ing.name || '').toLowerCase());
+                return (
+                  <li
+                    key={i}
+                    className={`p-1.5 rounded-lg border ${
+                      isMentioned ? 'bg-amber-500/20 border-amber-500/40 text-amber-200 font-semibold' : 'bg-stone-950/40 border-stone-800 text-stone-300'
+                    }`}
+                  >
+                    • {formatted}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {/* Navigation Buttons */}
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={prevStep}
+            disabled={stepIdx === 0}
+            className="flex-1 py-3 rounded-xl border border-stone-800 bg-stone-900 text-white font-mono uppercase text-xs font-semibold disabled:opacity-30 active:scale-95 flex items-center justify-center gap-1"
+          >
+            <ChevronLeft size={18} /> Zurück
+          </button>
+          {stepIdx < totalSteps - 1 ? (
+            <button
+              onClick={nextStep}
+              className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-stone-950 font-mono uppercase text-xs font-bold shadow-lg flex items-center justify-center gap-1"
+            >
+              Weiter <ChevronRight size={18} />
+            </button>
+          ) : (
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-mono uppercase text-xs font-bold shadow-lg flex items-center justify-center gap-1"
+            >
+              <Check size={18} /> Fertig!
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
   const { recipes, updateRecipe, deleteRecipe, showToast } = useApp();
   const recipe = recipes.find(r => r.id === initialRecipe.id) || initialRecipe;
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [fullScreen, setFullScreen] = useState(false);
+  const [cookMode, setCookMode] = useState(false);
 
   const [isWakeLocked, setIsWakeLocked] = useState(false);
   const wakeLockRef = useRef(null);
@@ -2225,6 +2434,10 @@ function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
     const formattedAmt = Math.round(scaledAmount * 100) / 100;
     return `${formattedAmt} ${ing.unit || ''} ${ing.name}`.trim();
   };
+
+  if (cookMode) {
+    return <CookModeModal recipe={recipe} multiplier={multiplier} onClose={() => setCookMode(false)} />;
+  }
 
   if (editing) {
     return (
@@ -2361,20 +2574,30 @@ function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
               )}
             </div>
           )}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <StarRating value={recipe.rating} onChange={(v) => updateRecipe(recipe.id, { rating: v })} size={20} />
-            <button
-              onClick={toggleWakeLock}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono border transition-colors ${
-                isWakeLocked
-                  ? 'bg-amber-500 text-white border-amber-500 animate-pulse'
-                  : 'bg-stone-50 text-stone-500 border-stone-200 hover:bg-stone-100 hover:text-stone-700'
-              }`}
-              title={isWakeLocked ? 'Bildschirm-Ruhezustand zulassen' : 'Verhindern, dass der Bildschirm ausgeht'}
-            >
-              <Sun size={12} className={isWakeLocked ? 'animate-spin' : ''} />
-              <span>{isWakeLocked ? 'Wach aktiv' : 'Wach bleiben'}</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCookMode(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-amber-600 hover:bg-amber-700 active:scale-95 text-white shadow transition-all"
+                title="Rezept Schritt für Schritt im Kochmodus zubereiten"
+              >
+                <Sparkles size={13} />
+                <span>Kochmodus</span>
+              </button>
+              <button
+                onClick={toggleWakeLock}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono border transition-colors ${
+                  isWakeLocked
+                    ? 'bg-amber-500 text-white border-amber-500 animate-pulse'
+                    : 'bg-stone-50 text-stone-500 border-stone-200 hover:bg-stone-100 hover:text-stone-700'
+                }`}
+                title={isWakeLocked ? 'Bildschirm-Ruhezustand zulassen' : 'Verhindern, dass der Bildschirm ausgeht'}
+              >
+                <Sun size={12} className={isWakeLocked ? 'animate-spin' : ''} />
+                <span>{isWakeLocked ? 'Wach aktiv' : 'Wach bleiben'}</span>
+              </button>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2 text-xs text-stone-500 font-mono">
             {multiplier !== 1 ? (
@@ -2811,45 +3034,45 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[70] p-4 animate-fade-in">
-      <div className="bg-slate-900 text-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-slate-700 animate-scale-up">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] p-4 animate-fade-in">
+      <div className="bg-white text-stone-800 rounded-xl max-w-sm w-full p-5 shadow-xl space-y-4 border border-stone-200 animate-scale-up">
         {/* Header with tile preview */}
-        <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
-          <div className="w-12 h-12 rounded-xl bg-rose-600 flex items-center justify-center flex-shrink-0 shadow">
-            <ProductPictogram icon={product?.icon || item.icon} category={product?.category || item.category} className="w-7 h-7 text-white stroke-[2]" />
+        <div className="flex items-center gap-3 border-b border-stone-200 pb-3">
+          <div className="w-12 h-12 rounded-xl bg-rose-100 border border-rose-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <ProductPictogram icon={product?.icon || item.icon} category={product?.category || item.category} className="w-7 h-7 text-rose-700 stroke-[2]" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-lg text-white truncate">{item.name}</h3>
-            <p className="text-xs text-slate-400 font-mono uppercase tracking-wider">{product?.category || item.category || 'Produkt'}</p>
+            <h3 className="font-bold text-base text-stone-900 truncate">{item.name}</h3>
+            <p className="text-xs text-stone-400 font-mono uppercase tracking-wider">{product?.category || item.category || 'Produkt'}</p>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+          <button onClick={onClose} className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100">
             <X size={20} />
           </button>
         </div>
 
         {/* Detail Input */}
         <div>
-          <label className="text-xs font-mono uppercase tracking-wide text-slate-400 mb-1 block">Details / Menge / Notiz</label>
+          <label className="text-xs font-mono uppercase tracking-wide text-stone-400 mb-1 block">Details / Menge / Notiz</label>
           <input
             type="text"
             value={detail}
             onChange={e => setDetail(e.target.value)}
             placeholder="z. B. 1kg, Gala, zero, Freitag..."
-            className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+            className="w-full px-3 py-2 rounded-lg bg-stone-50 border border-stone-300 text-stone-900 text-sm focus:outline-none focus:ring-1 focus:ring-stone-900"
             autoFocus
           />
         </div>
 
         {/* Vorgefertigte Details */}
         <div>
-          <label className="text-xs font-mono uppercase tracking-wide text-slate-400 mb-1.5 block">Vorschläge & Mengen</label>
+          <label className="text-xs font-mono uppercase tracking-wide text-stone-400 mb-1.5 block">Vorschläge & Mengen</label>
           <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
             {presetOptions.map((opt, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setDetail(opt)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${detail === opt ? 'bg-rose-600 text-white font-bold ring-2 ring-rose-400' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${detail === opt ? 'bg-stone-900 text-white font-bold' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
               >
                 {opt}
               </button>
@@ -2862,21 +3085,21 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
           <button
             type="button"
             onClick={() => setShowSaveDb(true)}
-            className="w-full py-2 rounded-xl border border-dashed border-slate-700 text-xs font-mono uppercase tracking-wide text-teal-400 hover:bg-slate-800 flex items-center justify-center gap-1.5"
+            className="w-full py-2 rounded-lg border border-dashed border-stone-300 text-xs font-mono uppercase tracking-wide text-rose-700 hover:bg-stone-50 flex items-center justify-center gap-1.5"
           >
             <PlusCircle size={14} /> In Produktdatenbank speichern
           </button>
         )}
 
         {showSaveDb && (
-          <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-3">
-            <div className="text-xs font-semibold text-teal-400 font-mono uppercase tracking-wide">In Datenbank speichern</div>
+          <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-3">
+            <div className="text-xs font-semibold text-rose-800 font-mono uppercase tracking-wide">In Datenbank speichern</div>
             <div>
-              <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">Kategorie</label>
+              <label className="text-[10px] font-mono text-stone-400 uppercase block mb-1">Kategorie</label>
               <select
                 value={customCat}
                 onChange={e => setCustomCat(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 text-stone-800 text-xs"
               >
                 {SHOPPING_CATEGORIES.map(c => (
                   <option key={c} value={c}>{c}</option>
@@ -2884,16 +3107,16 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">Piktogramm</label>
+              <label className="text-[10px] font-mono text-stone-400 uppercase block mb-1">Piktogramm</label>
               <div className="flex gap-2 flex-wrap">
                 {['Apple', 'Carrot', 'Fish', 'Milk', 'Egg', 'Wheat', 'Wine', 'Flame', 'Package', 'Droplets', 'Heart', 'Shield'].map(ic => (
                   <button
                     key={ic}
                     type="button"
                     onClick={() => setCustomIcon(ic)}
-                    className={`p-1.5 rounded-lg border ${customIcon === ic ? 'border-teal-400 bg-teal-600/30' : 'border-slate-700 bg-slate-900 text-slate-400'}`}
+                    className={`p-1.5 rounded-lg border ${customIcon === ic ? 'border-rose-500 bg-rose-50 text-rose-800' : 'border-stone-200 bg-white text-stone-500'}`}
                   >
-                    <ProductPictogram icon={ic} category={customCat} className="w-5 h-5" />
+                    <ProductPictogram icon={ic} category={customCat} className="w-5 h-5 text-current" />
                   </button>
                 ))}
               </div>
@@ -2905,20 +3128,20 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
         <div className="space-y-2 pt-2">
           <button
             onClick={showSaveDb ? handleSaveDbSubmit : handleSave}
-            className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-[0.99] text-white font-mono uppercase text-xs font-bold shadow-lg transition-all"
+            className="w-full py-2.5 rounded-lg bg-stone-900 hover:bg-stone-800 active:scale-[0.99] text-white font-mono uppercase text-xs font-bold shadow transition-all"
           >
             Details speichern
           </button>
           <div className="flex gap-2">
             <button
               onClick={() => { onRemoveItem(item.id); onClose(); }}
-              className="flex-1 py-2 rounded-xl bg-slate-800 text-rose-400 hover:bg-slate-700 text-xs font-mono uppercase font-semibold flex items-center justify-center gap-1"
+              className="flex-1 py-2 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-mono uppercase font-semibold flex items-center justify-center gap-1"
             >
               <Trash2 size={13} /> Löschen
             </button>
             <button
               onClick={onClose}
-              className="flex-1 py-2 rounded-xl bg-slate-800 text-slate-400 hover:bg-slate-700 text-xs font-mono uppercase font-semibold"
+              className="flex-1 py-2 rounded-lg border border-stone-300 text-stone-700 hover:bg-stone-50 text-xs font-mono uppercase font-semibold"
             >
               Abbrechen
             </button>
@@ -2932,25 +3155,25 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
 /* ---------------------------------- Weekly Import Confirmation Modal ---------------------------------- */
 function WeeklyConfirmModal({ onConfirm, onClose }) {
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[70] p-4 animate-fade-in">
-      <div className="bg-slate-900 text-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-slate-700 animate-scale-up">
-        <div className="flex items-center gap-3 text-amber-400">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] p-4 animate-fade-in">
+      <div className="bg-white text-stone-800 rounded-xl max-w-sm w-full p-5 shadow-xl space-y-4 border border-stone-200 animate-scale-up">
+        <div className="flex items-center gap-3 text-amber-600">
           <AlertTriangle size={24} />
-          <h3 className="font-bold text-base text-white">Wochenzutaten bereits hinzugefügt</h3>
+          <h3 className="font-bold text-base text-stone-900">Wochenzutaten bereits hinzugefügt</h3>
         </div>
-        <p className="text-xs text-slate-300 leading-relaxed">
+        <p className="text-xs text-stone-600 leading-relaxed">
           Die Zutaten der nächsten 7 Tage wurden für diese Woche bereits auf die Einkaufsliste gesetzt. Möchtest du die Zutaten wirklich erneut hinzufügen?
         </p>
         <div className="flex gap-2 pt-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-mono uppercase font-semibold"
+            className="flex-1 py-2.5 rounded-lg border border-stone-300 text-stone-700 text-xs font-mono uppercase font-semibold hover:bg-stone-50"
           >
             Abbrechen
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-mono uppercase font-bold shadow-lg"
+            className="flex-1 py-2.5 rounded-lg bg-stone-900 text-white text-xs font-mono uppercase font-bold shadow"
           >
             Erneut hinzufügen
           </button>
@@ -2960,7 +3183,7 @@ function WeeklyConfirmModal({ onConfirm, onClose }) {
   );
 }
 
-/* ---------------------------------- Bring! Tile Component ---------------------------------- */
+/* ---------------------------------- Bring! Tile Component (Corporate Design) ---------------------------------- */
 function ShoppingTile({ item, product, isActive, onShortClick, onLongPress }) {
   const timerRef = useRef(null);
   const isLongPressRef = useRef(false);
@@ -2995,17 +3218,17 @@ function ShoppingTile({ item, product, isActive, onShortClick, onLongPress }) {
       onTouchStart={startPress}
       onTouchEnd={endPress}
       onTouchCancel={cancelPress}
-      className={`rounded-2xl p-2.5 min-h-[105px] flex flex-col items-center justify-between cursor-pointer select-none transition-all duration-200 relative shadow-md group ${
+      className={`rounded-xl p-2.5 min-h-[100px] flex flex-col items-center justify-between cursor-pointer select-none transition-all duration-200 relative shadow-sm group ${
         isActive
-          ? 'bg-rose-600 hover:bg-rose-500 active:scale-95 text-white border border-rose-500/40'
-          : 'bg-[#267368] hover:bg-[#206158] active:scale-95 text-white border border-teal-500/30'
+          ? 'bg-rose-50 hover:bg-rose-100/80 active:scale-95 text-rose-950 border border-rose-200'
+          : 'bg-stone-50 hover:bg-stone-100 active:scale-95 text-stone-800 border border-stone-200'
       }`}
     >
       {/* Top right edit indicator */}
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onLongPress(item); }}
-        className="absolute top-1.5 right-1.5 p-1 rounded-full text-white/40 hover:text-white hover:bg-black/20 transition-all opacity-80 sm:opacity-0 group-hover:opacity-100"
+        className="absolute top-1.5 right-1.5 p-1 rounded-full text-stone-400 hover:text-stone-800 hover:bg-stone-200/50 transition-all opacity-80 sm:opacity-0 group-hover:opacity-100"
         title="Details bearbeiten"
       >
         <MoreVertical size={14} />
@@ -3013,16 +3236,22 @@ function ShoppingTile({ item, product, isActive, onShortClick, onLongPress }) {
 
       {/* Pictogram */}
       <div className="my-auto pt-1">
-        <ProductPictogram icon={iconName} category={categoryName} className="w-8 h-8 text-white stroke-[1.75] drop-shadow-sm" />
+        <ProductPictogram
+          icon={iconName}
+          category={categoryName}
+          className={`w-8 h-8 stroke-[1.75] ${isActive ? 'text-rose-600' : 'text-stone-600'}`}
+        />
       </div>
 
       {/* Product Name & Detail */}
       <div className="w-full text-center space-y-0.5 mt-1">
-        <div className="text-xs sm:text-sm font-bold text-white leading-tight truncate px-1">
+        <div className={`text-xs sm:text-sm font-bold leading-tight truncate px-1 ${isActive ? 'text-rose-950' : 'text-stone-800'}`}>
           {item.name}
         </div>
         {item.detail ? (
-          <div className="text-[10px] sm:text-xs font-semibold text-white/90 bg-black/25 px-1.5 py-0.5 rounded-full inline-block truncate max-w-full">
+          <div className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full inline-block truncate max-w-full ${
+            isActive ? 'bg-rose-200/80 text-rose-900' : 'bg-stone-200/70 text-stone-600'
+          }`}>
             {item.detail}
           </div>
         ) : (
@@ -3033,7 +3262,7 @@ function ShoppingTile({ item, product, isActive, onShortClick, onLongPress }) {
   );
 }
 
-/* ---------------------------------- Main Bring! Shopping Tab ---------------------------------- */
+/* ---------------------------------- Main Bring! Shopping Tab (Corporate Design) ---------------------------------- */
 function ShoppingTab() {
   const { recipes, showToast } = useApp();
   const [items, setItems] = useState([]);
@@ -3296,11 +3525,11 @@ function ShoppingTab() {
   return (
     <div className="space-y-4 pb-12 select-none">
       {/* Container header & actions */}
-      <div className="bg-slate-900 rounded-2xl p-4 shadow-xl border border-slate-800 text-white space-y-3">
+      <div className={cardCls + " space-y-3"}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ShoppingCart className="text-rose-500 stroke-[2.25]" size={22} />
-            <h2 className="font-bold text-lg tracking-tight text-white font-sans">Einkaufsliste</h2>
+            <ShoppingCart className="text-stone-900 stroke-[2.25]" size={20} />
+            <h2 className="font-bold text-base tracking-tight text-stone-900 font-mono uppercase">Einkaufsliste</h2>
           </div>
 
           <div className="flex items-center gap-2">
@@ -3309,7 +3538,7 @@ function ShoppingTab() {
               <select
                 value={sortMode}
                 onChange={e => setSortMode(e.target.value)}
-                className="bg-slate-800 text-slate-200 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-rose-500 cursor-pointer"
+                className="bg-stone-50 text-stone-700 border border-stone-300 rounded-lg px-2.5 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-stone-900 cursor-pointer"
               >
                 <option value="logical">⇅ Supermarkt</option>
                 <option value="alphabetical">A-Z Name</option>
@@ -3320,7 +3549,7 @@ function ShoppingTab() {
             {/* Wochenzutaten Button */}
             <button
               onClick={handleWeeklyImportClick}
-              className="bg-rose-600 hover:bg-rose-500 active:scale-95 text-white px-3 py-1.5 rounded-xl text-xs font-mono uppercase font-bold flex items-center gap-1.5 shadow transition-all"
+              className="bg-stone-900 hover:bg-stone-800 active:scale-95 text-white px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold flex items-center gap-1.5 shadow-sm transition-all"
               title="Alle Zutaten der nächsten 7 Tage hinzufügen"
             >
               <Plus size={14} /> Wochen-Zutaten
@@ -3331,16 +3560,16 @@ function ShoppingTab() {
         {/* Search Bar with Autocomplete */}
         <div className="relative">
           <div className="relative flex items-center">
-            <Search className="absolute left-3.5 text-slate-400" size={18} />
+            <Search className="absolute left-3.5 text-stone-400" size={16} />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Was brauchst du? (z.B. Hackfleisch, Haferflocken...)"
-              className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all shadow-inner"
+              className={inputCls + " pl-10 pr-10 py-2.5"}
             />
             {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 text-slate-400 hover:text-white">
+              <button onClick={() => setSearch('')} className="absolute right-3 text-stone-400 hover:text-stone-700">
                 <X size={16} />
               </button>
             )}
@@ -3348,28 +3577,28 @@ function ShoppingTab() {
 
           {/* Instant Autocomplete Suggestions */}
           {search.trim() && (
-            <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto divide-y divide-slate-800 animate-fade-in">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-stone-200 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto divide-y divide-stone-100 animate-fade-in">
               {suggestions.map(p => (
                 <button
                   key={p.id}
                   onClick={() => handleActivateProduct(p)}
-                  className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-slate-800 transition-colors"
+                  className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <ProductPictogram icon={p.icon} category={p.category} className="w-5 h-5 text-rose-400" />
+                    <ProductPictogram icon={p.icon} category={p.category} className="w-5 h-5 text-rose-600" />
                     <div>
-                      <span className="text-sm font-semibold text-white">{p.name}</span>
-                      <span className="text-xs text-slate-400 block font-mono">{p.category}</span>
+                      <span className="text-sm font-semibold text-stone-800">{p.name}</span>
+                      <span className="text-xs text-stone-400 block font-mono">{p.category}</span>
                     </div>
                   </div>
-                  <Plus size={16} className="text-rose-500" />
+                  <Plus size={16} className="text-stone-600" />
                 </button>
               ))}
 
               {/* Add custom item if no exact match */}
               <button
                 onClick={() => handleActivateProduct(search.trim())}
-                className="w-full px-4 py-3 flex items-center gap-2 text-rose-400 hover:bg-slate-800 font-mono text-xs font-semibold"
+                className="w-full px-4 py-3 flex items-center gap-2 text-rose-700 hover:bg-stone-50 font-mono text-xs font-semibold"
               >
                 <PlusCircle size={16} /> "{search.trim()}" als eigenes Produkt hinzufügen
               </button>
@@ -3379,13 +3608,13 @@ function ShoppingTab() {
       </div>
 
       {/* Active Items (Rot/Coral Tiles Grid) */}
-      <div className="bg-slate-900 rounded-2xl p-4 shadow-xl border border-slate-800 text-white space-y-3">
+      <div className={cardCls + " space-y-3"}>
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-sm text-slate-200 uppercase font-mono tracking-wider flex items-center gap-2">
+          <h3 className="font-bold text-xs text-stone-700 uppercase font-mono tracking-wider flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
             Einkaufsliste ({activeItems.length})
           </h3>
-          <span className="text-[10px] text-slate-400 font-mono">Tippen = Abhaken · Halten = Details</span>
+          <span className="text-[10px] text-stone-400 font-mono">Tippen = Abhaken · Halten = Details</span>
         </div>
 
         {activeItems.length > 0 ? (
@@ -3402,27 +3631,27 @@ function ShoppingTab() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-slate-400 border border-dashed border-slate-800 rounded-xl bg-slate-950/40">
-            <ShoppingCart size={32} className="mx-auto mb-2 text-slate-600" />
-            <p className="text-sm font-medium text-slate-300">Deine Einkaufsliste ist leer!</p>
-            <p className="text-xs text-slate-500 mt-1">Suche oben nach Produkten oder tippe auf Produkte unten im Katalog.</p>
+          <div className="text-center py-8 text-stone-400 border border-dashed border-stone-200 rounded-xl bg-stone-50/50">
+            <ShoppingCart size={28} className="mx-auto mb-2 text-stone-300" />
+            <p className="text-sm font-medium text-stone-600">Deine Einkaufsliste ist leer!</p>
+            <p className="text-xs text-stone-400 mt-1">Suche oben nach Produkten oder tippe auf Produkte unten im Katalog.</p>
           </div>
         )}
       </div>
 
       {/* Catalog & Zuletzt verwendet Container */}
-      <div className="bg-slate-900 rounded-2xl p-4 shadow-xl border border-slate-800 text-white space-y-5">
+      <div className={cardCls + " space-y-5"}>
         {/* Section 1: Zuletzt verwendet (ALWAYS AT THE VERY TOP ABOVE OTHER CATEGORIES) */}
         {recentItems.length > 0 && (
-          <div className="space-y-2 border-b border-slate-800 pb-4">
+          <div className="space-y-2 border-b border-stone-100 pb-4">
             <button
               onClick={() => toggleCategoryCollapse('zuletzt_verwendet')}
               className="w-full flex items-center justify-between text-left group"
             >
-              <h3 className="font-bold text-sm text-teal-400 uppercase font-mono tracking-wider flex items-center gap-2">
-                <RotateCcw size={16} /> Zuletzt verwendet ({recentItems.length})
+              <h3 className="font-bold text-xs text-stone-700 uppercase font-mono tracking-wider flex items-center gap-2">
+                <RotateCcw size={15} className="text-stone-500" /> Zuletzt verwendet ({recentItems.length})
               </h3>
-              {collapsedCategories['zuletzt_verwendet'] ? <ChevronRight size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+              {collapsedCategories['zuletzt_verwendet'] ? <ChevronRight size={16} className="text-stone-400" /> : <ChevronDown size={16} className="text-stone-400" />}
             </button>
 
             {!collapsedCategories['zuletzt_verwendet'] && (
@@ -3444,7 +3673,7 @@ function ShoppingTab() {
 
         {/* Section 2: Catalog Categories (Alphabetically Sorted) */}
         <div className="space-y-4">
-          <div className="text-xs text-slate-400 font-mono uppercase tracking-widest">Produktdatenbank Katalog</div>
+          <div className="text-[10px] text-stone-400 font-mono uppercase tracking-widest">Produktdatenbank Katalog</div>
 
           {sortedCatalogCategories.map(cat => {
             const catProducts = categoryCatalogMap[cat] || [];
@@ -3452,16 +3681,16 @@ function ShoppingTab() {
             const isCollapsed = !!collapsedCategories[cat];
 
             return (
-              <div key={cat} className="space-y-2 border-b border-slate-800/80 last:border-0 pb-3">
+              <div key={cat} className="space-y-2 border-b border-stone-100 last:border-0 pb-3">
                 <button
                   onClick={() => toggleCategoryCollapse(cat)}
-                  className="w-full flex items-center justify-between text-left py-1 hover:text-rose-400 transition-colors"
+                  className="w-full flex items-center justify-between text-left py-1 hover:text-stone-900 transition-colors"
                 >
-                  <h4 className="font-semibold text-xs sm:text-sm text-slate-200 font-sans tracking-wide flex items-center gap-2">
-                    <ProductPictogram icon={''} category={cat} className="w-4 h-4 text-rose-500" />
-                    {cat} <span className="text-slate-500 font-mono text-xs">({catProducts.length})</span>
+                  <h4 className="font-semibold text-xs sm:text-sm text-stone-800 font-sans tracking-wide flex items-center gap-2">
+                    <ProductPictogram icon={''} category={cat} className="w-4 h-4 text-stone-600" />
+                    {cat} <span className="text-stone-400 font-mono text-xs">({catProducts.length})</span>
                   </h4>
-                  {isCollapsed ? <ChevronRight size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
+                  {isCollapsed ? <ChevronRight size={16} className="text-stone-400" /> : <ChevronDown size={16} className="text-stone-400" />}
                 </button>
 
                 {!isCollapsed && (
@@ -3997,12 +4226,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.7.0</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.7.1</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Hefezopf 🍞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.0 (Hefezopf)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.1 (Hefezopf)
         </div>
       </div>
     </div>
