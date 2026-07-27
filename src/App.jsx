@@ -8,6 +8,13 @@ import {
   Shield, Tag, ArrowUpDown, ChevronDown, ChevronUp, MoreVertical, PlusCircle,
   CheckCircle2, Clock, Grid, ListFilter, RotateCcw, HelpCircle, Layers,
 } from 'lucide-react';
+import {
+  SHOPPING_CATEGORIES,
+  SUPERMARKET_ORDER,
+  DEFAULT_PRESET_DETAILS,
+  BUILTIN_PRODUCTS,
+  ProductPictogram,
+} from './productDatabase';
 
 /* ---------------------------------- Design tokens ---------------------------------- */
 const inputCls = "w-full px-3 py-2 rounded-lg border border-stone-300 text-sm focus:outline-none focus:ring-1 focus:ring-stone-900 bg-white";
@@ -2785,174 +2792,10 @@ function RecipesTab() {
 
 /* ---------------------------------- Bring! Shopping Database & Components ---------------------------------- */
 
-const SHOPPING_CATEGORIES = [
-  'Saisonales',
-  'Obst',
-  'Gemüse',
-  'Brot & Gebäck',
-  'Milchprodukte',
-  'Käse',
-  'Fleisch',
-  'Fisch',
-  'Grundzutaten',
-  'Gewürze',
-  'Fertig & Tiefkühlprodukte',
-  'Getreideprodukte',
-  'Süssigkeiten',
-  'Getränke',
-  'Haushalt',
-  'Pflege & Gesundheit',
-];
-
-const SUPERMARKET_ORDER = [
-  'Obst', 'Gemüse', 'Saisonales',
-  'Fleisch', 'Fisch',
-  'Brot & Gebäck',
-  'Milchprodukte', 'Käse',
-  'Grundzutaten', 'Gewürze', 'Getreideprodukte', 'Süssigkeiten', 'Haushalt', 'Pflege & Gesundheit',
-  'Fertig & Tiefkühlprodukte',
-  'Getränke',
-];
-
-const DEFAULT_PRESET_DETAILS = ['1', '2', '3', '4', '500g', '1kg', 'Freitag'];
-
-const BUILTIN_PRODUCTS = [
-  // Saisonales & Obst
-  { id: 'apfel', name: 'Äpfel', category: 'Obst', icon: 'Apple', seasonalMonths: [8, 9, 10, 11], suggestedDetails: ['Gala', 'Elstar', 'Braeburn', 'Granny Smith', '1kg', '500g', '1 Stk', '2 Stk'] },
-  { id: 'banane', name: 'Bananen', category: 'Obst', icon: 'Apple', suggestedDetails: ['Chiquita', 'Bio', '1 Büschel', '500g', '1kg', '3 Stk'] },
-  { id: 'erdbeeren', name: 'Erdbeeren', category: 'Obst', icon: 'Apple', seasonalMonths: [5, 6, 7], suggestedDetails: ['500g Schale', '250g', 'Bio', '1kg'] },
-  { id: 'beeren', name: 'Himbeeren', category: 'Obst', icon: 'Apple', seasonalMonths: [6, 7, 8], suggestedDetails: ['125g', '250g', 'Frisch'] },
-  { id: 'heidelbeeren', name: 'Heidelbeeren', category: 'Obst', icon: 'Apple', seasonalMonths: [6, 7, 8, 9], suggestedDetails: ['125g', '250g', 'Bio'] },
-  { id: 'zitronen', name: 'Zitronen', category: 'Obst', icon: 'Apple', suggestedDetails: ['Bio (unbehandelt)', ' Netz 500g', '2 Stk'] },
-  { id: 'limette', name: 'Limetten', category: 'Obst', icon: 'Apple', suggestedDetails: ['Unbehandelt', '3er Pack', '1 Stk'] },
-  { id: 'trauben', name: 'Weintrauben', category: 'Obst', icon: 'Apple', seasonalMonths: [8, 9, 10], suggestedDetails: ['Kernlos', 'Helle Trauben', 'Dunkle Trauben', '500g'] },
-  { id: 'birne', name: 'Birnen', category: 'Obst', icon: 'Apple', seasonalMonths: [8, 9, 10, 11], suggestedDetails: ['Abate Fetel', 'Williams', '1kg'] },
-  { id: 'orangen', name: 'Orangen', category: 'Obst', icon: 'Apple', seasonalMonths: [11, 12, 1, 2, 3], suggestedDetails: ['Saftorangen', '1.5kg Netz', 'Bio'] },
-  { id: 'kiwi', name: 'Kiwis', category: 'Obst', icon: 'Apple', suggestedDetails: ['Grün', 'Gold', '4 Stk'] },
-  { id: 'wassermelone', name: 'Wassermelone', category: 'Obst', icon: 'Apple', seasonalMonths: [6, 7, 8], suggestedDetails: ['1/2 Melone', '1/4 Melone', 'Ganz'] },
-  { id: 'pfirsich', name: 'Pfirsiche', category: 'Obst', icon: 'Apple', seasonalMonths: [6, 7, 8, 9], suggestedDetails: ['Plattpfirsiche', '1kg', '500g'] },
-
-  // Gemüse
-  { id: 'tomaten', name: 'Tomaten', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [6, 7, 8, 9], suggestedDetails: ['Strauchtomaten', 'Rispen', 'Cocktail', 'Roma', '500g'] },
-  { id: 'gurke', name: 'Gurke', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [6, 7, 8, 9], suggestedDetails: ['Salatgurke', 'Mini-Gurken', '1 Stk', '2 Stk'] },
-  { id: 'zucchini', name: 'Zucchini', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [6, 7, 8, 9], suggestedDetails: ['Grün', 'Gelb', '500g', '2 Stk'] },
-  { id: 'karotten', name: 'Karotten', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [7, 8, 9, 10, 11, 12, 1, 2], suggestedDetails: ['1kg Beutel', 'Bund', '500g', 'Bio'] },
-  { id: 'paprika', name: 'Paprika', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [7, 8, 9, 10], suggestedDetails: ['Rot', 'Gelb', 'Grün', '3er Mix', '500g'] },
-  { id: 'zwiebeln', name: 'Zwiebeln', category: 'Gemüse', icon: 'Carrot', suggestedDetails: ['Gelb', 'Rot', 'Schalotten', '1kg Netz', '500g'] },
-  { id: 'knoblauch', name: 'Knoblauch', category: 'Gemüse', icon: 'Carrot', suggestedDetails: ['1 Knolle', '3er Pack', 'Zehen'] },
-  { id: 'kartoffeln', name: 'Kartoffeln', category: 'Gemüse', icon: 'Carrot', suggestedDetails: ['Festkochend', 'Mehligkochend', 'Vorwiegend fest', '2.5kg', '1kg'] },
-  { id: 'brokkoli', name: 'Brokkoli', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [6, 7, 8, 9, 10], suggestedDetails: ['500g Kopf', '1 Stk'] },
-  { id: 'blumenkohl', name: 'Blumenkohl', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [6, 7, 8, 9, 10], suggestedDetails: ['1 Kopf', 'Frisch'] },
-  { id: 'spinat', name: 'Spinat', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [4, 5, 9, 10], suggestedDetails: ['Blattspinat', 'Rahmspinat', 'Baby-Spinat', '500g'] },
-  { id: 'salat', name: 'Salat', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [5, 6, 7, 8, 9], suggestedDetails: ['Eisbergsalat', 'Kopfsalat', 'Rucola', 'Feldsalat'] },
-  { id: 'champignons', name: 'Champignons', category: 'Gemüse', icon: 'Carrot', suggestedDetails: ['Weiß', 'Braune Champignons', '400g', '250g'] },
-  { id: 'kurbis', name: 'Kürbis', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [9, 10, 11], suggestedDetails: ['Hokkaido', 'Butternut', '1 Stk'] },
-
-  // Brot & Gebäck
-  { id: 'brot', name: 'Brot', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['Vollkorn', 'Graubrot', 'Mischbrot', 'Toastbrot', 'Baguette', '1 Laib'] },
-  { id: 'brotchen', name: 'Brötchen', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['Weizen', 'Kaiser', 'Vollkorn', 'Mehrkorn', '4 Stk', '6 Stk'] },
-  { id: 'toast', name: 'Toast', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['Buttertoast', 'Vollkorntoast', '500g', '750g'] },
-  { id: 'baguette', name: 'Baguette', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['Frisch', 'Zum Aufbacken', '2 Stk'] },
-  { id: 'croissant', name: 'Croissant', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['Buttercroissant', 'Schoko', '2 Stk'] },
-  { id: 'brezel', name: 'Laugenbrezel', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['2 Stk', 'Mit Salz'] },
-
-  // Milchprodukte
-  { id: 'milch', name: 'Milch', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Vollmilch 3.5%', 'Fettarm 1.5%', 'Haferdrink', 'Laktosefrei', '1l', '2l'] },
-  { id: 'schlagsahne', name: 'Schlagsahne', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['200g Becher', '30% Fett', '2er Pack'] },
-  { id: 'quark', name: 'Quark', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Magerquark', '40% Fett', '500g Becher', '250g'] },
-  { id: 'joghurt', name: 'Joghurt', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Natur 3.5%', 'Griechischer Joghurt', 'Magerjoghurt', '500g', '1kg'] },
-  { id: 'butter', name: 'Butter', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Süßrahm', 'Sauerrahm', '250g Packung', 'Bio'] },
-  { id: 'frischkase', name: 'Frischkäse', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Natur', 'Kräuter', 'Bresso', '200g'] },
-  { id: 'saure_sahne', name: 'Saure Sahne', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['10% Fett', '200g Becher', 'Schmand'] },
-  { id: 'creme_fraiche', name: 'Crème Fraîche', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Classic 150g', 'Kräuter'] },
-
-  // Käse
-  { id: 'gouda', name: 'Gouda', category: 'Käse', icon: 'Layers', suggestedDetails: ['Jung', 'Mittelalt', 'Alt', 'Scheiben', '200g Stück'] },
-  { id: 'mozzarella', name: 'Mozzarella', category: 'Käse', icon: 'Layers', suggestedDetails: ['Kugel 125g', 'Büffelmozzarella', 'Gerieben', '2er Pack'] },
-  { id: 'parmesan', name: 'Parmesan', category: 'Käse', icon: 'Layers', suggestedDetails: ['Grana Padano', 'Parmigiano Reggiano', 'Stück', 'Gerieben 100g'] },
-  { id: 'feta', name: 'Feta', category: 'Käse', icon: 'Layers', suggestedDetails: ['Schafskäse', 'Hirtenkäse', '200g Packung'] },
-  { id: 'halloumi', name: 'Halloumi', category: 'Käse', icon: 'Layers', suggestedDetails: ['Grillkäse', 'Kräuter', '200g'] },
-  { id: 'emmentaler', name: 'Emmentaler', category: 'Käse', icon: 'Layers', suggestedDetails: ['Scheiben', '200g Stück'] },
-  { id: 'cheddar', name: 'Cheddar', category: 'Käse', icon: 'Layers', suggestedDetails: ['Herzhaft', 'Scheiben', 'Gerieben'] },
-  { id: 'camembert', name: 'Camembert', category: 'Käse', icon: 'Layers', suggestedDetails: ['Frz. Weichkäse', '250g'] },
-
-  // Fleisch
-  { id: 'hackfleisch', name: 'Hackfleisch', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['Gemischt', 'Rind', 'Schwein', 'Pute', '500g', '1kg'] },
-  { id: 'hahnchenbrust', name: 'Hähnchenbrust', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['500g', '1kg', 'Filet', 'Bio'] },
-  { id: 'rinderhack', name: 'Rinderhackfleisch', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['Magermilch', '500g', '1kg', 'Bio'] },
-  { id: 'steak', name: 'Steak', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['Rumpsteak', 'Entrecôte', 'Filet', '2 Stk'] },
-  { id: 'speck', name: 'Speck', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['Würfel 2x75g', 'Streifen', 'Bacon'] },
-  { id: 'bratwurst', name: 'Bratwurst', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['Nürnberger (14er)', 'Große Bratwurst', 'Grillwurst'] },
-  { id: 'putenbrust', name: 'Putenbrust', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['500g', 'Aufschnitt'] },
-
-  // Fisch
-  { id: 'lachs', name: 'Lachs', category: 'Fisch', icon: 'Fish', suggestedDetails: ['Frisch 200g', 'TK-Filet 400g', 'Räucherlachs 100g'] },
-  { id: 'thunfisch', name: 'Thunfisch', category: 'Fisch', icon: 'Fish', suggestedDetails: ['In Eigensaft', 'In Öl', '1 Dose', '3er Pack'] },
-  { id: 'garnelen', name: 'Garnelen', category: 'Fisch', icon: 'Fish', suggestedDetails: ['King Prawns', 'TK 250g', 'Knoblauch', 'Bio'] },
-  { id: 'fischstabchen', name: 'Fischstäbchen', category: 'Fisch', icon: 'Fish', suggestedDetails: ['15er Pack', 'Kabeljau', 'Vollkorn'] },
-
-  // Grundzutaten
-  { id: 'eier', name: 'Eier', category: 'Grundzutaten', icon: 'Egg', suggestedDetails: ['6er Pack', '10er Pack', 'Freiland M', 'Bio L'] },
-  { id: 'mehl', name: 'Mehl', category: 'Grundzutaten', icon: 'Wheat', suggestedDetails: ['Weizen 405', 'Weizen 550', 'Dinkel 630', 'Vollkorn', '1kg'] },
-  { id: 'zucker', name: 'Zucker', category: 'Grundzutaten', icon: 'Egg', suggestedDetails: ['Raffinade 1kg', 'Rohrzucker', 'Puderzucker', 'Vanillezucker'] },
-  { id: 'salz', name: 'Salz', category: 'Grundzutaten', icon: 'Egg', suggestedDetails: ['Feinsalz', 'Meersalz', 'Jodsalz', '500g'] },
-  { id: 'olivenol', name: 'Olivenöl', category: 'Grundzutaten', icon: 'Droplets', suggestedDetails: ['Natives ÖL Extra', '750ml', '1l', 'Bio'] },
-  { id: 'rapsol', name: 'Rapsöl', category: 'Grundzutaten', icon: 'Droplets', suggestedDetails: ['1l Flasche', 'Zum Braten'] },
-  { id: 'bruhe', name: 'Brühe', category: 'Grundzutaten', icon: 'Egg', suggestedDetails: ['Gemüsebrühe', 'Hühnerbrühe', 'Rinderbrühe', 'Fischfond', '1 Glas', 'Würfel'] },
-  { id: 'passierte_tomaten', name: 'Passierte Tomaten', category: 'Grundzutaten', icon: 'Package', suggestedDetails: ['500g Tetrapack', 'Dose 400g', 'Passata'] },
-  { id: 'tomatenmark', name: 'Tomatenmark', category: 'Grundzutaten', icon: 'Package', suggestedDetails: ['200g Tube', 'Dreifach konzentriert'] },
-
-  // Gewürze
-  { id: 'pfeffer', name: 'Pfeffer', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['Schwarz gemahlen', 'Mühle', 'Bunt'] },
-  { id: 'paprikapulver', name: 'Paprikapulver', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['Edelsüß', 'Scharf', 'Geräuchert'] },
-  { id: 'basilikum', name: 'Basilikum', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['Frisch Topf', 'Gerebelt', 'TK'] },
-  { id: 'oregano', name: 'Oregano', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['Gerebelt', 'Dose'] },
-  { id: 'zimt', name: 'Zimt', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['Gemahlen', 'Stangen', 'Ceylon'] },
-  { id: 'curry', name: 'Currypulver', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['MILD', 'Scharf', 'Gelb'] },
-
-  // Getreideprodukte
-  { id: 'nudeln', name: 'Nudeln', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['Spaghetti', 'Penne', 'Fusilli', 'Rigatoni', '500g'] },
-  { id: 'reis', name: 'Reis', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['Basmati', 'Jasmine', 'Milchreis', 'Risotto', '1kg'] },
-  { id: 'haferflocken', name: 'Haferflocken', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['Zart', 'Kernig', '500g Beutel', 'Bio'] },
-  { id: 'couscous', name: 'Couscous', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['500g', 'Vollkorn'] },
-
-  // Fertig & Tiefkühlprodukte
-  { id: 'pizza', name: 'TK-Pizza', category: 'Fertig & Tiefkühlprodukte', icon: 'Package', suggestedDetails: ['Salami', 'Margherita', 'Speciale', '2er Pack'] },
-  { id: 'pommes', name: 'Pommes', category: 'Fertig & Tiefkühlprodukte', icon: 'Package', suggestedDetails: ['Backofen 1kg', 'Steakhouse', 'Süßkartoffel'] },
-  { id: 'tk_gemuse', name: 'TK-Gemüse', category: 'Fertig & Tiefkühlprodukte', icon: 'Package', suggestedDetails: ['Kaisergemüse', 'Erbsen', 'Rahmgemüse', '450g'] },
-
-  // Süssigkeiten
-  { id: 'schokolade', name: 'Schokolade', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Vollmilch', 'Zartbitter 70%', 'Nuss', '100g Tafel'] },
-  { id: 'gummibarchen', name: 'Gummibärchen', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Goldbären 200g', 'Sauer', 'Fruchtgummi'] },
-  { id: 'chips', name: 'Chips', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Paprika 150g', 'Gesalzen', 'Sour Cream'] },
-  { id: 'kekse', name: 'Kekse', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Butterkekse', 'Doppelkeks', 'Haferkekse'] },
-
-  // Getränke
-  { id: 'wasser', name: 'Wasser', category: 'Getränke', icon: 'Wine', suggestedDetails: ['Sprudel', 'Medium', 'Still', '6er Kiste', '6x1.5l'] },
-  { id: 'apfelsaft', name: 'Apfelsaft', category: 'Getränke', icon: 'Wine', suggestedDetails: ['Naturtrüb 1l', 'Klar', 'Direktsaft'] },
-  { id: 'orangensaft', name: 'Orangensaft', category: 'Getränke', icon: 'Wine', suggestedDetails: ['100% Direktsaft', 'Mit Fruchtfleisch', '1l'] },
-  { id: 'cola', name: 'Cola', category: 'Getränke', icon: 'Wine', suggestedDetails: ['zero', 'light', 'normal', 'original', '1.5l', 'Dose 0.33l', '6er Pack'] },
-  { id: 'bier', name: 'Bier', category: 'Getränke', icon: 'Wine', suggestedDetails: ['Pils', 'Weizen', 'Helles', 'Alkoholfrei', 'Kiste', '6er Pack'] },
-  { id: 'wein', name: 'Wein', category: 'Getränke', icon: 'Wine', suggestedDetails: ['Weißwein', 'Rotwein', 'Rosé', 'Prosecco', '0.75l Flasche'] },
-  { id: 'kaffee', name: 'Kaffee', category: 'Getränke', icon: 'Coffee', suggestedDetails: ['Ganze Bohnen 1kg', 'Gemahlen 500g', 'Espresso', 'Pad'] },
-  { id: 'tee', name: 'Tee', category: 'Getränke', icon: 'Coffee', suggestedDetails: ['Pfefferminze', 'Kamille', 'Früchte', 'Schwarztee', '20 Beutel'] },
-
-  // Haushalt
-  { id: 'klopapier', name: 'Klopapier', category: 'Haushalt', icon: 'Shield', suggestedDetails: ['3-lagig', '4-lagig', '8er Pack', '10er Pack'] },
-  { id: 'kuchenrolle', name: 'Küchenrolle', category: 'Haushalt', icon: 'Shield', suggestedDetails: ['4er Pack', '3-lagig'] },
-  { id: 'spulmittel', name: 'Spülmittel', category: 'Haushalt', icon: 'Droplets', suggestedDetails: ['Original', 'Zitrone', '500ml Flasche'] },
-  { id: 'mullbeutel', name: 'Müllbeutel', category: 'Haushalt', icon: 'Shield', suggestedDetails: ['35l mit Zugband', '60l', 'Bio-Beutel'] },
-
-  // Pflege & Gesundheit
-  { id: 'duschgel', name: 'Duschgel', category: 'Pflege & Gesundheit', icon: 'Heart', suggestedDetails: ['Sensitive', 'Sport', 'Fruchtig', '250ml'] },
-  { id: 'shampoo', name: 'Shampoo', category: 'Pflege & Gesundheit', icon: 'Heart', suggestedDetails: ['Normales Haar', 'Anti-Schuppen', 'Volume', '250ml'] },
-  { id: 'zahnpasta', name: 'Zahnpasta', category: 'Pflege & Gesundheit', icon: 'Heart', suggestedDetails: ['Complete', 'Sensitiv', 'Frei von Fluorid', '75ml'] },
-  { id: 'taschentuch', name: 'Taschentücher', category: 'Pflege & Gesundheit', icon: 'Heart', suggestedDetails: ['10er Pack', 'Box 100 Stk'] },
-];
-
 function triggerShoppingThrottledNotification(actionText) {
   try {
     const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
     const currentHourKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}`;
     const lastNotifiedHour = localStorage.getItem('tischplan_shopping_notified_hour');
 
@@ -2976,34 +2819,6 @@ function triggerShoppingThrottledNotification(actionText) {
   } catch (e) {
     console.error('Notification error', e);
   }
-}
-
-function ProductPictogram({ icon, category, className = "w-7 h-7 text-white stroke-[1.75]" }) {
-  const iconMap = {
-    Apple, Carrot, Fish, Milk, Egg, Wheat, Wine, Flame, Package, Droplets,
-    Heart, Shield, Tag, Coffee, Cookie, Cake, Sun, Moon, Layers, Sparkles, Utensils,
-  };
-  const categoryIconMap = {
-    'Saisonales': Sparkles,
-    'Obst': Apple,
-    'Gemüse': Carrot,
-    'Brot & Gebäck': Wheat,
-    'Milchprodukte': Milk,
-    'Käse': Layers,
-    'Fleisch': Flame,
-    'Fisch': Fish,
-    'Grundzutaten': Egg,
-    'Gewürze': Sparkles,
-    'Fertig & Tiefkühlprodukte': Package,
-    'Getreideprodukte': Wheat,
-    'Süssigkeiten': Cookie,
-    'Getränke': Wine,
-    'Haushalt': Shield,
-    'Pflege & Gesundheit': Heart,
-  };
-
-  const IconComp = iconMap[icon] || categoryIconMap[category] || ShoppingCart;
-  return <IconComp className={className} />;
 }
 
 /* ---------------------------------- Product Detail & Save Modal ---------------------------------- */
@@ -4226,12 +4041,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.7.1</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.7.2</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Hefezopf 🍞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.1 (Hefezopf)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.2 (Hefezopf)
         </div>
       </div>
     </div>
