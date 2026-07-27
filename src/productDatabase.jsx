@@ -43,8 +43,8 @@ export function ProductPictogram({ icon, category, className = "w-7 h-7 stroke-[
     Apple, Carrot, Fish, Milk, Egg, Wheat, Wine, Flame, Package, Droplets,
     Heart, Shield, Tag, Coffee, Cookie, Cake, Sun, Moon, Layers, Sparkles, Utensils,
     ShoppingCart, Beef, Pizza, Salad, IceCream, UtensilsCrossed, Cherry, Citrus,
-    Banana, Nut, Soup, Beer, GlassWater, Sandwich, WashingMachine, Sparkle,
-    Pill, Bath, Box, Scissors, Drumstick, Thermometer, Flower2, Leaf, ShieldAlert, Star, Bandage
+    Banana, Nut, Soup, Beer, GlassWater, Sandwich, Sparkle,
+    Pill, Bath, Box, Scissors, Drumstick, Thermometer, Flower2, Leaf, ShieldAlert, Star
   };
 
   const categoryIconMap = {
