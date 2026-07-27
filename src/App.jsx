@@ -111,7 +111,7 @@ function ingredientsToText(ings) {
   return (ings || []).map(i => i.raw || [i.amount, i.unit, i.name].filter(x => x !== null && x !== '' && x !== undefined).join(' ')).join('\n');
 }
 
-async function resizeImage(file, maxDim = 700, quality = 0.7) {
+async function resizeImage(file, maxDim = 1600, quality = 0.88) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -123,6 +123,8 @@ async function resizeImage(file, maxDim = 700, quality = 0.7) {
         const canvas = document.createElement('canvas');
         canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
@@ -2173,23 +2175,81 @@ function AddRecipeModal({ onClose, onSaved }) {
 
 /* ---------------------------------- Recipes tab ---------------------------------- */
 /* ---------------------------------- Cook Mode Modal (Instagram Story Slide Style) ---------------------------------- */
+function getWordStems(text) {
+  if (!text) return [];
+  const cleaned = text
+    .toLowerCase()
+    .replace(/[0-9]+/g, ' ')
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ');
+  const words = cleaned.split(/\s+/).filter(w => w.length >= 3);
+
+  const stems = new Set();
+  const stopwords = new Set(['ein', 'eine', 'einen', 'einem', 'einer', 'eines', 'der', 'die', 'das', 'den', 'dem', 'des', 'und', 'oder', 'mit', 'für', 'vom', 'zum', 'zur', 'auf', 'aus', 'bei', 'nach', 'über', 'unter', 'vor', 'stück', 'gramm', 'kilo', 'prise', 'teelöffel', 'esslöffel', 'packung', 'dose', 'glas', 'becher', 'el', 'tl', 'g', 'kg', 'ml', 'l', 'stk']);
+
+  words.forEach(word => {
+    if (stopwords.has(word)) return;
+    stems.add(word);
+    let stem = word;
+    if (stem.endsWith('en') && stem.length > 4) stem = stem.slice(0, -2);
+    else if (stem.endsWith('es') && stem.length > 4) stem = stem.slice(0, -2);
+    else if (stem.endsWith('er') && stem.length > 4) stem = stem.slice(0, -2);
+    else if (stem.endsWith('n') && stem.length > 4) stem = stem.slice(0, -1);
+    else if (stem.endsWith('e') && stem.length > 4) stem = stem.slice(0, -1);
+    else if (stem.endsWith('s') && stem.length > 4) stem = stem.slice(0, -1);
+
+    if (stem.length >= 3) {
+      stems.add(stem);
+    }
+  });
+
+  return Array.from(stems);
+}
+
+function isIngredientMentionedInStep(ing, stepText) {
+  if (!ing || !stepText) return false;
+  const stepLower = stepText.toLowerCase();
+
+  const nameLower = (ing.name || '').toLowerCase().trim();
+  if (nameLower && nameLower.length >= 3 && stepLower.includes(nameLower)) {
+    return true;
+  }
+
+  const ingText = `${ing.name || ''} ${ing.raw || ''}`;
+  const ingStems = getWordStems(ingText);
+
+  for (const stem of ingStems) {
+    if (stepLower.includes(stem)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function parseTimersFromText(text) {
   if (!text) return [];
-  const regex = /\b(\d+(?:[.,]\d+)?)\s*(min|minute|minuten|std|stunde|stunden|sek|sekunde|sekunden)\b/gi;
+  const regex = /(?:(\d+(?:[.,]\d+)?)\s*(?:bis|-)\s*)?(\d+(?:[.,]\d+)?)\s*(min(?:ute|uten|s)?|std|stunde|stunden|h|sek(?:unde|unden)?|sec(?:ond|onds|s)?|s)\b/gi;
   const timers = [];
   let match;
   while ((match = regex.exec(text)) !== null) {
-    const rawVal = parseFloat(match[1].replace(',', '.'));
-    const unit = match[2].toLowerCase();
+    const rawVal = parseFloat(match[2].replace(',', '.'));
+    const unit = match[3].toLowerCase();
     let seconds = 0;
-    if (unit.startsWith('std') || unit.startsWith('stunde')) seconds = rawVal * 3600;
-    else if (unit.startsWith('sek')) seconds = rawVal;
-    else seconds = rawVal * 60;
 
-    timers.push({
-      label: match[0],
-      seconds: Math.round(seconds),
-    });
+    if (unit.startsWith('std') || unit.startsWith('stunde') || unit === 'h') {
+      seconds = rawVal * 3600;
+    } else if (unit.startsWith('sek') || unit.startsWith('sec') || unit === 's') {
+      seconds = rawVal;
+    } else {
+      seconds = rawVal * 60;
+    }
+
+    if (seconds > 0) {
+      timers.push({
+        label: match[0].trim(),
+        seconds: Math.round(seconds),
+      });
+    }
   }
   return timers;
 }
@@ -2334,7 +2394,7 @@ function CookModeModal({ recipe, multiplier = 1, onClose }) {
             <ul className="grid grid-cols-2 gap-1.5 text-xs text-stone-200">
               {recipe.ingredients.map((ing, i) => {
                 const formatted = formatIngredient(ing);
-                const isMentioned = currentStepText.toLowerCase().includes((ing.name || '').toLowerCase());
+                const isMentioned = isIngredientMentionedInStep(ing, currentStepText);
                 return (
                   <li
                     key={i}
@@ -4142,12 +4202,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.0</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.1</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Ingwertee 🫖
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.0 (Ingwertee)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.1 (Ingwertee)
         </div>
       </div>
     </div>
