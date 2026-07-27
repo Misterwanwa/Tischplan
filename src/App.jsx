@@ -4,6 +4,9 @@ import {
   Settings as SettingsIcon, Camera, Upload, Sparkles, Trash2, Edit2, Check,
   AlertTriangle, Utensils, Coffee, Cookie, Cake, Sun, Moon, Loader2, ExternalLink,
   Copy, Printer, User, Users, Star, Save, Download, Bell,
+  Apple, Carrot, Fish, Milk, Egg, Wheat, Wine, Flame, Package, Droplets, Heart,
+  Shield, Tag, ArrowUpDown, ChevronDown, ChevronUp, MoreVertical, PlusCircle,
+  CheckCircle2, Clock, Grid, ListFilter, RotateCcw, HelpCircle, Layers,
 } from 'lucide-react';
 
 /* ---------------------------------- Design tokens ---------------------------------- */
@@ -705,7 +708,7 @@ function BottomNav({ tab, setTab }) {
   const items = [
     { key: 'calendar', label: 'Plan', icon: Calendar },
     { key: 'recipes', label: 'Rezepte', icon: Utensils },
-    { key: 'shopping', label: 'Liste', icon: ShoppingCart },
+    { key: 'shopping', label: 'Einkaufsliste', icon: ShoppingCart },
     { key: 'cookbook', label: 'Buch', icon: BookOpen },
     { key: 'settings', label: 'Einstellungen', icon: SettingsIcon },
   ];
@@ -713,8 +716,9 @@ function BottomNav({ tab, setTab }) {
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 no-print z-30">
       <div className="max-w-2xl mx-auto grid grid-cols-5">
         {items.map(it => (
-          <button key={it.key} onClick={() => setTab(it.key)} className={`flex flex-col items-center gap-0.5 py-2.5 text-xs font-mono ${tab === it.key ? 'text-stone-900' : 'text-stone-400'}`}>
-            <it.icon size={19} />{it.label}
+          <button key={it.key} onClick={() => setTab(it.key)} className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] sm:text-xs font-mono truncate px-0.5 ${tab === it.key ? 'text-stone-900 font-semibold' : 'text-stone-400'}`}>
+            <it.icon size={19} />
+            <span className="truncate">{it.label}</span>
           </button>
         ))}
       </div>
@@ -2556,21 +2560,675 @@ function RecipesTab() {
   );
 }
 
-/* ---------------------------------- Shopping tab ---------------------------------- */
-function ShoppingTab() {
-  const { recipes } = useApp();
-  const [start, setStart] = useState(todayKey());
-  const [days, setDays] = useState(7);
-  const [items, setItems] = useState(null);
-  const [checked, setChecked] = useState({});
-  const [loading, setLoading] = useState(false);
+/* ---------------------------------- Bring! Shopping Database & Components ---------------------------------- */
 
-  const generate = async () => {
-    setLoading(true);
-    const startDate = new Date(start + 'T00:00:00');
+const SHOPPING_CATEGORIES = [
+  'Saisonales',
+  'Obst',
+  'Gemüse',
+  'Brot & Gebäck',
+  'Milchprodukte',
+  'Käse',
+  'Fleisch',
+  'Fisch',
+  'Grundzutaten',
+  'Gewürze',
+  'Fertig & Tiefkühlprodukte',
+  'Getreideprodukte',
+  'Süssigkeiten',
+  'Getränke',
+  'Haushalt',
+  'Pflege & Gesundheit',
+];
+
+const SUPERMARKET_ORDER = [
+  'Obst', 'Gemüse', 'Saisonales',
+  'Fleisch', 'Fisch',
+  'Brot & Gebäck',
+  'Milchprodukte', 'Käse',
+  'Grundzutaten', 'Gewürze', 'Getreideprodukte', 'Süssigkeiten', 'Haushalt', 'Pflege & Gesundheit',
+  'Fertig & Tiefkühlprodukte',
+  'Getränke',
+];
+
+const DEFAULT_PRESET_DETAILS = ['1', '2', '3', '4', '500g', '1kg', 'Freitag'];
+
+const BUILTIN_PRODUCTS = [
+  // Saisonales & Obst
+  { id: 'apfel', name: 'Äpfel', category: 'Obst', icon: 'Apple', seasonalMonths: [8, 9, 10, 11], suggestedDetails: ['Gala', 'Elstar', 'Braeburn', 'Granny Smith', '1kg', '500g', '1 Stk', '2 Stk'] },
+  { id: 'banane', name: 'Bananen', category: 'Obst', icon: 'Apple', suggestedDetails: ['Chiquita', 'Bio', '1 Büschel', '500g', '1kg', '3 Stk'] },
+  { id: 'erdbeeren', name: 'Erdbeeren', category: 'Obst', icon: 'Apple', seasonalMonths: [5, 6, 7], suggestedDetails: ['500g Schale', '250g', 'Bio', '1kg'] },
+  { id: 'beeren', name: 'Himbeeren', category: 'Obst', icon: 'Apple', seasonalMonths: [6, 7, 8], suggestedDetails: ['125g', '250g', 'Frisch'] },
+  { id: 'heidelbeeren', name: 'Heidelbeeren', category: 'Obst', icon: 'Apple', seasonalMonths: [6, 7, 8, 9], suggestedDetails: ['125g', '250g', 'Bio'] },
+  { id: 'zitronen', name: 'Zitronen', category: 'Obst', icon: 'Apple', suggestedDetails: ['Bio (unbehandelt)', ' Netz 500g', '2 Stk'] },
+  { id: 'limette', name: 'Limetten', category: 'Obst', icon: 'Apple', suggestedDetails: ['Unbehandelt', '3er Pack', '1 Stk'] },
+  { id: 'trauben', name: 'Weintrauben', category: 'Obst', icon: 'Apple', seasonalMonths: [8, 9, 10], suggestedDetails: ['Kernlos', 'Helle Trauben', 'Dunkle Trauben', '500g'] },
+  { id: 'birne', name: 'Birnen', category: 'Obst', icon: 'Apple', seasonalMonths: [8, 9, 10, 11], suggestedDetails: ['Abate Fetel', 'Williams', '1kg'] },
+  { id: 'orangen', name: 'Orangen', category: 'Obst', icon: 'Apple', seasonalMonths: [11, 12, 1, 2, 3], suggestedDetails: ['Saftorangen', '1.5kg Netz', 'Bio'] },
+  { id: 'kiwi', name: 'Kiwis', category: 'Obst', icon: 'Apple', suggestedDetails: ['Grün', 'Gold', '4 Stk'] },
+  { id: 'wassermelone', name: 'Wassermelone', category: 'Obst', icon: 'Apple', seasonalMonths: [6, 7, 8], suggestedDetails: ['1/2 Melone', '1/4 Melone', 'Ganz'] },
+  { id: 'pfirsich', name: 'Pfirsiche', category: 'Obst', icon: 'Apple', seasonalMonths: [6, 7, 8, 9], suggestedDetails: ['Plattpfirsiche', '1kg', '500g'] },
+
+  // Gemüse
+  { id: 'tomaten', name: 'Tomaten', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [6, 7, 8, 9], suggestedDetails: ['Strauchtomaten', 'Rispen', 'Cocktail', 'Roma', '500g'] },
+  { id: 'gurke', name: 'Gurke', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [6, 7, 8, 9], suggestedDetails: ['Salatgurke', 'Mini-Gurken', '1 Stk', '2 Stk'] },
+  { id: 'zucchini', name: 'Zucchini', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [6, 7, 8, 9], suggestedDetails: ['Grün', 'Gelb', '500g', '2 Stk'] },
+  { id: 'karotten', name: 'Karotten', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [7, 8, 9, 10, 11, 12, 1, 2], suggestedDetails: ['1kg Beutel', 'Bund', '500g', 'Bio'] },
+  { id: 'paprika', name: 'Paprika', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [7, 8, 9, 10], suggestedDetails: ['Rot', 'Gelb', 'Grün', '3er Mix', '500g'] },
+  { id: 'zwiebeln', name: 'Zwiebeln', category: 'Gemüse', icon: 'Carrot', suggestedDetails: ['Gelb', 'Rot', 'Schalotten', '1kg Netz', '500g'] },
+  { id: 'knoblauch', name: 'Knoblauch', category: 'Gemüse', icon: 'Carrot', suggestedDetails: ['1 Knolle', '3er Pack', 'Zehen'] },
+  { id: 'kartoffeln', name: 'Kartoffeln', category: 'Gemüse', icon: 'Carrot', suggestedDetails: ['Festkochend', 'Mehligkochend', 'Vorwiegend fest', '2.5kg', '1kg'] },
+  { id: 'brokkoli', name: 'Brokkoli', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [6, 7, 8, 9, 10], suggestedDetails: ['500g Kopf', '1 Stk'] },
+  { id: 'blumenkohl', name: 'Blumenkohl', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [6, 7, 8, 9, 10], suggestedDetails: ['1 Kopf', 'Frisch'] },
+  { id: 'spinat', name: 'Spinat', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [4, 5, 9, 10], suggestedDetails: ['Blattspinat', 'Rahmspinat', 'Baby-Spinat', '500g'] },
+  { id: 'salat', name: 'Salat', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [5, 6, 7, 8, 9], suggestedDetails: ['Eisbergsalat', 'Kopfsalat', 'Rucola', 'Feldsalat'] },
+  { id: 'champignons', name: 'Champignons', category: 'Gemüse', icon: 'Carrot', suggestedDetails: ['Weiß', 'Braune Champignons', '400g', '250g'] },
+  { id: 'kurbis', name: 'Kürbis', category: 'Gemüse', icon: 'Carrot', seasonalMonths: [9, 10, 11], suggestedDetails: ['Hokkaido', 'Butternut', '1 Stk'] },
+
+  // Brot & Gebäck
+  { id: 'brot', name: 'Brot', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['Vollkorn', 'Graubrot', 'Mischbrot', 'Toastbrot', 'Baguette', '1 Laib'] },
+  { id: 'brotchen', name: 'Brötchen', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['Weizen', 'Kaiser', 'Vollkorn', 'Mehrkorn', '4 Stk', '6 Stk'] },
+  { id: 'toast', name: 'Toast', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['Buttertoast', 'Vollkorntoast', '500g', '750g'] },
+  { id: 'baguette', name: 'Baguette', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['Frisch', 'Zum Aufbacken', '2 Stk'] },
+  { id: 'croissant', name: 'Croissant', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['Buttercroissant', 'Schoko', '2 Stk'] },
+  { id: 'brezel', name: 'Laugenbrezel', category: 'Brot & Gebäck', icon: 'Wheat', suggestedDetails: ['2 Stk', 'Mit Salz'] },
+
+  // Milchprodukte
+  { id: 'milch', name: 'Milch', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Vollmilch 3.5%', 'Fettarm 1.5%', 'Haferdrink', 'Laktosefrei', '1l', '2l'] },
+  { id: 'schlagsahne', name: 'Schlagsahne', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['200g Becher', '30% Fett', '2er Pack'] },
+  { id: 'quark', name: 'Quark', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Magerquark', '40% Fett', '500g Becher', '250g'] },
+  { id: 'joghurt', name: 'Joghurt', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Natur 3.5%', 'Griechischer Joghurt', 'Magerjoghurt', '500g', '1kg'] },
+  { id: 'butter', name: 'Butter', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Süßrahm', 'Sauerrahm', '250g Packung', 'Bio'] },
+  { id: 'frischkase', name: 'Frischkäse', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Natur', 'Kräuter', 'Bresso', '200g'] },
+  { id: 'saure_sahne', name: 'Saure Sahne', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['10% Fett', '200g Becher', 'Schmand'] },
+  { id: 'creme_fraiche', name: 'Crème Fraîche', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Classic 150g', 'Kräuter'] },
+
+  // Käse
+  { id: 'gouda', name: 'Gouda', category: 'Käse', icon: 'Layers', suggestedDetails: ['Jung', 'Mittelalt', 'Alt', 'Scheiben', '200g Stück'] },
+  { id: 'mozzarella', name: 'Mozzarella', category: 'Käse', icon: 'Layers', suggestedDetails: ['Kugel 125g', 'Büffelmozzarella', 'Gerieben', '2er Pack'] },
+  { id: 'parmesan', name: 'Parmesan', category: 'Käse', icon: 'Layers', suggestedDetails: ['Grana Padano', 'Parmigiano Reggiano', 'Stück', 'Gerieben 100g'] },
+  { id: 'feta', name: 'Feta', category: 'Käse', icon: 'Layers', suggestedDetails: ['Schafskäse', 'Hirtenkäse', '200g Packung'] },
+  { id: 'halloumi', name: 'Halloumi', category: 'Käse', icon: 'Layers', suggestedDetails: ['Grillkäse', 'Kräuter', '200g'] },
+  { id: 'emmentaler', name: 'Emmentaler', category: 'Käse', icon: 'Layers', suggestedDetails: ['Scheiben', '200g Stück'] },
+  { id: 'cheddar', name: 'Cheddar', category: 'Käse', icon: 'Layers', suggestedDetails: ['Herzhaft', 'Scheiben', 'Gerieben'] },
+  { id: 'camembert', name: 'Camembert', category: 'Käse', icon: 'Layers', suggestedDetails: ['Frz. Weichkäse', '250g'] },
+
+  // Fleisch
+  { id: 'hackfleisch', name: 'Hackfleisch', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['Gemischt', 'Rind', 'Schwein', 'Pute', '500g', '1kg'] },
+  { id: 'hahnchenbrust', name: 'Hähnchenbrust', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['500g', '1kg', 'Filet', 'Bio'] },
+  { id: 'rinderhack', name: 'Rinderhackfleisch', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['Magermilch', '500g', '1kg', 'Bio'] },
+  { id: 'steak', name: 'Steak', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['Rumpsteak', 'Entrecôte', 'Filet', '2 Stk'] },
+  { id: 'speck', name: 'Speck', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['Würfel 2x75g', 'Streifen', 'Bacon'] },
+  { id: 'bratwurst', name: 'Bratwurst', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['Nürnberger (14er)', 'Große Bratwurst', 'Grillwurst'] },
+  { id: 'putenbrust', name: 'Putenbrust', category: 'Fleisch', icon: 'Flame', suggestedDetails: ['500g', 'Aufschnitt'] },
+
+  // Fisch
+  { id: 'lachs', name: 'Lachs', category: 'Fisch', icon: 'Fish', suggestedDetails: ['Frisch 200g', 'TK-Filet 400g', 'Räucherlachs 100g'] },
+  { id: 'thunfisch', name: 'Thunfisch', category: 'Fisch', icon: 'Fish', suggestedDetails: ['In Eigensaft', 'In Öl', '1 Dose', '3er Pack'] },
+  { id: 'garnelen', name: 'Garnelen', category: 'Fisch', icon: 'Fish', suggestedDetails: ['King Prawns', 'TK 250g', 'Knoblauch', 'Bio'] },
+  { id: 'fischstabchen', name: 'Fischstäbchen', category: 'Fisch', icon: 'Fish', suggestedDetails: ['15er Pack', 'Kabeljau', 'Vollkorn'] },
+
+  // Grundzutaten
+  { id: 'eier', name: 'Eier', category: 'Grundzutaten', icon: 'Egg', suggestedDetails: ['6er Pack', '10er Pack', 'Freiland M', 'Bio L'] },
+  { id: 'mehl', name: 'Mehl', category: 'Grundzutaten', icon: 'Wheat', suggestedDetails: ['Weizen 405', 'Weizen 550', 'Dinkel 630', 'Vollkorn', '1kg'] },
+  { id: 'zucker', name: 'Zucker', category: 'Grundzutaten', icon: 'Egg', suggestedDetails: ['Raffinade 1kg', 'Rohrzucker', 'Puderzucker', 'Vanillezucker'] },
+  { id: 'salz', name: 'Salz', category: 'Grundzutaten', icon: 'Egg', suggestedDetails: ['Feinsalz', 'Meersalz', 'Jodsalz', '500g'] },
+  { id: 'olivenol', name: 'Olivenöl', category: 'Grundzutaten', icon: 'Droplets', suggestedDetails: ['Natives ÖL Extra', '750ml', '1l', 'Bio'] },
+  { id: 'rapsol', name: 'Rapsöl', category: 'Grundzutaten', icon: 'Droplets', suggestedDetails: ['1l Flasche', 'Zum Braten'] },
+  { id: 'bruhe', name: 'Brühe', category: 'Grundzutaten', icon: 'Egg', suggestedDetails: ['Gemüsebrühe', 'Hühnerbrühe', 'Rinderbrühe', 'Fischfond', '1 Glas', 'Würfel'] },
+  { id: 'passierte_tomaten', name: 'Passierte Tomaten', category: 'Grundzutaten', icon: 'Package', suggestedDetails: ['500g Tetrapack', 'Dose 400g', 'Passata'] },
+  { id: 'tomatenmark', name: 'Tomatenmark', category: 'Grundzutaten', icon: 'Package', suggestedDetails: ['200g Tube', 'Dreifach konzentriert'] },
+
+  // Gewürze
+  { id: 'pfeffer', name: 'Pfeffer', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['Schwarz gemahlen', 'Mühle', 'Bunt'] },
+  { id: 'paprikapulver', name: 'Paprikapulver', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['Edelsüß', 'Scharf', 'Geräuchert'] },
+  { id: 'basilikum', name: 'Basilikum', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['Frisch Topf', 'Gerebelt', 'TK'] },
+  { id: 'oregano', name: 'Oregano', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['Gerebelt', 'Dose'] },
+  { id: 'zimt', name: 'Zimt', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['Gemahlen', 'Stangen', 'Ceylon'] },
+  { id: 'curry', name: 'Currypulver', category: 'Gewürze', icon: 'Sparkles', suggestedDetails: ['MILD', 'Scharf', 'Gelb'] },
+
+  // Getreideprodukte
+  { id: 'nudeln', name: 'Nudeln', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['Spaghetti', 'Penne', 'Fusilli', 'Rigatoni', '500g'] },
+  { id: 'reis', name: 'Reis', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['Basmati', 'Jasmine', 'Milchreis', 'Risotto', '1kg'] },
+  { id: 'haferflocken', name: 'Haferflocken', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['Zart', 'Kernig', '500g Beutel', 'Bio'] },
+  { id: 'couscous', name: 'Couscous', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['500g', 'Vollkorn'] },
+
+  // Fertig & Tiefkühlprodukte
+  { id: 'pizza', name: 'TK-Pizza', category: 'Fertig & Tiefkühlprodukte', icon: 'Package', suggestedDetails: ['Salami', 'Margherita', 'Speciale', '2er Pack'] },
+  { id: 'pommes', name: 'Pommes', category: 'Fertig & Tiefkühlprodukte', icon: 'Package', suggestedDetails: ['Backofen 1kg', 'Steakhouse', 'Süßkartoffel'] },
+  { id: 'tk_gemuse', name: 'TK-Gemüse', category: 'Fertig & Tiefkühlprodukte', icon: 'Package', suggestedDetails: ['Kaisergemüse', 'Erbsen', 'Rahmgemüse', '450g'] },
+
+  // Süssigkeiten
+  { id: 'schokolade', name: 'Schokolade', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Vollmilch', 'Zartbitter 70%', 'Nuss', '100g Tafel'] },
+  { id: 'gummibarchen', name: 'Gummibärchen', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Goldbären 200g', 'Sauer', 'Fruchtgummi'] },
+  { id: 'chips', name: 'Chips', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Paprika 150g', 'Gesalzen', 'Sour Cream'] },
+  { id: 'kekse', name: 'Kekse', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Butterkekse', 'Doppelkeks', 'Haferkekse'] },
+
+  // Getränke
+  { id: 'wasser', name: 'Wasser', category: 'Getränke', icon: 'Wine', suggestedDetails: ['Sprudel', 'Medium', 'Still', '6er Kiste', '6x1.5l'] },
+  { id: 'apfelsaft', name: 'Apfelsaft', category: 'Getränke', icon: 'Wine', suggestedDetails: ['Naturtrüb 1l', 'Klar', 'Direktsaft'] },
+  { id: 'orangensaft', name: 'Orangensaft', category: 'Getränke', icon: 'Wine', suggestedDetails: ['100% Direktsaft', 'Mit Fruchtfleisch', '1l'] },
+  { id: 'cola', name: 'Cola', category: 'Getränke', icon: 'Wine', suggestedDetails: ['zero', 'light', 'normal', 'original', '1.5l', 'Dose 0.33l', '6er Pack'] },
+  { id: 'bier', name: 'Bier', category: 'Getränke', icon: 'Wine', suggestedDetails: ['Pils', 'Weizen', 'Helles', 'Alkoholfrei', 'Kiste', '6er Pack'] },
+  { id: 'wein', name: 'Wein', category: 'Getränke', icon: 'Wine', suggestedDetails: ['Weißwein', 'Rotwein', 'Rosé', 'Prosecco', '0.75l Flasche'] },
+  { id: 'kaffee', name: 'Kaffee', category: 'Getränke', icon: 'Coffee', suggestedDetails: ['Ganze Bohnen 1kg', 'Gemahlen 500g', 'Espresso', 'Pad'] },
+  { id: 'tee', name: 'Tee', category: 'Getränke', icon: 'Coffee', suggestedDetails: ['Pfefferminze', 'Kamille', 'Früchte', 'Schwarztee', '20 Beutel'] },
+
+  // Haushalt
+  { id: 'klopapier', name: 'Klopapier', category: 'Haushalt', icon: 'Shield', suggestedDetails: ['3-lagig', '4-lagig', '8er Pack', '10er Pack'] },
+  { id: 'kuchenrolle', name: 'Küchenrolle', category: 'Haushalt', icon: 'Shield', suggestedDetails: ['4er Pack', '3-lagig'] },
+  { id: 'spulmittel', name: 'Spülmittel', category: 'Haushalt', icon: 'Droplets', suggestedDetails: ['Original', 'Zitrone', '500ml Flasche'] },
+  { id: 'mullbeutel', name: 'Müllbeutel', category: 'Haushalt', icon: 'Shield', suggestedDetails: ['35l mit Zugband', '60l', 'Bio-Beutel'] },
+
+  // Pflege & Gesundheit
+  { id: 'duschgel', name: 'Duschgel', category: 'Pflege & Gesundheit', icon: 'Heart', suggestedDetails: ['Sensitive', 'Sport', 'Fruchtig', '250ml'] },
+  { id: 'shampoo', name: 'Shampoo', category: 'Pflege & Gesundheit', icon: 'Heart', suggestedDetails: ['Normales Haar', 'Anti-Schuppen', 'Volume', '250ml'] },
+  { id: 'zahnpasta', name: 'Zahnpasta', category: 'Pflege & Gesundheit', icon: 'Heart', suggestedDetails: ['Complete', 'Sensitiv', 'Frei von Fluorid', '75ml'] },
+  { id: 'taschentuch', name: 'Taschentücher', category: 'Pflege & Gesundheit', icon: 'Heart', suggestedDetails: ['10er Pack', 'Box 100 Stk'] },
+];
+
+function triggerShoppingThrottledNotification(actionText) {
+  try {
+    const now = new Date();
+    const currentHourKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}`;
+    const lastNotifiedHour = localStorage.getItem('tischplan_shopping_notified_hour');
+
+    if (lastNotifiedHour === currentHourKey) {
+      return; // Already notified in this hour
+    }
+
+    localStorage.setItem('tischplan_shopping_notified_hour', currentHourKey);
+
+    if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification('Einkaufsliste 🛒', {
+          body: actionText || 'Artikel auf der Einkaufsliste geändert.',
+          icon: '/icon.svg',
+          badge: '/icon.svg',
+          tag: 'tischplan-shopping-update',
+          requireInteraction: false
+        });
+      }).catch(() => {});
+    }
+  } catch (e) {
+    console.error('Notification error', e);
+  }
+}
+
+function ProductPictogram({ icon, category, className = "w-7 h-7 text-white stroke-[1.75]" }) {
+  const iconMap = {
+    Apple, Carrot, Fish, Milk, Egg, Wheat, Wine, Flame, Package, Droplets,
+    Heart, Shield, Tag, Coffee, Cookie, Cake, Sun, Moon, Layers, Sparkles, Utensils,
+  };
+  const categoryIconMap = {
+    'Saisonales': Sparkles,
+    'Obst': Apple,
+    'Gemüse': Carrot,
+    'Brot & Gebäck': Wheat,
+    'Milchprodukte': Milk,
+    'Käse': Layers,
+    'Fleisch': Flame,
+    'Fisch': Fish,
+    'Grundzutaten': Egg,
+    'Gewürze': Sparkles,
+    'Fertig & Tiefkühlprodukte': Package,
+    'Getreideprodukte': Wheat,
+    'Süssigkeiten': Cookie,
+    'Getränke': Wine,
+    'Haushalt': Shield,
+    'Pflege & Gesundheit': Heart,
+  };
+
+  const IconComp = iconMap[icon] || categoryIconMap[category] || ShoppingCart;
+  return <IconComp className={className} />;
+}
+
+/* ---------------------------------- Product Detail & Save Modal ---------------------------------- */
+function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem, onSaveToDatabase }) {
+  const [detail, setDetail] = useState(item.detail || '');
+  const [showSaveDb, setShowSaveDb] = useState(false);
+  const [customCat, setCustomCat] = useState(product ? product.category : 'Grundzutaten');
+  const [customIcon, setCustomIcon] = useState(product ? product.icon : 'Package');
+
+  const presetOptions = useMemo(() => {
+    const set = new Set(DEFAULT_PRESET_DETAILS);
+    if (product && product.suggestedDetails) {
+      product.suggestedDetails.forEach(d => set.add(d));
+    }
+    return Array.from(set);
+  }, [product]);
+
+  const handleSave = () => {
+    onSaveDetail(item.id, detail.trim());
+    onClose();
+  };
+
+  const handleSaveDbSubmit = () => {
+    if (onSaveToDatabase) {
+      onSaveToDatabase(item, customCat, customIcon);
+    }
+    handleSave();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[70] p-4 animate-fade-in">
+      <div className="bg-slate-900 text-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-slate-700 animate-scale-up">
+        {/* Header with tile preview */}
+        <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+          <div className="w-12 h-12 rounded-xl bg-rose-600 flex items-center justify-center flex-shrink-0 shadow">
+            <ProductPictogram icon={product?.icon || item.icon} category={product?.category || item.category} className="w-7 h-7 text-white stroke-[2]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-lg text-white truncate">{item.name}</h3>
+            <p className="text-xs text-slate-400 font-mono uppercase tracking-wider">{product?.category || item.category || 'Produkt'}</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Detail Input */}
+        <div>
+          <label className="text-xs font-mono uppercase tracking-wide text-slate-400 mb-1 block">Details / Menge / Notiz</label>
+          <input
+            type="text"
+            value={detail}
+            onChange={e => setDetail(e.target.value)}
+            placeholder="z. B. 1kg, Gala, zero, Freitag..."
+            className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+            autoFocus
+          />
+        </div>
+
+        {/* Vorgefertigte Details */}
+        <div>
+          <label className="text-xs font-mono uppercase tracking-wide text-slate-400 mb-1.5 block">Vorschläge & Mengen</label>
+          <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+            {presetOptions.map((opt, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setDetail(opt)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${detail === opt ? 'bg-rose-600 text-white font-bold ring-2 ring-rose-400' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom DB save option */}
+        {!product && !showSaveDb && (
+          <button
+            type="button"
+            onClick={() => setShowSaveDb(true)}
+            className="w-full py-2 rounded-xl border border-dashed border-slate-700 text-xs font-mono uppercase tracking-wide text-teal-400 hover:bg-slate-800 flex items-center justify-center gap-1.5"
+          >
+            <PlusCircle size={14} /> In Produktdatenbank speichern
+          </button>
+        )}
+
+        {showSaveDb && (
+          <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-3">
+            <div className="text-xs font-semibold text-teal-400 font-mono uppercase tracking-wide">In Datenbank speichern</div>
+            <div>
+              <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">Kategorie</label>
+              <select
+                value={customCat}
+                onChange={e => setCustomCat(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs"
+              >
+                {SHOPPING_CATEGORIES.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">Piktogramm</label>
+              <div className="flex gap-2 flex-wrap">
+                {['Apple', 'Carrot', 'Fish', 'Milk', 'Egg', 'Wheat', 'Wine', 'Flame', 'Package', 'Droplets', 'Heart', 'Shield'].map(ic => (
+                  <button
+                    key={ic}
+                    type="button"
+                    onClick={() => setCustomIcon(ic)}
+                    className={`p-1.5 rounded-lg border ${customIcon === ic ? 'border-teal-400 bg-teal-600/30' : 'border-slate-700 bg-slate-900 text-slate-400'}`}
+                  >
+                    <ProductPictogram icon={ic} category={customCat} className="w-5 h-5" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Buttons */}
+        <div className="space-y-2 pt-2">
+          <button
+            onClick={showSaveDb ? handleSaveDbSubmit : handleSave}
+            className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-[0.99] text-white font-mono uppercase text-xs font-bold shadow-lg transition-all"
+          >
+            Details speichern
+          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { onRemoveItem(item.id); onClose(); }}
+              className="flex-1 py-2 rounded-xl bg-slate-800 text-rose-400 hover:bg-slate-700 text-xs font-mono uppercase font-semibold flex items-center justify-center gap-1"
+            >
+              <Trash2 size={13} /> Löschen
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 py-2 rounded-xl bg-slate-800 text-slate-400 hover:bg-slate-700 text-xs font-mono uppercase font-semibold"
+            >
+              Abbrechen
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- Weekly Import Confirmation Modal ---------------------------------- */
+function WeeklyConfirmModal({ onConfirm, onClose }) {
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[70] p-4 animate-fade-in">
+      <div className="bg-slate-900 text-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-slate-700 animate-scale-up">
+        <div className="flex items-center gap-3 text-amber-400">
+          <AlertTriangle size={24} />
+          <h3 className="font-bold text-base text-white">Wochenzutaten bereits hinzugefügt</h3>
+        </div>
+        <p className="text-xs text-slate-300 leading-relaxed">
+          Die Zutaten der nächsten 7 Tage wurden für diese Woche bereits auf die Einkaufsliste gesetzt. Möchtest du die Zutaten wirklich erneut hinzufügen?
+        </p>
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-mono uppercase font-semibold"
+          >
+            Abbrechen
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-mono uppercase font-bold shadow-lg"
+          >
+            Erneut hinzufügen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- Bring! Tile Component ---------------------------------- */
+function ShoppingTile({ item, product, isActive, onShortClick, onLongPress }) {
+  const timerRef = useRef(null);
+  const isLongPressRef = useRef(false);
+
+  const startPress = () => {
+    isLongPressRef.current = false;
+    timerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      onLongPress(item);
+    }, 450);
+  };
+
+  const endPress = (e) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (!isLongPressRef.current) {
+      onShortClick(item);
+    }
+  };
+
+  const cancelPress = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+
+  const iconName = product?.icon || item.icon;
+  const categoryName = product?.category || item.category;
+
+  return (
+    <div
+      onMouseDown={startPress}
+      onMouseUp={endPress}
+      onMouseLeave={cancelPress}
+      onTouchStart={startPress}
+      onTouchEnd={endPress}
+      onTouchCancel={cancelPress}
+      className={`rounded-2xl p-2.5 min-h-[105px] flex flex-col items-center justify-between cursor-pointer select-none transition-all duration-200 relative shadow-md group ${
+        isActive
+          ? 'bg-rose-600 hover:bg-rose-500 active:scale-95 text-white border border-rose-500/40'
+          : 'bg-[#267368] hover:bg-[#206158] active:scale-95 text-white border border-teal-500/30'
+      }`}
+    >
+      {/* Top right edit indicator */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onLongPress(item); }}
+        className="absolute top-1.5 right-1.5 p-1 rounded-full text-white/40 hover:text-white hover:bg-black/20 transition-all opacity-80 sm:opacity-0 group-hover:opacity-100"
+        title="Details bearbeiten"
+      >
+        <MoreVertical size={14} />
+      </button>
+
+      {/* Pictogram */}
+      <div className="my-auto pt-1">
+        <ProductPictogram icon={iconName} category={categoryName} className="w-8 h-8 text-white stroke-[1.75] drop-shadow-sm" />
+      </div>
+
+      {/* Product Name & Detail */}
+      <div className="w-full text-center space-y-0.5 mt-1">
+        <div className="text-xs sm:text-sm font-bold text-white leading-tight truncate px-1">
+          {item.name}
+        </div>
+        {item.detail ? (
+          <div className="text-[10px] sm:text-xs font-semibold text-white/90 bg-black/25 px-1.5 py-0.5 rounded-full inline-block truncate max-w-full">
+            {item.detail}
+          </div>
+        ) : (
+          <div className="h-4"></div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- Main Bring! Shopping Tab ---------------------------------- */
+function ShoppingTab() {
+  const { recipes, showToast } = useApp();
+  const [items, setItems] = useState([]);
+  const [customDb, setCustomDb] = useState([]);
+  const [search, setSearch] = useState('');
+  const [sortMode, setSortMode] = useState('logical'); // 'alphabetical', 'date', 'logical'
+  const [detailModalItem, setDetailModalItem] = useState(null);
+  const [showWeeklyConfirm, setShowWeeklyConfirm] = useState(false);
+  const [collapsedCategories, setCollapsedCategories] = useState({});
+
+  // Load state from localStorage on mount
+  useEffect(() => {
+    (async () => {
+      const storedItems = await storageGet('shopping_items_v2', true, []);
+      const storedCustom = await storageGet('shopping_custom_db', true, []);
+      setItems(storedItems || []);
+      setCustomDb(storedCustom || []);
+    })();
+  }, []);
+
+  // Sync items to localStorage
+  const updateShoppingItems = async (newItems, actionText = null) => {
+    setItems(newItems);
+    await storageSet('shopping_items_v2', newItems, true);
+    if (actionText) {
+      triggerShoppingThrottledNotification(actionText);
+    }
+  };
+
+  // Combine built-in DB and custom DB
+  const allProducts = useMemo(() => {
+    const map = new Map();
+    BUILTIN_PRODUCTS.forEach(p => map.set(p.id, p));
+    customDb.forEach(p => map.set(p.id, p));
+    return Array.from(map.values());
+  }, [customDb]);
+
+  // Current month for seasonal filtering (1 - 12)
+  const currentMonth = useMemo(() => new Date().getMonth() + 1, []);
+
+  // Search Autocomplete Suggestions
+  const suggestions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return allProducts.filter(p => p.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [search, allProducts]);
+
+  // Add / Activate product from search or catalog
+  const handleActivateProduct = (productOrName) => {
+    const isObject = typeof productOrName === 'object' && productOrName !== null;
+    const name = isObject ? productOrName.name : productOrName.trim();
+    if (!name) return;
+
+    const matchedProd = isObject ? productOrName : allProducts.find(p => p.name.toLowerCase() === name.toLowerCase());
+
+    const existingIdx = items.findIndex(i => (matchedProd && i.productId === matchedProd.id) || i.name.toLowerCase() === name.toLowerCase());
+
+    let next = [...items];
+    if (existingIdx >= 0) {
+      next[existingIdx] = {
+        ...next[existingIdx],
+        completed: false,
+        addedAt: Date.now(),
+      };
+    } else {
+      next.unshift({
+        id: matchedProd ? matchedProd.id : uid(),
+        productId: matchedProd ? matchedProd.id : null,
+        name: matchedProd ? matchedProd.name : name,
+        category: matchedProd ? matchedProd.category : 'Grundzutaten',
+        icon: matchedProd ? matchedProd.icon : 'Package',
+        detail: '',
+        addedAt: Date.now(),
+        completed: false,
+        lastUsedAt: Date.now(),
+      });
+    }
+
+    updateShoppingItems(next, `${name} zur Einkaufsliste hinzugefügt.`);
+    setSearch('');
+    showToast(`${name} auf die Liste gesetzt`);
+  };
+
+  // Short Click on Tile: Toggle active (Rot) vs inactive (Teal in Zuletzt verwendet)
+  const handleShortClickTile = (item) => {
+    const isNowCompleted = !item.completed;
+    const next = items.map(i => i.id === item.id ? {
+      ...i,
+      completed: isNowCompleted,
+      lastUsedAt: Date.now(),
+    } : i);
+
+    const text = isNowCompleted ? `${item.name} abgehakt.` : `${item.name} wieder auf die Einkaufsliste gesetzt.`;
+    updateShoppingItems(next, text);
+  };
+
+  // Update Item Details
+  const handleSaveDetail = (itemId, newDetail) => {
+    const next = items.map(i => i.id === itemId ? { ...i, detail: newDetail } : i);
+    updateShoppingItems(next);
+    showToast('Details aktualisiert');
+  };
+
+  // Remove Item from list completely
+  const handleRemoveItem = (itemId) => {
+    const next = items.filter(i => i.id !== itemId);
+    updateShoppingItems(next, 'Artikel von der Einkaufsliste entfernt.');
+    showToast('Artikel entfernt');
+  };
+
+  // Save custom product to permanent DB
+  const handleSaveToDatabase = async (item, category, icon) => {
+    const customId = item.productId || ('custom_' + uid());
+    const newProd = {
+      id: customId,
+      name: item.name,
+      category,
+      icon,
+      suggestedDetails: DEFAULT_PRESET_DETAILS,
+    };
+
+    const nextCustom = [...customDb.filter(c => c.id !== customId), newProd];
+    setCustomDb(nextCustom);
+    await storageSet('shopping_custom_db', nextCustom, true);
+
+    const nextItems = items.map(i => i.id === item.id ? {
+      ...i,
+      productId: customId,
+      category,
+      icon,
+    } : i);
+    await updateShoppingItems(nextItems);
+    showToast(`${item.name} in Produktdatenbank gespeichert!`);
+  };
+
+  // Sort Active Items
+  const activeItems = useMemo(() => {
+    const list = items.filter(i => !i.completed);
+    if (sortMode === 'alphabetical') {
+      return [...list].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    } else if (sortMode === 'date') {
+      return [...list].sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+    } else {
+      // Supermarkt Logisch
+      return [...list].sort((a, b) => {
+        const catA = a.category || 'Grundzutaten';
+        const catB = b.category || 'Grundzutaten';
+        const idxA = SUPERMARKET_ORDER.indexOf(catA) >= 0 ? SUPERMARKET_ORDER.indexOf(catA) : 99;
+        const idxB = SUPERMARKET_ORDER.indexOf(catB) >= 0 ? SUPERMARKET_ORDER.indexOf(catB) : 99;
+        if (idxA !== idxB) return idxA - idxB;
+        return a.name.localeCompare(b.name, 'de');
+      });
+    }
+  }, [items, sortMode]);
+
+  // Inactive / Recent items ("Zuletzt verwendet")
+  const recentItems = useMemo(() => {
+    return items.filter(i => i.completed).sort((a, b) => (b.lastUsedAt || 0) - (a.lastUsedAt || 0));
+  }, [items]);
+
+  // Catalog Products grouped by Category (excluding items already active)
+  const categoryCatalogMap = useMemo(() => {
+    const activeProdIds = new Set(activeItems.map(i => i.productId || i.id));
+    const activeNames = new Set(activeItems.map(i => i.name.toLowerCase()));
+
+    const map = {};
+    SHOPPING_CATEGORIES.forEach(c => map[c] = []);
+
+    allProducts.forEach(p => {
+      if (activeProdIds.has(p.id) || activeNames.has(p.name.toLowerCase())) return;
+
+      // Add to main category
+      if (map[p.category]) map[p.category].push(p);
+
+      // Add to Saisonales if seasonal for current month
+      if (p.seasonalMonths && p.seasonalMonths.includes(currentMonth)) {
+        if (map['Saisonales']) map['Saisonales'].push(p);
+      }
+    });
+
+    return map;
+  }, [allProducts, activeItems, currentMonth]);
+
+  // Category list sorted alphabetically (with Saisonales first, then alphabetical)
+  const sortedCatalogCategories = useMemo(() => {
+    const cats = SHOPPING_CATEGORIES.filter(c => c !== 'Saisonales').sort((a, b) => a.localeCompare(b, 'de'));
+    return ['Saisonales', ...cats];
+  }, []);
+
+  // Weekly Import Handler
+  const executeWeeklyImport = async () => {
+    const today = new Date();
     const usage = [];
-    for (let i = 0; i < days; i++) {
-      const d = new Date(startDate); d.setDate(d.getDate() + i);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today); d.setDate(d.getDate() + i);
       const plan = await storageGet(`mealplan:${dateKey(d)}`, true, null);
       if (!plan) continue;
       for (const mt of MEAL_KEYS) for (const co of COURSE_KEYS) {
@@ -2581,59 +3239,389 @@ function ShoppingTab() {
         }
       }
     }
-    setItems(aggregateIngredients(usage));
-    setChecked({});
-    setLoading(false);
+
+    if (usage.length === 0) {
+      showToast('Keine Rezepte in den nächsten 7 Tagen geplant.');
+      return;
+    }
+
+    // Consolidated ingredients
+    const consolidated = consolidateIngredientsForNextWeek(usage, allProducts);
+
+    let nextItems = [...items];
+    let addedCount = 0;
+
+    consolidated.forEach(newItem => {
+      const existingIdx = nextItems.findIndex(i => (i.productId && i.productId === newItem.productId) || i.name.toLowerCase() === newItem.name.toLowerCase());
+      if (existingIdx >= 0) {
+        nextItems[existingIdx] = {
+          ...nextItems[existingIdx],
+          completed: false,
+          detail: newItem.detail || nextItems[existingIdx].detail,
+          addedAt: Date.now(),
+        };
+      } else {
+        nextItems.unshift(newItem);
+      }
+      addedCount++;
+    });
+
+    // Record imported week key
+    const currentWeekKey = getISOWeekKey(today);
+    const importedWeeks = await storageGet('shopping_imported_weeks', true, []);
+    if (!importedWeeks.includes(currentWeekKey)) {
+      await storageSet('shopping_imported_weeks', [...importedWeeks, currentWeekKey], true);
+    }
+
+    await updateShoppingItems(nextItems, `Zutaten der kommenden Woche hinzugefügt (${addedCount} Artikel).`);
+    showToast(`${addedCount} Zutaten der Woche zur Liste hinzugefügt!`);
   };
 
-  const listText = items ? items.map(i => `${i.amount ? Math.round(i.amount * 10) / 10 + ' ' + (i.unit || '') : ''} ${i.name}`.trim()).join('\n') : '';
-  const copyList = async () => { try { await navigator.clipboard.writeText(listText); } catch (e) { } };
+  const handleWeeklyImportClick = async () => {
+    const today = new Date();
+    const currentWeekKey = getISOWeekKey(today);
+    const importedWeeks = await storageGet('shopping_imported_weeks', true, []);
+
+    if (importedWeeks.includes(currentWeekKey)) {
+      setShowWeeklyConfirm(true);
+    } else {
+      executeWeeklyImport();
+    }
+  };
+
+  const toggleCategoryCollapse = (cat) => {
+    setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+  };
 
   return (
-    <div className="space-y-4">
-      <div className={cardCls + " space-y-3"}>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <label className={labelCls}>Von</label>
-            <input type="date" value={start} onChange={e => setStart(e.target.value)} className={inputCls + " mt-1"} />
+    <div className="space-y-4 pb-12 select-none">
+      {/* Container header & actions */}
+      <div className="bg-slate-900 rounded-2xl p-4 shadow-xl border border-slate-800 text-white space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="text-rose-500 stroke-[2.25]" size={22} />
+            <h2 className="font-bold text-lg tracking-tight text-white font-sans">Einkaufsliste</h2>
           </div>
-          <div className="w-20">
-            <label className={labelCls}>Tage</label>
-            <input type="number" min="1" max="14" value={days} onChange={e => setDays(parseInt(e.target.value) || 1)} className={inputCls + " mt-1"} />
+
+          <div className="flex items-center gap-2">
+            {/* Sort Selector Dropdown */}
+            <div className="relative">
+              <select
+                value={sortMode}
+                onChange={e => setSortMode(e.target.value)}
+                className="bg-slate-800 text-slate-200 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-rose-500 cursor-pointer"
+              >
+                <option value="logical">⇅ Supermarkt</option>
+                <option value="alphabetical">A-Z Name</option>
+                <option value="date">🕒 Neueste</option>
+              </select>
+            </div>
+
+            {/* Wochenzutaten Button */}
+            <button
+              onClick={handleWeeklyImportClick}
+              className="bg-rose-600 hover:bg-rose-500 active:scale-95 text-white px-3 py-1.5 rounded-xl text-xs font-mono uppercase font-bold flex items-center gap-1.5 shadow transition-all"
+              title="Alle Zutaten der nächsten 7 Tage hinzufügen"
+            >
+              <Plus size={14} /> Wochen-Zutaten
+            </button>
           </div>
         </div>
-        <button onClick={generate} disabled={loading} className={primaryBtnCls}>
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <ShoppingCart size={14} />} Liste erstellen
-        </button>
-      </div>
 
-      {items && (
-        <div className={cardCls}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-mono font-semibold uppercase tracking-wide text-sm">Zutaten ({items.length})</span>
-            <button onClick={copyList} className="text-xs text-stone-500 hover:text-stone-900 flex items-center gap-1 font-mono uppercase tracking-wide"><Copy size={12} /> Kopieren</button>
+        {/* Search Bar with Autocomplete */}
+        <div className="relative">
+          <div className="relative flex items-center">
+            <Search className="absolute left-3.5 text-slate-400" size={18} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Was brauchst du? (z.B. Hackfleisch, Haferflocken...)"
+              className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all shadow-inner"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-3 text-slate-400 hover:text-white">
+                <X size={16} />
+              </button>
+            )}
           </div>
-          <div className="space-y-1 mb-3">
-            {items.map((it, i) => (
-              <label key={i} className="flex items-center gap-2 py-1.5 border-b border-stone-100 last:border-0">
-                <input type="checkbox" checked={!!checked[i]} onChange={() => setChecked({ ...checked, [i]: !checked[i] })} />
-                <span className={`text-sm flex-1 ${checked[i] ? 'line-through text-stone-300' : ''}`}>
-                  {it.amount ? `${Math.round(it.amount * 10) / 10} ${it.unit || ''} ` : ''}{it.name}
-                </span>
-              </label>
-            ))}
-            {items.length === 0 && <div className="text-sm text-stone-400 text-center py-4">Keine Zutaten im Zeitraum geplant.</div>}
-          </div>
-          {items.length > 0 && (
-            <div>
-              <label className={labelCls}>Zum Kopieren markieren</label>
-              <textarea readOnly value={listText} onClick={e => e.target.select()} rows={Math.min(10, items.length + 1)} className={inputCls + " mt-1 font-mono"} />
+
+          {/* Instant Autocomplete Suggestions */}
+          {search.trim() && (
+            <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto divide-y divide-slate-800 animate-fade-in">
+              {suggestions.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => handleActivateProduct(p)}
+                  className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-slate-800 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <ProductPictogram icon={p.icon} category={p.category} className="w-5 h-5 text-rose-400" />
+                    <div>
+                      <span className="text-sm font-semibold text-white">{p.name}</span>
+                      <span className="text-xs text-slate-400 block font-mono">{p.category}</span>
+                    </div>
+                  </div>
+                  <Plus size={16} className="text-rose-500" />
+                </button>
+              ))}
+
+              {/* Add custom item if no exact match */}
+              <button
+                onClick={() => handleActivateProduct(search.trim())}
+                className="w-full px-4 py-3 flex items-center gap-2 text-rose-400 hover:bg-slate-800 font-mono text-xs font-semibold"
+              >
+                <PlusCircle size={16} /> "{search.trim()}" als eigenes Produkt hinzufügen
+              </button>
             </div>
           )}
         </div>
+      </div>
+
+      {/* Active Items (Rot/Coral Tiles Grid) */}
+      <div className="bg-slate-900 rounded-2xl p-4 shadow-xl border border-slate-800 text-white space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-sm text-slate-200 uppercase font-mono tracking-wider flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+            Einkaufsliste ({activeItems.length})
+          </h3>
+          <span className="text-[10px] text-slate-400 font-mono">Tippen = Abhaken · Halten = Details</span>
+        </div>
+
+        {activeItems.length > 0 ? (
+          <div className="grid grid-cols-3 gap-2.5">
+            {activeItems.map(item => (
+              <ShoppingTile
+                key={item.id}
+                item={item}
+                product={allProducts.find(p => p.id === item.productId || p.name.toLowerCase() === item.name.toLowerCase())}
+                isActive={true}
+                onShortClick={handleShortClickTile}
+                onLongPress={setDetailModalItem}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-slate-400 border border-dashed border-slate-800 rounded-xl bg-slate-950/40">
+            <ShoppingCart size={32} className="mx-auto mb-2 text-slate-600" />
+            <p className="text-sm font-medium text-slate-300">Deine Einkaufsliste ist leer!</p>
+            <p className="text-xs text-slate-500 mt-1">Suche oben nach Produkten oder tippe auf Produkte unten im Katalog.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Catalog & Zuletzt verwendet Container */}
+      <div className="bg-slate-900 rounded-2xl p-4 shadow-xl border border-slate-800 text-white space-y-5">
+        {/* Section 1: Zuletzt verwendet (ALWAYS AT THE VERY TOP ABOVE OTHER CATEGORIES) */}
+        {recentItems.length > 0 && (
+          <div className="space-y-2 border-b border-slate-800 pb-4">
+            <button
+              onClick={() => toggleCategoryCollapse('zuletzt_verwendet')}
+              className="w-full flex items-center justify-between text-left group"
+            >
+              <h3 className="font-bold text-sm text-teal-400 uppercase font-mono tracking-wider flex items-center gap-2">
+                <RotateCcw size={16} /> Zuletzt verwendet ({recentItems.length})
+              </h3>
+              {collapsedCategories['zuletzt_verwendet'] ? <ChevronRight size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+            </button>
+
+            {!collapsedCategories['zuletzt_verwendet'] && (
+              <div className="grid grid-cols-3 gap-2.5 pt-1">
+                {recentItems.slice(0, 18).map(item => (
+                  <ShoppingTile
+                    key={item.id}
+                    item={item}
+                    product={allProducts.find(p => p.id === item.productId || p.name.toLowerCase() === item.name.toLowerCase())}
+                    isActive={false}
+                    onShortClick={handleShortClickTile}
+                    onLongPress={setDetailModalItem}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Section 2: Catalog Categories (Alphabetically Sorted) */}
+        <div className="space-y-4">
+          <div className="text-xs text-slate-400 font-mono uppercase tracking-widest">Produktdatenbank Katalog</div>
+
+          {sortedCatalogCategories.map(cat => {
+            const catProducts = categoryCatalogMap[cat] || [];
+            if (catProducts.length === 0) return null;
+            const isCollapsed = !!collapsedCategories[cat];
+
+            return (
+              <div key={cat} className="space-y-2 border-b border-slate-800/80 last:border-0 pb-3">
+                <button
+                  onClick={() => toggleCategoryCollapse(cat)}
+                  className="w-full flex items-center justify-between text-left py-1 hover:text-rose-400 transition-colors"
+                >
+                  <h4 className="font-semibold text-xs sm:text-sm text-slate-200 font-sans tracking-wide flex items-center gap-2">
+                    <ProductPictogram icon={''} category={cat} className="w-4 h-4 text-rose-500" />
+                    {cat} <span className="text-slate-500 font-mono text-xs">({catProducts.length})</span>
+                  </h4>
+                  {isCollapsed ? <ChevronRight size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
+                </button>
+
+                {!isCollapsed && (
+                  <div className="grid grid-cols-3 gap-2.5 pt-1">
+                    {catProducts.map(p => {
+                      const dummyItem = {
+                        id: p.id,
+                        productId: p.id,
+                        name: p.name,
+                        category: p.category,
+                        icon: p.icon,
+                        detail: '',
+                        completed: true
+                      };
+                      return (
+                        <ShoppingTile
+                          key={p.id}
+                          item={dummyItem}
+                          product={p}
+                          isActive={false}
+                          onShortClick={() => handleActivateProduct(p)}
+                          onLongPress={() => setDetailModalItem(dummyItem)}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Detail & Save Modal */}
+      {detailModalItem && (
+        <ProductDetailModal
+          item={detailModalItem}
+          product={allProducts.find(p => (p.id === detailModalItem.productId) || (p.name.toLowerCase() === detailModalItem.name.toLowerCase()))}
+          onClose={() => setDetailModalItem(null)}
+          onSaveDetail={handleSaveDetail}
+          onRemoveItem={handleRemoveItem}
+          onSaveToDatabase={handleSaveToDatabase}
+        />
+      )}
+
+      {/* Weekly Confirm Modal */}
+      {showWeeklyConfirm && (
+        <WeeklyConfirmModal
+          onConfirm={() => {
+            setShowWeeklyConfirm(false);
+            executeWeeklyImport();
+          }}
+          onClose={() => setShowWeeklyConfirm(false)}
+        />
       )}
     </div>
   );
+}
+
+function getISOWeekKey(d) {
+  const date = new Date(d.getTime());
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+  const week1 = new Date(date.getFullYear(), 0, 4);
+  const weekNum = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+  return `${date.getFullYear()}-W${pad(weekNum)}`;
+}
+
+function consolidateIngredientsForNextWeek(usageList, allProducts) {
+  const itemMap = new Map();
+
+  for (const { recipe, multiplier } of usageList) {
+    for (const ing of recipe.ingredients || []) {
+      const rawName = (ing.name || ing.raw || '').trim();
+      if (!rawName) continue;
+
+      const lowerName = rawName.toLowerCase();
+      let matchedProd = allProducts.find(p => p.name.toLowerCase() === lowerName);
+
+      if (!matchedProd) {
+        if (lowerName.includes('hackfleisch') || lowerName.includes('minced meat')) matchedProd = allProducts.find(p => p.id === 'hackfleisch');
+        else if (lowerName.includes('apfel') || lowerName.includes('äpfel') || lowerName.includes('apple')) matchedProd = allProducts.find(p => p.id === 'apfel');
+        else if (lowerName.includes('tomate') || lowerName.includes('tomato')) matchedProd = allProducts.find(p => p.id === 'tomaten');
+        else if (lowerName.includes('zwiebel') || lowerName.includes('onion')) matchedProd = allProducts.find(p => p.id === 'zwiebeln');
+        else if (lowerName.includes('knoblauch') || lowerName.includes('garlic')) matchedProd = allProducts.find(p => p.id === 'knoblauch');
+        else if (lowerName.includes('kartoffel') || lowerName.includes('potato')) matchedProd = allProducts.find(p => p.id === 'kartoffeln');
+        else if (lowerName.includes('nudel') || lowerName.includes('spaghetti') || lowerName.includes('penne') || lowerName.includes('pasta')) matchedProd = allProducts.find(p => p.id === 'nudeln');
+        else if (lowerName.includes('reis') || lowerName.includes('rice')) matchedProd = allProducts.find(p => p.id === 'reis');
+        else if (lowerName.includes('milch') || lowerName.includes('milk')) matchedProd = allProducts.find(p => p.id === 'milch');
+        else if (lowerName.includes('eier') || lowerName.includes('egg')) matchedProd = allProducts.find(p => p.id === 'eier');
+        else if (lowerName.includes('butter')) matchedProd = allProducts.find(p => p.id === 'butter');
+        else if (lowerName.includes('käse') || lowerName.includes('cheese') || lowerName.includes('gouda')) matchedProd = allProducts.find(p => p.id === 'gouda');
+        else if (lowerName.includes('sahne')) matchedProd = allProducts.find(p => p.id === 'schlagsahne');
+        else if (lowerName.includes('olivenöl') || lowerName.includes('öl')) matchedProd = allProducts.find(p => p.id === 'olivenol');
+        else if (lowerName.includes('brot') || lowerName.includes('bread')) matchedProd = allProducts.find(p => p.id === 'brot');
+        else if (lowerName.includes('cola')) matchedProd = allProducts.find(p => p.id === 'cola');
+      }
+
+      const prodId = matchedProd ? matchedProd.id : lowerName;
+      const displayName = matchedProd ? matchedProd.name : rawName;
+      const category = matchedProd ? matchedProd.category : 'Grundzutaten';
+      const icon = matchedProd ? matchedProd.icon : 'Package';
+
+      let unit = (ing.unit || '').toLowerCase().trim();
+      let amount = ing.amount != null ? ing.amount * multiplier : null;
+
+      // Conversion: 1 pound = 453.6g
+      if (unit === 'pound' || unit === 'pounds' || unit === 'lb' || unit === 'lbs') {
+        if (amount != null) amount = amount * 453.6;
+        unit = 'g';
+      }
+
+      if (itemMap.has(prodId)) {
+        const existing = itemMap.get(prodId);
+        if (amount != null && existing.amount != null && (existing.unit === unit || !existing.unit)) {
+          existing.amount += amount;
+        } else if (amount != null && existing.amount == null) {
+          existing.amount = amount;
+          existing.unit = unit;
+        }
+      } else {
+        itemMap.set(prodId, {
+          productId: prodId,
+          name: displayName,
+          category,
+          icon,
+          amount,
+          unit,
+        });
+      }
+    }
+  }
+
+  const result = [];
+  for (const [prodId, data] of itemMap.entries()) {
+    let detailStr = '';
+    if (data.amount != null && data.amount > 0) {
+      if (data.unit === 'g' && data.amount >= 1000) {
+        detailStr = (Math.round((data.amount / 1000) * 10) / 10) + 'kg';
+      } else if (data.unit === 'ml' && data.amount >= 1000) {
+        detailStr = (Math.round((data.amount / 1000) * 10) / 10) + 'l';
+      } else {
+        detailStr = Math.round(data.amount * 10) / 10 + (data.unit ? ' ' + data.unit : '');
+      }
+    }
+
+    result.push({
+      id: prodId,
+      productId: prodId,
+      name: data.name,
+      category: data.category,
+      icon: data.icon,
+      detail: detailStr,
+      addedAt: Date.now(),
+      completed: false,
+      lastUsedAt: Date.now(),
+    });
+  }
+
+  return result;
 }
 
 /* ---------------------------------- Cookbook tab ---------------------------------- */
@@ -3009,12 +3997,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.6.0</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.7.0</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
-          Codename: Gyros 🥙
+          Codename: Hefezopf 🍞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.0 (Hefezopf)
         </div>
       </div>
     </div>
