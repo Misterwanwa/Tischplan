@@ -1,0 +1,153 @@
+ID;Name;Kategorie;Icon;Vorschlaege;SaisonMonate
+apfel;Äpfel;Obst;Apple;Gala,Elstar,Braeburn,Granny Smith,1kg,500g;8,9,10,11
+banane;Bananen;Obst;Banana;Chiquita,Bio,1 Büschel,500g,1kg,3 Stk;
+erdbeeren;Erdbeeren;Obst;Cherry;500g Schale,250g,Bio,1kg;5,6,7
+himbeeren;Himbeeren;Obst;Cherry;125g,250g,Frisch;6,7,8
+heidelbeeren;Heidelbeeren;Obst;Cherry;125g,250g,Bio;6,7,8,9
+brombeeren;Brombeeren;Obst;Cherry;125g Schale,Frisch;7,8,9
+johannisbeeren;Johannisbeeren;Obst;Cherry;Rot,Schwarz,250g;6,7
+stachelbeeren;Stachelbeeren;Obst;Cherry;Grün,Rot,500g;6,7
+zitronen;Zitronen;Obst;Citrus;Bio unbehandelt,Netz 500g,2 Stk;
+limette;Limetten;Obst;Citrus;Unbehandelt,3er Pack,1 Stk;
+orangen;Orangen;Obst;Citrus;Saftorangen,1.5kg Netz,Bio;11,12,1,2,3
+blutorange;Blutorangen;Obst;Citrus;1kg Netz,Sizilianisch;1,2,3
+mandarinen;Mandarinen;Obst;Citrus;Clementinen,1kg Kiste,Kernlos;11,12,1
+clementinen;Clementinen;Obst;Citrus;Kernlos,750g Beutel;11,12,1
+grapefruit;Grapefruit;Obst;Citrus;Rosa,Rot,2 Stk;11,12,1,2
+kumquats;Kumquats;Obst;Citrus;250g Schale,Bio;
+weintrauben;Weintrauben;Obst;Cherry;Kernlos,Helle Trauben,Dunkle Trauben,500g;8,9,10
+birne;Birnen;Obst;Apple;Abate Fetel,Williams,1kg;8,9,10,11
+kiwi;Kiwis;Obst;Apple;Grün,Gold,4 Stk;
+wassermelone;Wassermelone;Obst;Apple;1/2 Melone,1/4 Melone,Ganz;6,7,8
+galiamelone;Galiamelone;Obst;Apple;1 Stk,Süß;6,7,8
+honigmelone;Honigmelone;Obst;Apple;Gelb,1 Stk;6,7,8
+cantaloupe;Cantaloupe-Melone;Obst;Apple;1 Stk,Süß;6,7,8
+pfirsich;Pfirsiche;Obst;Apple;Plattpfirsiche,1kg,500g;6,7,8,9
+nektarine;Nektarinen;Obst;Apple;Gelbfleischig,Weißfleischig,1kg;6,7,8,9
+aprikose;Aprikosen;Obst;Apple;500g Schale,1kg;6,7,8
+kirschen;Kirschen;Obst;Cherry;Süßkirschen,Sauerkirschen,500g;6,7
+pflaumen;Pflaumen;Obst;Apple;Blau,500g,1kg;7,8,9
+zwetschgen;Zwetschgen;Obst;Apple;1kg Korb,Zum Backen;8,9
+mirabellen;Mirabellen;Obst;Apple;Gelb,500g;8,9
+ananas;Ananas;Obst;Apple;Sweet,1 Stk,Flugananas;
+mango;Mango;Obst;Apple;Essreif,Flugmango,1 Stk;
+papaya;Papaya;Obst;Apple;1 Stk,Bio;
+feigen;Feigen;Obst;Apple;Frisch 4er Pack,Türkisch;8,9,10
+datteln;Datteln;Obst;Nut;Medjool 200g,Getrocknet;
+granatapfel;Granatapfel;Obst;Apple;1 Stk,Kerne;9,10,11,12
+maracuja;Maracuja / Passionsfrucht;Obst;Apple;2 Stk,Süß;
+drachenfrucht;Drachenfrucht (Pitaya);Obst;Apple;Rot,Weiß,1 Stk;
+kaki;Kaki / Sharonfrucht;Obst;Apple;Essreif,2 Stk;10,11,12,1
+preiselbeeren;Preiselbeeren;Obst;Cherry;Glas 250g,Frisch;
+cranberrys;Cranberrys;Obst;Cherry;Frisch 300g,Getrocknet;
+rhabarber;Rhabarber;Obst;Carrot;1 Bund,500g;4,5,6
+lychee;Litchis;Obst;Cherry;Frisch 250g;12,1
+kokosnuss;Kokosnuss;Obst;Nut;1 Stk,Trinkkokosnuss;
+quitten;Quitten;Obst;Apple;1kg,Zum Gelee;9,10,11
+sanddorn;Sanddorn;Obst;Cherry;Beeren,Saft 330ml;
+physalis;Physalis (Kapstachelbeere);Obst;Cherry;100g Schale;
+sternfrucht;Sternfrucht (Carambola);Obst;Star;1 Stk,Deko;
+guave;Guave;Obst;Apple;1 Stk,Frisch;
+hagebutten;Hagebutten;Obst;Cherry;Tee,Frisch;
+tomaten;Tomaten;Gemüse;Carrot;Strauchtomaten,Rispen,Cocktail,Roma,500g;6,7,8,9
+gurke;Gurke;Gemüse;Carrot;Salatgurke,Mini-Gurken,1 Stk,2 Stk;6,7,8,9
+zucchini;Zucchini;Gemüse;Carrot;Grün,Gelb,500g,2 Stk;6,7,8,9
+karotten;Karotten / Möhren;Gemüse;Carrot;1kg Beutel,Bund,500g,Bio;7,8,9,10,11,12,1,2
+paprika;Paprika;Gemüse;Carrot;Rot,Gelb,Grün,3er Mix,500g;7,8,9,10
+zwiebeln;Zwiebeln;Gemüse;Carrot;Gelb,Rot,Schalotten,1kg Netz,500g;
+schalotten;Schalotten;Gemüse;Carrot;250g Netz,Französisch;
+fruhlingszwiebeln;Frühlingszwiebeln / Lauchzwiebeln;Gemüse;Carrot;1 Bund,2 Bünde;
+knoblauch;Knoblauch;Gemüse;Carrot;1 Knolle,3er Pack,Zehen;
+kartoffeln;Kartoffeln;Gemüse;Carrot;Festkochend,Mehligkochend,Vorwiegend fest,2.5kg,1kg;
+susskartoffeln;Süßkartoffeln;Gemüse;Carrot;1kg,2 Stk,Bio;
+brokkoli;Brokkoli;Gemüse;Salad;500g Kopf,1 Stk;6,7,8,9,10
+blumenkohl;Blumenkohl;Gemüse;Salad;1 Kopf,Frisch;6,7,8,9,10
+spinat;Spinat;Gemüse;Leaf;Blattspinat,Rahmspinat,Baby-Spinat,500g;4,5,9,10
+eisbergsalat;Eisbergsalat;Gemüse;Salad;1 Kopf,Knackig;6,7,8,9
+kopfsalat;Kopfsalat;Gemüse;Salad;1 Kopf,Frisch;5,6,7,8
+rucola;Rucola;Gemüse;Leaf;125g Schale,Bio;5,6,7,8,9
+feldsalat;Feldsalat / Nüsslisalat;Gemüse;Leaf;150g Schale,Geputzt;10,11,12,1,2
+champignons;Champignons;Gemüse;Carrot;Weiß,Braune Champignons,400g,250g;
+kurbis;Kürbis;Gemüse;Carrot;Hokkaido,Butternut,1 Stk;9,10,11
+lauch;Lauch / Porree;Gemüse;Carrot;1 Stange,500g;9,10,11,12,1,2
+auberginen;Auberginen;Gemüse;Carrot;1 Stk,2 Stk,Dunkelblau;7,8,9
+radieschen;Radieschen;Gemüse;Carrot;1 Bund,Knackig;5,6,7,8,9
+spargel;Spargel;Gemüse;Carrot;Weiß 500g,Grün 500g,1kg;4,5,6
+sellerie;Knollensellerie;Gemüse;Carrot;1 Knolle,Halber Kopf;9,10,11,12,1
+staudensellerie;Staudensellerie / Stangensellerie;Gemüse;Carrot;1 Staudenstrunk,500g;
+rotkohl;Rotkohl / Rotkraut;Gemüse;Salad;1 Kopf,Glas 680g;9,10,11,12,1
+weisskohl;Weißkohl / Kraut;Gemüse;Salad;1 Kopf,Zum Eisbein;9,10,11,12,1
+grunkohl;Grünkohl;Gemüse;Leaf;Frisch 1kg,TK;11,12,1,2
+rosenkohl;Rosenkohl;Gemüse;Salad;500g Netz,Frisch;10,11,12,1
+wirsing;Wirsing;Gemüse;Salad;1 Kopf,500g;9,10,11,12
+chinakohl;Chinakohl;Gemüse;Salad;1 Kopf,Zum Wok;
+pakchoi;Pak Choi;Gemüse;Leaf;2er Pack,Mini Pak Choi;
+erbsen;Erbsen;Gemüse;Carrot;Frisch Schoten,TK 450g,Dose;6,7
+bohnen;Grüne Bohnen / Buschbohnen;Gemüse;Carrot;500g Beutel,Prinzessbohnen;7,8,9
+dickebohnen;Dicke Bohnen / Saubohnen;Gemüse;Carrot;Frisch,Glas 400g;6,7
+linsen;Linsen (Tellerlinsen);Gemüse;Nut;Brown 500g,Rote Linsen,Beluga;
+kichererbsen;Kichererbsen;Gemüse;Nut;Dose 400g,Getrocknet 500g;
+mais;Zuckermais;Gemüse;Carrot;Frisch 2er Kolben,Dose 300g;8,9,10
+fenchel;Fenchel;Gemüse;Carrot;2 Knollen,500g;6,7,8,9,10
+meerrettich;Meerrettich;Gemüse;Carrot;Stange,Glas geraspelt;
+rote_bete;Rote Bete / Rote Rüben;Gemüse;Carrot;Vakuumiert 500g,Frisch;9,10,11,12,1
+pastinaken;Pastinaken;Gemüse;Carrot;500g Beutel,Bio;10,11,12,1,2
+petersilienwurzel;Petersilienwurzel;Gemüse;Carrot;1 Bund,Für Suppengrün;10,11,12
+mangold;Mangold;Gemüse;Leaf;1 Bund,Bunt;6,7,8,9,10
+chicoree;Chicorée;Gemüse;Salad;500g Packung,3 Stk;11,12,1,2,3
+endivie;Endiviensalat;Gemüse;Salad;1 Kopf,Kraus;9,10,11,12
+kresse;Gartenkresse;Gemüse;Leaf;1 Kästchen,Frisch;
+bambussprossen;Bambussprossen;Gemüse;Carrot;Dose 300g,Streifen;
+suppengrun;Suppengrün / Suppengemüse;Gemüse;Carrot;1 Bund frisch,TK;
+brot;Brot;Brot & Gebäck;Wheat;Vollkorn,Graubrot,Mischbrot,Toastbrot,Baguette,1 Laib;
+brotchen;Brötchen / Semmeln;Brot & Gebäck;Wheat;Weizen,Kaiser,Vollkorn,Mehrkorn,4 Stk,6 Stk;
+toast;Toastbrot;Brot & Gebäck;Wheat;Buttertoast,Vollkorntoast,500g,750g;
+baguette;Baguette;Brot & Gebäck;Wheat;Frisch,Zum Aufbacken,2 Stk;
+croissant;Croissant;Brot & Gebäck;Wheat;Buttercroissant,Schoko,2 Stk;
+brezel;Laugenbrezel;Brot & Gebäck;Wheat;2 Stk,Mit Salz;
+vollkornbrot;Vollkornbrot;Brot & Gebäck;Wheat;Geschnitten,500g;
+knackebrot;Knäckebrot;Brot & Gebäck;Wheat;Wasa Original,Vollkorn,Sesam;
+pita;Pita-Brot;Brot & Gebäck;Wheat;4er Pack,Zum Füllen;
+pizzateig;Pizzateig (Kühlregal);Brot & Gebäck;Pizza;Mit Soße,XXL Blech;
+milch;Milch;Milchprodukte;Milk;Vollmilch 3.5%,Fettarm 1.5%,Haferdrink,Laktosefrei,1l,2l;
+schlagsahne;Schlagsahne;Milchprodukte;Milk;200g Becher,30% Fett,2er Pack;
+magerquark;Magerquark;Milchprodukte;Milk;500g Becher,250g;
+naturjoghurt;Naturjoghurt;Milchprodukte;Milk;3.5% Fett,1.5% Fett,500g Glas,1kg;
+butter;Butter;Milchprodukte;Milk;Süßrahm,Sauerrahm,250g Packung,Bio;
+frischkase;Frischkäse;Milchprodukte;Milk;Natur,Kräuter,Bresso,200g;
+gouda;Gouda;Käse;Layers;Jung,Mittelalt,Alt,Scheiben,200g Stück;
+mozzarella;Mozzarella;Käse;Layers;Kugel 125g,Büffelmozzarella,Gerieben,2er Pack;
+parmesan;Parmesan;Käse;Layers;Grana Padano,Parmigiano Reggiano,Stück,Gerieben 100g;
+feta;Feta (Schafskäse);Käse;Layers;Original Feta 200g,Hirtenkäse;
+hackfleisch;Hackfleisch (Gemischt);Fleisch;Flame;Gemischt (Rind/Schwein),500g,1kg;
+rinderhack;Rinderhackfleisch;Fleisch;Beef;500g,1kg,Bio,Mager;
+hahnchenbrust;Hähnchenbrustfilet;Fleisch;Drumstick;500g,1kg,Bio;
+lachs;Lachsfilet (Frisch);Fisch;Fish;200g Stück,400g Packung,Mit Haut;
+thunfisch_dose;Thunfisch (Dose);Fisch;Fish;In Eigensaft,In Öl,3er Pack;
+eier;Eier;Grundzutaten;Egg;6er Pack,10er Pack,Freiland M,Bio L;
+mehl405;Weizenmehl Type 405;Grundzutaten;Wheat;1kg Packung;
+zucker;Zucker (Raffinade);Grundzutaten;Egg;1kg Packung;
+salz;Salz (Speisesalz);Grundzutaten;Egg;Jodsalz 500g,Meersalz;
+olivenol;Olivenöl (Extra Vergine);Grundzutaten;Droplets;750ml Flasche,1l;
+pfeffer;Pfeffer (Schwarz);Gewürze;Sparkles;Gemahlen,Mühle,Ganze Körner;
+paprika_edelsuess;Paprikapulver (Edelsüß);Gewürze;Sparkles;Dose 50g;
+zimt;Zimt (Gemahlen);Gewürze;Sparkles;Ceylon-Zimt,50g;
+pizza_salami;TK-Pizza Salami;Fertig & Tiefkühlprodukte;Pizza;Wagner / Dr. Oetker,2er Pack;
+tk_pommes;TK-Pommes Frites;Fertig & Tiefkühlprodukte;Package;Backofen 1kg,Steakhouse;
+spaghetti;Spaghetti;Getreideprodukte;Wheat;Barilla No.5,500g Packung,Vollkorn;
+penne;Penne Rigate;Getreideprodukte;Wheat;500g Packung;
+basmatireis;Basmati-Reis;Getreideprodukte;Wheat;1kg Beutel,Bio;
+haferflocken_zart;Haferflocken (Zart);Getreideprodukte;Wheat;Kölln 500g,Bio;
+vollmilch_schoko;Vollmilch-Schokolade;Süssigkeiten;Cookie;Milka 100g,Ritter Sport;
+goldbaeren;Haribo Goldbären;Süssigkeiten;Cookie;200g Beutel,360g;
+paprika_chips;Paprika-Chips;Süssigkeiten;Cookie;Funny-Frisch 150g,Pringles;
+wasser_sprudel;Mineralwasser (Sprudel);Getränke;GlassWater;6x1.5l PET,Kiste Glas 12x0.7l;
+apfelsaft;Apfelsaft (Naturtrüb);Getränke;Wine;100% Direktsaft 1l;
+cola_zero;Coca-Cola Zero Sugar;Getränke;Wine;1.5l PET,Dose 0.33l,6er Pack;
+bier_pils;Pilsener Bier;Getränke;Beer;Kiste 20x0.5l,6er Pack 0.33l;
+klopapier;Klopapier / Toilettenpapier;Haushalt;Shield;3-lagig,4-lagig,8er Pack,10er Pack;
+kuchenrolle;Küchenrolle / Zewa;Haushalt;Shield;4er Pack,3-lagig;
+spulmittel;Spülmittel (Hand);Haushalt;Droplets;Pril / Fairy 500ml,Zitrone;
+duschgel;Duschgel;Pflege & Gesundheit;Bath;Nivea / Balea 250ml,Sensitive,Sport;
+shampoo;Shampoo;Pflege & Gesundheit;Bath;Head & Shoulders 300ml,Volumen,Anti-Schuppen;
+zahnpasta;Zahnpasta / Zahncreme;Pflege & Gesundheit;Pill;Sensodyne 75ml,Colgate,Blend-a-med;

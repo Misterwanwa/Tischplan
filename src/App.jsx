@@ -14,6 +14,8 @@ import {
   DEFAULT_PRESET_DETAILS,
   BUILTIN_PRODUCTS,
   ProductPictogram,
+  parseProductsCSV,
+  exportProductsCSV,
 } from './productDatabase';
 
 /* ---------------------------------- Design tokens ---------------------------------- */
@@ -3088,12 +3090,37 @@ function ShoppingTab() {
   const [showWeeklyConfirm, setShowWeeklyConfirm] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState({});
 
-  // Load state from localStorage on mount
+  // Load state from localStorage on mount & check daily CSV auto-sync
   useEffect(() => {
     (async () => {
       const storedItems = await storageGet('shopping_items_v2', true, []);
-      const storedCustom = await storageGet('shopping_custom_db', true, []);
+      let storedCustom = await storageGet('shopping_custom_db', true, []);
       setItems(storedItems || []);
+
+      // Check daily CSV auto-sync from /products.csv
+      try {
+        const lastSyncDate = localStorage.getItem('tischplan_csv_last_sync');
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (lastSyncDate !== todayStr) {
+          const res = await fetch('/products.csv', { cache: 'no-cache' });
+          if (res.ok) {
+            const csvText = await res.text();
+            const csvProducts = parseProductsCSV(csvText);
+            if (csvProducts.length > 0) {
+              const map = new Map((storedCustom || []).map(p => [p.id, p]));
+              csvProducts.forEach(p => map.set(p.id, p));
+              storedCustom = Array.from(map.values());
+              await storageSet('shopping_custom_db', storedCustom, true);
+              const nowStr = new Date().toLocaleString('de-DE');
+              localStorage.setItem('tischplan_csv_last_sync', todayStr);
+              localStorage.setItem('tischplan_csv_last_sync_time', nowStr);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Auto CSV sync error:', e);
+      }
+
       setCustomDb(storedCustom || []);
     })();
   }, []);
@@ -3840,6 +3867,59 @@ function SettingsTab() {
     catch (e) { showToast('Datei konnte nicht gelesen werden', 'error'); }
     finally { setBmBusy(null); }
   };
+  const [csvBusy, setCsvBusy] = useState(false);
+  const [lastCsvSync, setLastCsvSync] = useState(localStorage.getItem('tischplan_csv_last_sync_time') || null);
+
+  const handleExportCSV = async () => {
+    try {
+      const storedCustom = await storageGet('shopping_custom_db', true, []);
+      const map = new Map();
+      BUILTIN_PRODUCTS.forEach(p => map.set(p.id, p));
+      storedCustom.forEach(p => map.set(p.id, p));
+      const allProds = Array.from(map.values());
+
+      const csvContent = exportProductsCSV(allProds);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `products_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('CSV-Datei heruntergeladen');
+    } catch (e) {
+      console.error(e);
+      showToast('Export fehlgeschlagen', 'error');
+    }
+  };
+
+  const handleCSVUpload = async (file) => {
+    setCsvBusy(true);
+    try {
+      const text = await file.text();
+      const csvProducts = parseProductsCSV(text);
+      if (csvProducts.length === 0) {
+        showToast('Keine gültigen Produkte in der CSV gefunden', 'error');
+        return;
+      }
+      const storedCustom = await storageGet('shopping_custom_db', true, []);
+      const map = new Map(storedCustom.map(p => [p.id, p]));
+      csvProducts.forEach(p => map.set(p.id, p));
+      const merged = Array.from(map.values());
+      await storageSet('shopping_custom_db', merged, true);
+      const nowStr = new Date().toLocaleString('de-DE');
+      localStorage.setItem('tischplan_csv_last_sync', new Date().toISOString().split('T')[0]);
+      localStorage.setItem('tischplan_csv_last_sync_time', nowStr);
+      setLastCsvSync(nowStr);
+      showToast(`${csvProducts.length} Produkte aus CSV synchronisiert!`);
+    } catch (e) {
+      console.error(e);
+      showToast('Fehler beim Lesen der CSV-Datei', 'error');
+    } finally {
+      setCsvBusy(false);
+    }
+  };
 
   const sortedCookbooks = [...settings.cookbooks].sort((a, b) => {
     const titleA = (typeof a === 'string' ? a : a.title).toLowerCase();
@@ -4039,14 +4119,35 @@ function SettingsTab() {
 
 
 
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-1 font-mono uppercase tracking-wide">Produktdatenbank (CSV-Synchronisation)</div>
+        <p className="text-xs text-stone-500 mb-3">
+          Pflege Produkte leicht in Excel/Notepad. Die App prüft 1x täglich beim Start automatisch <code>public/products.csv</code> oder ermöglicht manuellen Abgleich.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={handleExportCSV} className={secondaryBtnCls}>
+            <Download size={14} /> CSV Exportieren
+          </button>
+          <label className={secondaryBtnCls + " cursor-pointer"}>
+            {csvBusy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} CSV Importieren
+            <input type="file" accept=".csv" className="hidden" onChange={e => e.target.files[0] && handleCSVUpload(e.target.files[0])} />
+          </label>
+        </div>
+        {lastCsvSync && (
+          <div className="text-[11px] text-stone-400 font-mono mt-2 text-center">
+            Letzter CSV-Abgleich: {lastCsvSync}
+          </div>
+        )}
+      </div>
+
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.7.3</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.0</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
-          Codename: Hefezopf 🍞
+          Codename: Ingwertee 🫖
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.0 (Ingwertee)
         </div>
       </div>
     </div>
