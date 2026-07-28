@@ -238,7 +238,7 @@ export const BUILTIN_PRODUCTS = [
   // ==========================================
   // 4. MILCHPRODUKTE (50+ Produkte)
   // ==========================================
-  { id: 'milch', name: 'Milch', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Vollmilch 3.5%', 'Fettarm 1.5%', 'Haferdrink', 'Laktosefrei', '1l', '2l'] },
+  { id: 'milch', name: 'Milch', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Vollmilch 3.5%', 'Fettarm 1.5%', 'Hafermilch', 'Laktosefrei', '1l', '2l'] },
   { id: 'schlagsahne', name: 'Schlagsahne', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['200g Becher', '30% Fett', '2er Pack'] },
   { id: 'magerquark', name: 'Magerquark', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['500g Becher', '250g'] },
   { id: 'speisequark40', name: 'Speisequark 40%', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['250g', '500g Becher'] },
@@ -250,10 +250,10 @@ export const BUILTIN_PRODUCTS = [
   { id: 'creme_fraiche', name: 'Crème Fraîche', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Classic 150g', 'Kräuter'] },
   { id: 'schmand', name: 'Schmand', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['24% Fett', '200g Becher'] },
   { id: 'kondensmilch', name: 'Kondensmilch', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['10% Fett', '7.5% Fett', 'Dose 340g'] },
-  { id: 'haferdrink', name: 'Haferdrink / Hafermilch', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Oatly Barista', 'Bio 1l', 'Ungesüßt'] },
-  { id: 'sojadrink', name: 'Sojadrink / Sojamilch', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Natur 1l', 'Vanille'] },
-  { id: 'mandeldrink', name: 'Mandeldrink', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Ungesüßt 1l', 'Röstmandel'] },
-  { id: 'reisdrink', name: 'Reisdrink', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Bio 1l'] },
+  { id: 'haferdrink', name: 'Hafermilch', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Oatly Barista', 'Bio 1l', 'Ungesüßt'] },
+  { id: 'sojadrink', name: 'Sojamilch', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Natur 1l', 'Vanille'] },
+  { id: 'mandeldrink', name: 'Mandelmilch', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Ungesüßt 1l', 'Röstmandel'] },
+  { id: 'reisdrink', name: 'Reismilch', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Bio 1l'] },
   { id: 'kokosdrink', name: 'Kokosdrink', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['1l Karton', 'Zum Kochen'] },
   { id: 'ayran', name: 'Ayran', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['250ml Becher', '500ml'] },
   { id: 'kefir', name: 'Kefir', category: 'Milchprodukte', icon: 'Milk', suggestedDetails: ['Kalinka 500g', 'Mild'] },
@@ -449,6 +449,7 @@ export const BUILTIN_PRODUCTS = [
   { id: 'krebssuppe', name: 'Hummercremesuppe (Dose)', category: 'Fisch', icon: 'Soup', suggestedDetails: ['400ml'] },
   { id: 'seeteufelbäckchen', name: 'Seeteufelbäckchen', category: 'Fisch', icon: 'Fish', suggestedDetails: ['200g'] },
   { id: 'sushi_grade_lachs', name: 'Sushi-Lachs (Sashimi)', category: 'Fisch', icon: 'Fish', suggestedDetails: ['Frisch 200g'] },
+  { id: 'sushi', name: 'Sushi', category: 'Fisch', icon: 'Fish', suggestedDetails: ['Maki', 'Nigiri', 'Mix-Box', 'Vegetarisch', '12 Stk'] },
 
   // ==========================================
   // 8. GRUNDZUTATEN (50+ Produkte)
@@ -471,6 +472,7 @@ export const BUILTIN_PRODUCTS = [
   { id: 'balsamico', name: 'Balsamico-Essig (Aceto)', category: 'Grundzutaten', icon: 'Wine', suggestedDetails: ['Dunkel 500ml', 'Bianco'] },
   { id: 'apfelessig', name: 'Apfelessig', category: 'Grundzutaten', icon: 'Wine', suggestedDetails: ['Naturtrüb 750ml'] },
   { id: 'weissweinessig', name: 'Weißweinessig', category: 'Grundzutaten', icon: 'Wine', suggestedDetails: ['500ml Flasche'] },
+  { id: 'reisessig', name: 'Reisessig', category: 'Grundzutaten', icon: 'Wine', suggestedDetails: ['Mild 250ml', 'Für Sushi'] },
   { id: 'gemusebruhe', name: 'Gemüsebrühe', category: 'Grundzutaten', icon: 'Soup', suggestedDetails: ['Glas 200g', 'Würfel'] },
   { id: 'huhnerbruhe', name: 'Hühnerbrühe', category: 'Grundzutaten', icon: 'Soup', suggestedDetails: ['Glas 400ml', 'Würfel'] },
   { id: 'rinderbruhe', name: 'Rinderbrühe', category: 'Grundzutaten', icon: 'Soup', suggestedDetails: ['Glas 400ml', 'Würfel'] },
@@ -658,8 +660,7 @@ export const BUILTIN_PRODUCTS = [
   { id: 'cashewkerne', name: 'Cashewkerne', category: 'Getreideprodukte', icon: 'Nut', suggestedDetails: ['Ungesalzen 200g'] },
   { id: 'erdnuesse', name: 'Erdnüsse (Geröstet & Gesalzen)', category: 'Getreideprodukte', icon: 'Nut', suggestedDetails: ['200g Dose'] },
   { id: 'studentenfutter', name: 'Studentenfutter', category: 'Getreideprodukte', icon: 'Nut', suggestedDetails: ['200g Beutel', 'Mit Rosinen'] },
-  { id: 'knuspermuesli', name: 'Knusper-Müsli / Granola', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['Schoko 500g', 'Nuss'] },
-  { id: 'schokomuesli', name: 'Schoko-Müsli', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['500g Packung'] },
+  { id: 'muesli', name: 'Müsli', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['Knusper-Müsli / Granola', 'Schoko-Müsli', 'Früchte-Müsli', 'Bircher Müsli', '500g', '1kg'] },
   { id: 'cornflakes', name: 'Cornflakes', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['Kellogg’s 375g'] },
   { id: 'cerealx', name: 'Cini Minis / Choco Krispies', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['375g Packung'] },
   { id: 'graupen', name: 'Perlgraupen', category: 'Getreideprodukte', icon: 'Wheat', suggestedDetails: ['500g Packung'] },
@@ -682,9 +683,7 @@ export const BUILTIN_PRODUCTS = [
   { id: 'popcorn_salzig', name: 'Popcorn (Salzig)', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['100g Beutel'] },
   { id: 'popcorn_suess', name: 'Popcorn (Süß)', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['100g Beutel'] },
   { id: 'butterkekse', name: 'Butterkekse', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Leibniz 200g'] },
-  { id: 'doppelkekse', name: 'Doppelkekse (Prinzengröße)', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Prinzen Rolle 400g'] },
-  { id: 'haferkekse', name: 'Haferkekse / Schoko-Hafer', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['IKEA Kafferep 600g'] },
-  { id: 'schokokekse', name: 'Schoko-Cookies', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Griesson 150g'] },
+  { id: 'kekse', name: 'Kekse', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Doppelkekse', 'Haferkekse', 'Schokokekse'] },
   { id: 'waffeln', name: 'Manner Waffeln', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Neapolitaner 75g Pack'] },
   { id: 'dominosteine', name: 'Dominosteine', category: 'Süssigkeiten', icon: 'Cookie', seasonalMonths: [10, 11, 12], suggestedDetails: ['Zartbitter 250g'] },
   { id: 'lebkuchen', name: 'Nürnberger Elisen-Lebkuchen', category: 'Süssigkeiten', icon: 'Cookie', seasonalMonths: [10, 11, 12], suggestedDetails: ['Schokoliert 5 Stk'] },
@@ -694,7 +693,7 @@ export const BUILTIN_PRODUCTS = [
   { id: 'eukalyptusbonbons', name: 'Eukalyptus-Menthol Bonbons', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['150g Beutel'] },
   { id: 'kaugummi', name: 'Kaugummi (Airwaves / Extra)', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Menthol 50er Dosen-Pack'] },
   { id: 'mars_snickers', name: 'Snickers / Mars Riegel', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['5er Multipack'] },
-  { id: 'muesliriegel', name: 'Müsliriegel (Corny)', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Schoko 6er Pack', 'Nuss'] },
+  { id: 'muesliriegel', name: 'Müsliriegel', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Schoko 6er Pack', 'Nuss'] },
   { id: 'energybar', name: 'Proteinriegel', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Barebells 55g Schoko'] },
   { id: 'erdnusslocken', name: 'Erdnuss-Flips / Erdnusslocken', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['Lorenz 200g Beutel'] },
   { id: 'salzstangen', name: 'Salzstangen', category: 'Süssigkeiten', icon: 'Cookie', suggestedDetails: ['250g Packung'] },
@@ -723,9 +722,8 @@ export const BUILTIN_PRODUCTS = [
   // ==========================================
   // 13. GETRÄNKE (50+ Produkte)
   // ==========================================
-  { id: 'wasser_sprudel', name: 'Mineralwasser (Sprudel)', category: 'Getränke', icon: 'GlassWater', suggestedDetails: ['6x1.5l PET', 'Kiste Glas 12x0.7l'] },
-  { id: 'wasser_medium', name: 'Mineralwasser (Medium)', category: 'Getränke', icon: 'GlassWater', suggestedDetails: ['6x1.5l PET', 'Volvic / Gerolsteiner'] },
-  { id: 'wasser_still', name: 'Mineralwasser (Still)', category: 'Getränke', icon: 'GlassWater', suggestedDetails: ['6x1.5l PET', 'Evian / Volvic'] },
+  { id: 'mineralwasser', name: 'Mineralwasser', category: 'Getränke', icon: 'GlassWater', suggestedDetails: ['Sprudel', 'Medium', 'Still', '6x1.5l PET', 'Kiste Glas 12x0.7l'] },
+  { id: 'co2_kartusche', name: 'CO2-Kartusche', category: 'Getränke', icon: 'Sparkle', suggestedDetails: ['Quick Connect', 'Normal'] },
   { id: 'apfelsaft', name: 'Apfelsaft (Naturtrüb)', category: 'Getränke', icon: 'Wine', suggestedDetails: ['100% Direktsaft 1l'] },
   { id: 'orangensaft', name: 'Orangensaft (Mit Fruchtfleisch)', category: 'Getränke', icon: 'Wine', suggestedDetails: ['100% Direktsaft 1l', 'Hohes C'] },
   { id: 'multivitaminsaft', name: 'Multivitaminsaft', category: 'Getränke', icon: 'Wine', suggestedDetails: ['1l Karton'] },
