@@ -557,9 +557,11 @@ function useLongPress(onLongPress, onClick, delay = 500) {
   const timeoutRef = useRef(null);
   const isLongPressRef = useRef(false);
   const startCoordsRef = useRef({ x: 0, y: 0 });
+  const isMovedRef = useRef(false);
 
   const start = (e) => {
     isLongPressRef.current = false;
+    isMovedRef.current = false;
     const touch = e.touches ? e.touches[0] : e;
     startCoordsRef.current = { x: touch.clientX, y: touch.clientY };
 
@@ -575,7 +577,8 @@ function useLongPress(onLongPress, onClick, delay = 500) {
     const dx = touch.clientX - startCoordsRef.current.x;
     const dy = touch.clientY - startCoordsRef.current.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > 15) {
+    if (dist > 10) {
+      isMovedRef.current = true;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
@@ -594,6 +597,10 @@ function useLongPress(onLongPress, onClick, delay = 500) {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
+    }
+    if (isMovedRef.current) {
+      isMovedRef.current = false;
+      return;
     }
     if (isLongPressRef.current) {
       e.preventDefault();
@@ -3096,39 +3103,18 @@ function WeeklyConfirmModal({ onConfirm, onClose }) {
 
 /* ---------------------------------- Bring! Tile Component (Corporate Design) ---------------------------------- */
 function ShoppingTile({ item, product, isActive, onShortClick, onLongPress }) {
-  const timerRef = useRef(null);
-  const isLongPressRef = useRef(false);
-
-  const startPress = () => {
-    isLongPressRef.current = false;
-    timerRef.current = setTimeout(() => {
-      isLongPressRef.current = true;
-      onLongPress(item);
-    }, 450);
-  };
-
-  const endPress = (e) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (!isLongPressRef.current) {
-      onShortClick(item);
-    }
-  };
-
-  const cancelPress = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-  };
+  const handlers = useLongPress(
+    () => onLongPress(item),
+    () => onShortClick(item),
+    450
+  );
 
   const iconName = product?.icon || item.icon;
   const categoryName = product?.category || item.category;
 
   return (
     <div
-      onMouseDown={startPress}
-      onMouseUp={endPress}
-      onMouseLeave={cancelPress}
-      onTouchStart={startPress}
-      onTouchEnd={endPress}
-      onTouchCancel={cancelPress}
+      {...handlers}
       className={`rounded-xl p-2.5 min-h-[100px] flex flex-col items-center justify-between cursor-pointer select-none transition-all duration-200 relative shadow-sm group ${
         isActive
           ? 'bg-rose-50 hover:bg-rose-100/80 active:scale-95 text-rose-950 border border-rose-200'
@@ -4137,7 +4123,7 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.8</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.9</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Ingwertee 🫖
         </div>
