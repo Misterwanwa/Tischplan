@@ -25,6 +25,7 @@ export async function onRequestPost(context) {
       
       // Gemini 2.0 Flash mit Google Search Grounding (falls useSearch)
       if (useSearch) {
+        delete body.generationConfig.responseMimeType;
         body.tools = [{ googleSearch: {} }];
       }
       

@@ -371,8 +371,8 @@ async function estimateNutrition(ingredientsText, servings) {
   return callAI(prompt, false);
 }
 async function searchRecipeOnline(query) {
-  const prompt = `Suche im Web nach einem echten, existierenden Rezept für "${query}". Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz und knapp (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
-  return callAI(prompt, true);
+  const prompt = `Erstelle ein vollständiges, leckeres Rezept für "${query}". Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz und knapp (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
+  return callAI(prompt, false);
 }
 async function extractRecipeFromUrl(url) {
   const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
@@ -1456,7 +1456,7 @@ function SourcePicker({ onPick }) {
     { key: 'form', label: 'Manuell eingeben', icon: Edit2, desc: 'Rezept selbst eintippen' },
     { key: 'firefox', label: 'Aus Firefox-Favoriten', icon: BookOpen, desc: 'Gespeicherte Favoriten durchsuchen' },
     { key: 'cookbook', label: 'Aus Kochbuch', icon: Camera, desc: 'Titel, Seite & Foto erfassen' },
-    { key: 'ai', label: 'KI- oder Google-Suche', icon: Sparkles, desc: 'Rezept online finden lassen' },
+    { key: 'ai', label: 'KI, Browser & Import', icon: Sparkles, desc: 'Rezept per KI erstellen, im Browser suchen oder per Link importieren' },
     { key: 'other', label: 'Weiteres', icon: Plus, desc: 'Aktivitäten wie Essen gehen, Urlaub, etc.' },
   ];
   return (
@@ -1633,16 +1633,15 @@ function AIDirectSearch({ onNext }) {
     setBusy(true); setError(null);
     try {
       const result = await searchRecipeOnline(query.trim());
-      onNext({ title: result.title || query, servingsText: result.servings ? String(result.servings) : '4', ingredientsText: (result.ingredients || []).join('\n'), stepsText: (result.steps || []).join('\n'), nutrition: result.nutrition || null, source: { type: 'ai', url: result.sourceUrl || '', label: 'KI-Websuche' } });
-    } catch (e) { setError('Suche fehlgeschlagen. Bitte manuell eingeben.'); }
+      onNext({ title: result.title || query, servingsText: result.servings ? String(result.servings) : '4', ingredientsText: (result.ingredients || []).join('\n'), stepsText: (result.steps || []).join('\n'), nutrition: result.nutrition || null, source: { type: 'ai', url: result.sourceUrl || '', label: 'KI-Rezept' } });
+    } catch (e) { setError('Generierung fehlgeschlagen. Bitte manuell eingeben.'); }
     finally { setBusy(false); }
   };
   return (
     <div className="space-y-3">
-      <p className="text-sm text-stone-500">Claude durchsucht das Web nach einem passenden Rezept.</p>
       <input value={query} onChange={e => setQuery(e.target.value)} placeholder="z. B. Spaghetti Carbonara" className={inputCls} onKeyDown={e => e.key === 'Enter' && search()} />
       <button onClick={search} disabled={busy || !query.trim()} className={primaryBtnCls}>
-        {busy ? <><Loader2 size={14} className="animate-spin" /> Suche läuft</> : <><Sparkles size={14} /> Suchen</>}
+        {busy ? <><Loader2 size={14} className="animate-spin" /> Generierung läuft</> : <><Sparkles size={14} /> Generieren</>}
       </button>
       {error && <p className="text-sm text-rose-500">{error}</p>}
     </div>
@@ -1691,16 +1690,40 @@ function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
     
     try {
       const result = await extractRecipeFromUrl(currentUrl);
-      console.log('Extraktion erfolgreich:', result.title, '|', result.ingredients?.length, 'Zutaten');
-      
-      const screenshot = `https://image.thum.io/get/width/600/crop/800/${currentUrl}`;
-      result.photo = screenshot;
-      
-      setExtracted(result);
+      if (result && ((result.ingredients && result.ingredients.length >= 1) || (result.steps && result.steps.length >= 1))) {
+        console.log('Extraktion erfolgreich:', result.title, '|', result.ingredients?.length, 'Zutaten');
+        const screenshot = `https://image.thum.io/get/width/600/crop/800/${currentUrl}`;
+        result.photo = screenshot;
+        setExtracted(result);
+        return;
+      }
+      throw new Error("Kein Rezept-Format erkannt");
     } catch (e) {
-      const msg = e.message || 'Unbekannter Fehler';
-      console.error('[handleSave] Fehler:', e.name, msg, e.stack);
-      setError(`Extraktion fehlgeschlagen: ${msg}. Bitte andere Seite wählen oder manuell eingeben.`);
+      console.warn('[handleSave] Extraktion fehlgeschlagen, erstelle Screenshot-Rezept:', e);
+      const screenshot = `https://image.thum.io/get/width/600/crop/800/${currentUrl}`;
+      let pageTitle = 'Importiertes Rezept';
+      try {
+        if (iframeRef.current && iframeRef.current.contentWindow && iframeRef.current.contentWindow.document) {
+          const docTitle = iframeRef.current.contentWindow.document.title;
+          if (docTitle) pageTitle = docTitle.trim();
+        }
+      } catch (err) {}
+      if (pageTitle === 'Importiertes Rezept' && currentUrl) {
+        try {
+          const parsedUrl = new URL(currentUrl);
+          pageTitle = parsedUrl.hostname.replace(/^www\./, '');
+        } catch (err) {}
+      }
+
+      setExtracted({
+        title: pageTitle,
+        servings: 4,
+        ingredients: [],
+        steps: [],
+        nutrition: null,
+        photo: screenshot,
+        sourceUrl: currentUrl
+      });
     } finally {
       setBusy(false);
       console.groupEnd();
@@ -1731,8 +1754,7 @@ function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
         {busy && (
           <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white z-10 p-6 text-center">
             <Loader2 size={36} className="animate-spin mb-3 text-emerald-400" />
-            <div className="font-mono text-sm font-semibold tracking-wide uppercase">KI-Extraktion läuft</div>
-            <div className="text-xs text-stone-300 mt-1 max-w-xs">Claude liest die Seite aus, extrahiert die Zutaten, Schritte und schätzt die Nährwerte...</div>
+            <div className="font-mono text-sm font-semibold tracking-wide uppercase">Laden...</div>
           </div>
         )}
 
@@ -1746,7 +1768,7 @@ function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
         {extracted ? (
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 max-w-xl mx-auto w-full">
             <div className="text-center pb-2 border-b border-stone-200">
-              <span className="font-mono text-xs uppercase tracking-widest text-emerald-600 font-bold">Extrahiertes Rezept</span>
+              <span className="font-mono text-xs uppercase tracking-widest text-emerald-600 font-bold">Gespeichertes Rezept</span>
               <h2 className="text-xl font-bold mt-1 text-stone-900">{extracted.title || 'Rezept'}</h2>
               <p className="text-sm text-stone-500 mt-1">{extracted.servings || 4} Portionen</p>
             </div>
@@ -1821,28 +1843,15 @@ function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
 }
 
 function GoogleLinkSearch({ onNext }) {
-  const [query, setQuery] = useState('');
   const [browserUrl, setBrowserUrl] = useState(null);
 
   const startSearch = () => {
-    if (!query.trim()) return;
-    const gUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query.trim() + ' rezept')}`;
-    setBrowserUrl(gUrl);
+    setBrowserUrl('https://www.google.de');
   };
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-stone-500">
-        Gib unten die Bezeichnung vom Rezept ein. Es öffnet sich ein werbefreier In-App-Browser mit DuckDuckGo. Dort kannst du auf Rezepte klicken und diese per Klick auf „Speichern“ direkt einlesen.
-      </p>
-      <input
-        value={query}
-        onChange={e => setQuery(e.target.value)}
-        placeholder="z. B. Spaghetti Carbonara"
-        className={inputCls}
-        onKeyDown={e => e.key === 'Enter' && startSearch()}
-      />
-      <button onClick={startSearch} disabled={!query.trim()} className={primaryBtnCls}>
+      <button onClick={startSearch} className={primaryBtnCls}>
         <Search size={14} /> Suchen
       </button>
 
@@ -1864,8 +1873,8 @@ function URLPasteSearch({ onNext }) {
   const { showToast } = useApp();
   const [urlInput, setUrlInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
   const [extracted, setExtracted] = useState(null);
+  const [browserUrl, setBrowserUrl] = useState(null);
 
   const handleImport = async () => {
     if (!urlInput.trim()) {
@@ -1873,15 +1882,18 @@ function URLPasteSearch({ onNext }) {
       return;
     }
     setBusy(true);
-    setError(null);
     setExtracted(null);
     try {
       const result = await extractRecipeFromUrl(urlInput.trim());
-      result.photo = `https://image.thum.io/get/width/600/crop/800/${urlInput.trim()}`;
-      setExtracted(result);
+      if (result && ((result.ingredients && result.ingredients.length >= 1) || (result.steps && result.steps.length >= 1))) {
+        result.photo = `https://image.thum.io/get/width/600/crop/800/${urlInput.trim()}`;
+        setExtracted(result);
+        return;
+      }
+      throw new Error('Automatische Extraktion fehlgeschlagen');
     } catch (e) {
-      setError('Rezept-Extraktion fehlgeschlagen. Die Seite blockiert eventuell automatische Zugriffe oder das Rezept-Format wurde nicht erkannt.');
-      showToast('Import fehlgeschlagen', 'error');
+      console.warn('Rezept-Extraktion fehlgeschlagen, öffne In-App-Browser:', e);
+      setBrowserUrl(urlInput.trim());
     } finally {
       setBusy(false);
     }
@@ -1972,12 +1984,21 @@ function URLPasteSearch({ onNext }) {
         className={primaryBtnCls}
       >
         {busy ? (
-          <><Loader2 size={15} className="animate-spin" /> Claude extrahiert...</>
+          <Loader2 size={15} className="animate-spin" />
         ) : (
           <><Download size={15} /> Rezept importieren</>
         )}
       </button>
-      {error && <p className="text-sm text-rose-500 mt-2">{error}</p>}
+      {browserUrl && (
+        <InAppBrowser
+          initialUrl={browserUrl}
+          onClose={() => setBrowserUrl(null)}
+          onSaveRecipe={(recipeData) => {
+            setBrowserUrl(null);
+            onNext(recipeData);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1988,7 +2009,7 @@ function AISearchPanel({ onBack, onNext }) {
     <div className="space-y-3">
       <button onClick={onBack} className="text-sm text-stone-400 flex items-center gap-1"><ChevronLeft size={14} /> Zurück</button>
       <div className="flex gap-1 bg-stone-100 rounded-lg p-0.5 w-fit">
-        <button onClick={() => setSubTab('ai')} className={`px-3 py-1.5 rounded-md text-xs font-mono ${subTab === 'ai' ? 'bg-white shadow-sm font-semibold text-stone-800' : 'text-stone-500'}`}>KI-Suche</button>
+        <button onClick={() => setSubTab('ai')} className={`px-3 py-1.5 rounded-md text-xs font-mono ${subTab === 'ai' ? 'bg-white shadow-sm font-semibold text-stone-800' : 'text-stone-500'}`}>KI</button>
         <button onClick={() => setSubTab('google')} className={`px-3 py-1.5 rounded-md text-xs font-mono ${subTab === 'google' ? 'bg-white shadow-sm font-semibold text-stone-800' : 'text-stone-500'}`}>Browser</button>
         <button onClick={() => setSubTab('link')} className={`px-3 py-1.5 rounded-md text-xs font-mono ${subTab === 'link' ? 'bg-white shadow-sm font-semibold text-stone-800' : 'text-stone-500'}`}>Link Import</button>
       </div>
@@ -2863,9 +2884,14 @@ function ManageRecipeModal({ recipe, onClose }) {
 function RecipesTab() {
   const { recipes, openAddRecipe } = useApp();
   const [query, setQuery] = useState('');
+  const [onlyUnrated, setOnlyUnrated] = useState(false);
   const [selected, setSelected] = useState(null);
   const [manageRecipe, setManageRecipe] = useState(null);
-  const filtered = recipes.filter(r => !r.doNotSaveInBook).filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
+
+  const filtered = recipes
+    .filter(r => !r.doNotSaveInBook)
+    .filter(r => r.title.toLowerCase().includes(query.toLowerCase()))
+    .filter(r => !onlyUnrated || (!r.rating || r.rating === 0));
 
   return (
     <div className="space-y-3">
@@ -2874,6 +2900,18 @@ function RecipesTab() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rezepte durchsuchen" className={inputCls + " pl-9"} />
         </div>
+        <button 
+          onClick={() => setOnlyUnrated(!onlyUnrated)} 
+          className={`px-3 rounded-lg border text-xs font-mono flex items-center gap-1.5 flex-shrink-0 transition-colors ${
+            onlyUnrated 
+              ? 'bg-amber-50 border-amber-400 text-amber-900 font-bold' 
+              : 'bg-white border-stone-300 text-stone-600 hover:bg-stone-50'
+          }`}
+          title="Nur unbewertete Rezepte anzeigen"
+        >
+          <Star size={14} className={onlyUnrated ? 'fill-amber-500 text-amber-500' : 'text-stone-400'} />
+          <span>Unbewertet</span>
+        </button>
         <button onClick={() => openAddRecipe({})} className="px-4 rounded-lg bg-stone-900 text-white flex-shrink-0"><Plus size={18} /></button>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -2886,7 +2924,11 @@ function RecipesTab() {
           />
         ))}
       </div>
-      {filtered.length === 0 && <div className="text-center text-sm text-stone-400 py-10">Noch keine Rezepte – tippe auf + um eines hinzuzufügen.</div>}
+      {filtered.length === 0 && (
+        <div className="text-center text-sm text-stone-400 py-10">
+          {onlyUnrated ? 'Keine unbewerteten Rezepte gefunden.' : 'Noch keine Rezepte – tippe auf + um eines hinzuzufügen.'}
+        </div>
+      )}
       {selected && <RecipeDetailModal recipe={selected} onClose={() => setSelected(null)} />}
       {manageRecipe && <ManageRecipeModal recipe={manageRecipe} onClose={() => setManageRecipe(null)} />}
     </div>
@@ -4028,28 +4070,9 @@ function SettingsTab() {
         <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
           <Sparkles size={15} className="text-amber-500" /> KI-Einstellungen
         </div>
-        <div className="space-y-3">
-          <div>
-            <label className={labelCls}>KI-Anbieter</label>
-            <div className="flex gap-2 mt-1">
-              <button 
-                onClick={() => updateSettings({ aiProvider: 'gemini' })} 
-                className={`flex-1 py-2 rounded-lg text-sm font-mono ${settings.aiProvider !== 'claude' ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600'}`}
-              >
-                Gemini (Standard)
-              </button>
-              <button 
-                onClick={() => updateSettings({ aiProvider: 'claude' })} 
-                className={`flex-1 py-2 rounded-lg text-sm font-mono ${settings.aiProvider === 'claude' ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600'}`}
-              >
-                Claude (Fallback)
-              </button>
-            </div>
-          </div>
-          <p className="text-xs text-stone-500 leading-normal">
-            API-Keys werden ausschließlich im Cloudflare Worker hinterlegt – niemals im Browser sichtbar.
-          </p>
-        </div>
+        <p className="text-xs text-stone-500 leading-normal">
+          API-Keys werden ausschließlich im Cloudflare Worker hinterlegt – niemals im Browser sichtbar.
+        </p>
       </div>
 
       <div className={cardCls}>
@@ -4122,12 +4145,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.13</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.14</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Ingwertee 🫖
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.2 (Ingwertee)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.14 (Ingwertee)
         </div>
       </div>
     </div>
