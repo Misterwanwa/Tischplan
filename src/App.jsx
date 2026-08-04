@@ -3175,7 +3175,20 @@ function ShoppingTab() {
     (async () => {
       const storedItems = await storageGet('shopping_items_v2', true, []);
       let storedCustom = await storageGet('shopping_custom_db', true, []);
-      setItems(storedItems || []);
+
+      // Ensure every item has a unique ID
+      const seenIds = new Set();
+      const sanitizedItems = (storedItems || []).map(i => {
+        if (!i.id || seenIds.has(i.id)) {
+          const newId = uid();
+          seenIds.add(newId);
+          return { ...i, id: newId };
+        }
+        seenIds.add(i.id);
+        return i;
+      });
+
+      setItems(sanitizedItems);
       setCustomDb(storedCustom || []);
     })();
   }, []);
@@ -3215,28 +3228,19 @@ function ShoppingTab() {
 
     const matchedProd = isObject ? productOrName : allProducts.find(p => p.name.toLowerCase() === name.toLowerCase());
 
-    const existingIdx = items.findIndex(i => (matchedProd && i.productId === matchedProd.id) || i.name.toLowerCase() === name.toLowerCase());
+    const newItem = {
+      id: uid(),
+      productId: matchedProd ? matchedProd.id : null,
+      name: matchedProd ? matchedProd.name : name,
+      category: matchedProd ? matchedProd.category : 'Grundzutaten',
+      icon: matchedProd ? matchedProd.icon : 'Package',
+      detail: '',
+      addedAt: Date.now(),
+      completed: false,
+      lastUsedAt: Date.now(),
+    };
 
-    let next = [...items];
-    if (existingIdx >= 0) {
-      next[existingIdx] = {
-        ...next[existingIdx],
-        completed: false,
-        addedAt: Date.now(),
-      };
-    } else {
-      next.unshift({
-        id: matchedProd ? matchedProd.id : uid(),
-        productId: matchedProd ? matchedProd.id : null,
-        name: matchedProd ? matchedProd.name : name,
-        category: matchedProd ? matchedProd.category : 'Grundzutaten',
-        icon: matchedProd ? matchedProd.icon : 'Package',
-        detail: '',
-        addedAt: Date.now(),
-        completed: false,
-        lastUsedAt: Date.now(),
-      });
-    }
+    let next = [newItem, ...items];
 
     updateShoppingItems(next, `${name} zur Einkaufsliste hinzugefügt.`);
     setSearch('');
@@ -3320,17 +3324,12 @@ function ShoppingTab() {
     return items.filter(i => i.completed).sort((a, b) => (b.lastUsedAt || 0) - (a.lastUsedAt || 0));
   }, [items]);
 
-  // Catalog Products grouped by Category (excluding items already active)
+  // Catalog Products grouped by Category (all products remain visible)
   const categoryCatalogMap = useMemo(() => {
-    const activeProdIds = new Set(activeItems.map(i => i.productId || i.id));
-    const activeNames = new Set(activeItems.map(i => i.name.toLowerCase()));
-
     const map = {};
     SHOPPING_CATEGORIES.forEach(c => map[c] = []);
 
     allProducts.forEach(p => {
-      if (activeProdIds.has(p.id) || activeNames.has(p.name.toLowerCase())) return;
-
       // Add to main category
       if (map[p.category]) map[p.category].push(p);
 
@@ -3341,7 +3340,7 @@ function ShoppingTab() {
     });
 
     return map;
-  }, [allProducts, activeItems, currentMonth]);
+  }, [allProducts, currentMonth]);
 
   // Category list sorted alphabetically (with Saisonales first, then alphabetical)
   const sortedCatalogCategories = useMemo(() => {
