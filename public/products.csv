@@ -37,7 +37,7 @@ datteln;Datteln;Obst;Nut;Medjool 200g,Getrocknet;
 granatapfel;Granatapfel;Obst;Apple;1 Stk,Kerne;9,10,11,12
 maracuja;Maracuja / Passionsfrucht;Obst;Apple;2 Stk,Süß;
 drachenfrucht;Drachenfrucht;Obst;Apple;Rot,Weiß,1 Stk,Pitaya;
-kaki;Kaki / Sharonfrucht;Obst;Apple;Essreif,2 Stk;10,11,12,1
+kaki;Kaki;Obst;Apple;Essreif,2 Stk;10,11,12,1
 preiselbeeren;Preiselbeeren;Obst;Cherry;Glas 250g,Frisch;
 cranberrys;Cranberrys;Obst;Cherry;Frisch 300g,Getrocknet;
 rhabarber;Rhabarber;Obst;Carrot;1 Bund,500g;4,5,6
@@ -66,7 +66,7 @@ spinat;Spinat;Gemüse;Leaf;Blattspinat,Rahmspinat,Baby-Spinat,500g;4,5,9,10
 eisbergsalat;Eisbergsalat;Gemüse;Salad;1 Kopf,Knackig;6,7,8,9
 kopfsalat;Kopfsalat;Gemüse;Salad;1 Kopf,Frisch;5,6,7,8
 rucola;Rucola;Gemüse;Leaf;125g Schale,Bio;5,6,7,8,9
-feldsalat;Feldsalat / Nüsslisalat;Gemüse;Leaf;150g Schale,Geputzt;10,11,12,1,2
+feldsalat;Feldsalat;Gemüse;Leaf;150g Schale,Geputzt;10,11,12,1,2
 champignons;Champignons;Gemüse;Carrot;Weiß,Braune Champignons,400g,250g;
 kurbis;Kürbis;Gemüse;Carrot;Hokkaido,Butternut,1 Stk;9,10,11
 lauch;Lauch / Porree;Gemüse;Carrot;1 Stange,500g;9,10,11,12,1,2
@@ -75,7 +75,7 @@ radieschen;Radieschen;Gemüse;Carrot;1 Bund,Knackig;5,6,7,8,9
 spargel;Spargel;Gemüse;Carrot;Weiß 500g,Grün 500g,1kg;4,5,6
 sellerie;Knollensellerie;Gemüse;Carrot;1 Knolle,Halber Kopf;9,10,11,12,1
 staudensellerie;Staudensellerie / Stangensellerie;Gemüse;Carrot;1 Staudenstrunk,500g;
-rotkohl;Rotkohl / Rotkraut;Gemüse;Salad;1 Kopf,Glas 680g;9,10,11,12,1
+rotkohl;Rotkohl;Gemüse;Salad;1 Kopf,Glas 680g;9,10,11,12,1
 weisskohl;Weißkohl;Gemüse;Salad;1 Kopf,Zum Eisbein;9,10,11,12,1
 grunkohl;Grünkohl;Gemüse;Leaf;Frisch 1kg,TK;11,12,1,2
 rosenkohl;Rosenkohl;Gemüse;Salad;500g Netz,Frisch;10,11,12,1
@@ -84,7 +84,7 @@ chinakohl;Chinakohl;Gemüse;Salad;1 Kopf,Zum Wok;
 pakchoi;Pak Choi;Gemüse;Leaf;2er Pack,Mini Pak Choi;
 erbsen;Erbsen;Gemüse;Carrot;Frisch Schoten,TK 450g,Dose;6,7
 bohnen;Grüne Bohnen / Buschbohnen;Gemüse;Carrot;500g Beutel,Prinzessbohnen;7,8,9
-dickebohnen;Dicke Bohnen / Saubohnen;Gemüse;Carrot;Frisch,Glas 400g;6,7
+dickebohnen;Dicke Bohnen;Gemüse;Carrot;Frisch,Glas 400g;6,7
 linsen;Linsen;Gemüse;Nut;Brown 500g,Rote Linsen,Beluga,Tellerlinsen;
 kichererbsen;Kichererbsen;Gemüse;Nut;Dose 400g,Getrocknet 500g;
 mais;Zuckermais;Gemüse;Carrot;Frisch 2er Kolben,Dose 300g;8,9,10
@@ -126,7 +126,7 @@ hotdogbuns;Hotdog-Buns;Brot & Gebäck;Sandwich;4er Pack,Soft;
 brioche;Brioche-Zopf;Brot & Gebäck;Wheat;400g,Butter;
 grissini;Grissini;Brot & Gebäck;Wheat;125g Packung,Sesam;
 zwieback;Zwieback;Brot & Gebäck;Wheat;Brandt,225g;
-filoteig;Filoteig / Yufkateig;Brot & Gebäck;Wheat;250g Kühlung;
+filoteig;Filoteig;Brot & Gebäck;Wheat;250g Kühlung;
 blatterteig;Blätterteig;Brot & Gebäck;Wheat;Rolle Kühlung 275g,TK;
 flammkuchenteig;Flammkuchenteig;Brot & Gebäck;Wheat;Frischrolle 260g;
 murbeteig;Mürbeteig;Brot & Gebäck;Wheat;Rolle Kühlung;
@@ -169,11 +169,11 @@ ziegenmilch;Ziegenmilch;Milchprodukte;Milk;1l Karton;
 schafsmilch;Schafsmilch;Milchprodukte;Milk;500ml;
 laktosefreie_milch;Laktosefreie Milch;Milchprodukte;Milk;3.8% Fett,1.5%,1l;
 hmilch;H-Milch;Milchprodukte;Milk;3.5% Fett,1.5% Fett,12er Karton;
-kakaomilch;Kakao / Schokomilch;Milchprodukte;Milk;500ml Flasche,1l;
+kakaomilch;Kakao;Milchprodukte;Milk;500ml Flasche,1l;
 vanillemilch;Vanillemilch;Milchprodukte;Milk;500ml Packung;
 bananenmilch;Bananenmilch;Milchprodukte;Milk;500ml Packung;
 sahneersatz;Vegane Sahne;Milchprodukte;Milk;Cuisine 200ml;
-vegane_butter;Vegane Butter / Block;Milchprodukte;Milk;Violife 225g,Naturli;
+vegane_butter;Vegane Butter;Milchprodukte;Milk;Violife 225g,Naturli;
 fruchtquark;Fruchtquark;Milchprodukte;Milk;Erdbeere 250g,Pfirsich-Maracuja;
 tzatziki;Tzatziki;Milchprodukte;Milk;500g Becher,Knoblauch,Kühlregal;
 griebenschmalz;Griebenschmalz;Milchprodukte;Milk;150g Töpfchen;
@@ -241,7 +241,7 @@ bockwurst;Bockwurst;Fleisch;Flame;4 Stk Glas,Frisch;
 leberkase;Leberkäse / Fleischkäse;Fleisch;Flame;Zum Selbstbacken 500g,Scheiben;
 salami;Salami;Fleisch;Flame;Ungarisch,Italienisch,Scheiben 150g;
 kochschinken;Schinken;Fleisch;Flame;Saftschinken,150g Packung,Spanisch 100g,Serrano,Italienisch 90g,Parma;
-rohschinken;Rohschinken / Katenschinken;Fleisch;Flame;100g Scheiben;
+rohschinken;Rohschinken;Fleisch;Flame;100g Scheiben;
 mortadella;Mortadella;Fleisch;Flame;Mit Pistazien,100g Scheiben;
 geflugelwurst;Geflügel-Aufschnitt;Fleisch;Drumstick;Hähnchenbrust-Aufschnitt 100g;
 cabanossi;Cabanossi;Fleisch;Flame;300g Packung;
@@ -267,12 +267,12 @@ fischstabchen;Fischstäbchen;Fisch;Fish;15er Pack Iglo,Vollkorn;
 kabeljau;Kabeljau / Dorsch;Fisch;Fish;Loins 300g,Frisch;
 forelle;Forelle;Fisch;Fish;Ausgenommen 2 Stk,Frisch;
 raucherforelle;Räucherforellen-Filet;Fisch;Fish;125g Packung;
-meeresfruchte;Meeresfrüchte / Frutti di Mare;Fisch;Fish;TK Mix 500g,In Knoblauchöl;
+meeresfruchte;Meeresfrüchte;Fisch;Fish;TK Mix 500g,In Knoblauchöl;
 scholle;Schollenfilet;Fisch;Fish;Frisch 300g,Finkenwerder;
 seelachs;Seelachs / Köhler;Fisch;Fish;Pazifik 400g,Paniert;
 zander;Zanderfilet;Fisch;Fish;Mit Haut 300g;
 dorade;Dorade / Goldbrasse;Fisch;Fish;Ganz 400g;
-wolfsbarsch;Wolfsbarsch / Lou de Mer;Fisch;Fish;Ganz 400g;
+wolfsbarsch;Wolfsbarsch;Fisch;Fish;Ganz 400g;
 strettlachs;Stremellachs;Fisch;Fish;Pfeffer 125g,Natur;
 heringsfilet;Heringsfilet;Fisch;Fish;In Tomatensauce 200g,In Sahne,Dose;
 matjes;Matjesfilet;Fisch;Fish;Nordische Art 200g,Mit Zwiebeln;6,7
@@ -284,7 +284,7 @@ oktopus;Oktopus;Fisch;Fish;Gekocht 250g;
 muscheln;Miesmuscheln;Fisch;Fish;Frisch 1kg Beutel;9,10,11,12,1
 jakobsmuscheln;Jakobsmuscheln / Scallops;Fisch;Fish;Ausgelöst TK 200g;
 flusskrebse;Flusskrebs;Fisch;Fish;100g Lake;
-surimi;Surimi / Crab Sticks;Fisch;Fish;200g Packung;
+surimi;Surimi;Fisch;Fish;200g Packung;
 nordseekrabben;Nordseekrabben;Fisch;Fish;100g Becher,Gepult;
 pangasius;Pangasiusfilet;Fisch;Fish;TK 500g;
 rotbarsch;Rotbarschfilet;Fisch;Fish;Frisch 300g;
@@ -292,7 +292,7 @@ heilbutt;Heilbutt;Fisch;Fish;Weißer Heilbutt 150g,Geräuchert;
 karpfen;Karpfen;Fisch;Fish;Hufeisen 500g;12
 aal;Räucheraal;Fisch;Fish;Stück 150g;
 lachsforelle;Lachsforellenfilet;Fisch;Fish;Frisch 300g;
-krabbensalat;Krabbensalat / Feinkost;Fisch;Fish;Dill 150g;
+krabbensalat;Krabbensalat;Fisch;Fish;Dill 150g;
 thunfischsalat;Thunfischsalat;Fisch;Fish;Western Art 160g;
 viktoriabarsch;Viktoriabarschfilet;Fisch;Fish;Frisch 300g;
 seeteufel;Seeteufelfilet;Fisch;Fish;200g;
@@ -359,7 +359,7 @@ zimtstangen;Zimtstangen;Gewürze;Sparkles;5 Stk;
 currypulver;Currypulver;Gewürze;Sparkles;Gelb 50g,Mild;
 curry_scharf;Currypulver;Gewürze;Sparkles;Madras Curry,Scharf;
 knoblauchpulver;Knoblauchpulver;Gewürze;Sparkles;Streuer 60g;
-chiliflocken;Chiliflocken / Chilischoten;Gewürze;Flame;Mit Saaten 50g;
+chiliflocken;Chiliflocken;Gewürze;Flame;Mit Saaten 50g;
 muskatnuss;Muskatnuss;Gewürze;Sparkles;3 Nüsse mit Reibe,Gemahlen,Ganz;
 thymian;Thymian;Gewürze;Sparkles;Dose 25g,Gerebelt;
 rosmarin;Rosmarin;Gewürze;Sparkles;Dose 30g,Geschnitten;
@@ -397,7 +397,7 @@ safran;Safran;Gewürze;Sparkles;0.1g Briefchen,Fäden;
 vanilleschote;Vanille;Gewürze;Sparkles;1 Schote im Glas;
 tk_pizza;TK-Pizza;Fertig & Tiefkühlprodukte;Pizza;Salami,Margherita,Speciale,Tonno,Wagner / Dr. Oetker,2er Pack;
 tk_pommes;TK-Pommes;Fertig & Tiefkühlprodukte;Package;Frites,Süßkartoffel,Backofen 1kg,Steakhouse;
-tk_gemuse_mix;TK-Kaisergemüse / Gemüsemix;Fertig & Tiefkühlprodukte;Package;1kg Beutel,Suppengemüse;
+tk_gemuse_mix;TK-Gemüsemix;Fertig & Tiefkühlprodukte;Package;1kg Beutel,Suppengemüse;
 tk_erbsen;TK-Erbsen;Fertig & Tiefkühlprodukte;Package;450g,1kg,Junge Erbsen;
 tk_spinat;TK-Spinat;Fertig & Tiefkühlprodukte;Package;Iglo 450g (Portions-Plopps),Ganz 500g;
 tk_krauter;TK-Kräuter;Fertig & Tiefkühlprodukte;Package;Iglo Streudose 50g;
@@ -435,13 +435,13 @@ dosen_huhnersuppe;Hühnersuppe;Fertig & Tiefkühlprodukte;Soup;With Nudeln 800g,
 dosen_gulasch;Gulaschsuppe;Fertig & Tiefkühlprodukte;Soup;400g,Dose;
 tk_kroketten;TK-Kroketten;Fertig & Tiefkühlprodukte;Package;Backofen 750g;
 tk_rosti;TK-Kartoffelgericht;Fertig & Tiefkühlprodukte;Package;10 Stk 600g;
-tk_backfisch;TK-Backfisch / Schnitzel;Fertig & Tiefkühlprodukte;Fish;Iglo 2er Pack;
+tk_backfisch;TK-Backfisch;Fertig & Tiefkühlprodukte;Fish;Iglo 2er Pack;
 tk_asiagemuse;TK-Asia-Pfannengemüse;Fertig & Tiefkühlprodukte;Package;750g Beutel;
 tk_tortelloni;TK-Pasta;Fertig & Tiefkühlprodukte;Package;500g;
 tk_kaiserschmarrn;TK-Kaiserschmarrn mit Rosinen;Fertig & Tiefkühlprodukte;Cake;500g;
 spaghetti;Spaghetti;Getreideprodukte;Wheat;Barilla No.5,500g Packung,Vollkorn;
 penne;Penne Rigate;Getreideprodukte;Wheat;500g Packung;
-fusilli;Fusilli / Spirelli;Getreideprodukte;Wheat;500g Packung;
+fusilli;Fusilli;Getreideprodukte;Wheat;500g Packung;
 rigatoni;Rigatoni;Getreideprodukte;Wheat;500g Packung;
 farfalle;Farfalle;Getreideprodukte;Wheat;500g Packung,Schmetterlinge;
 linguine;Linguine;Getreideprodukte;Wheat;500g Packung;
@@ -495,8 +495,8 @@ kekse;Kekse;Süssigkeiten;Cookie;Doppelkekse,Haferkekse,Schokokekse;
 waffeln;Manner Waffeln;Süssigkeiten;Cookie;Neapolitaner 75g Pack;
 dominosteine;Dominosteine;Süssigkeiten;Cookie;Zartbitter 250g;10,11,12
 lebkuchen;Lebkuchen;Süssigkeiten;Cookie;Schokoliert 5 Stk;10,11,12
-gummischlangen;Haribo Phantasia / Schlangen;Süssigkeiten;Cookie;200g Beutel;
-lakritz;Lakritz / Colorado;Süssigkeiten;Cookie;Haribo Colorado 200g;
+gummischlangen;Fruchtgummi-Mix;Süssigkeiten;Cookie;200g Beutel;
+lakritz;Lakritz;Süssigkeiten;Cookie;Haribo Colorado 200g;
 fruchtbonbons;Nimm2 Bonbons;Süssigkeiten;Cookie;240g Beutel;
 eukalyptusbonbons;Eukalyptus-Menthol Bonbons;Süssigkeiten;Cookie;150g Beutel;
 kaugummi;Kaugummi;Süssigkeiten;Cookie;Menthol 50er Dosen-Pack,Airwaves,Extra;
@@ -540,7 +540,7 @@ bitter_lemon;Bitter Lemon;Getränke;Wine;Schweppes 1l;
 ginger_ale;Ginger Ale;Getränke;Wine;Schweppes 1l;
 energydrink;Energy Drink;Getränke;Wine;Dose 250ml,Sugarfree,Monster 500ml;
 bier_pils;Bier;Getränke;Beer;Kiste 20x0.5l,6er Pack 0.33l,Krombacher Alkoholfrei 6er,Alkoholfrei,Erdinger / Franziskaner 20x0.5l,Weizen,Augustiner / Tegernseer 20x0.5l,Helles;
-radler;Radler / Naturtrüb;Getränke;Beer;Kiste 20x0.5l;
+radler;Radler;Getränke;Beer;Kiste 20x0.5l;
 rotwein;Rotwein;Getränke;Wine;Merlot,Primitivo,Cabernet 0.75l,Trocken;
 weisswein;Weißwein;Getränke;Wine;Riesling,Grauburgunder,Chardonnay 0.75l,Trocken;
 rosewein;Roséwein;Getränke;Wine;Trocken 0.75l Flasche;
@@ -580,7 +580,7 @@ kuchenschwaemme;Küchenschwämme;Haushalt;Box;6er Pack mit Scheuerseite,Glitzi;
 spulbuerste;Spülbürste;Haushalt;Box;Holz,Plastik;
 microfasertuecher;Microfasertücher;Haushalt;Box;4er Pack bunt;
 weichspueler;Weichspüler;Haushalt;Droplets;Lenor / Vernel 1l;
-fleckensalz;Fleckensalz / Vanish;Haushalt;Sparkles;Oxi Action 500g;
+fleckensalz;Fleckensalz;Haushalt;Sparkles;Oxi Action 500g;
 hygienereiniger;Hygienereiniger;Haushalt;Sparkles;Wäsche-Spüler 1.5l;
 allzweckreiniger;Allzweckreiniger;Haushalt;Droplets;Der General 1l,Meister Proper;
 badreiniger;Badreiniger;Haushalt;Droplets;Cillit Bang 750ml,Glasreiniger,Sprühflasche 500ml;
@@ -600,10 +600,10 @@ batterien;Batterien;Haushalt;Box;Varta / Duracell 8er,8er Pack,AAA (Micro);
 schuhcreme;Schuhcreme;Haushalt;Box;Erdal 75ml,Schwarz,Farblos;
 textilerfrischer;Textilerfrischer;Haushalt;Droplets;500ml Sprühflasche,Febreze;
 grillanzuender;Grillanzünder;Haushalt;Flame;Öko-Würfel 32 Stk;
-holzkohle;Holzkohle / Briketts;Haushalt;Flame;3kg Sack;
-wolle_strickgarn;Wolle / Strickgarn;Haushalt;Box;50g Knäuel;
+holzkohle;Holzkohle;Haushalt;Flame;3kg Sack;
+wolle_strickgarn;Wolle;Haushalt;Box;50g Knäuel;
 paketklebeband;Paketband;Haushalt;Box;Braun 50m;
-tesafilm;Tesafilm / Klebestreifen;Haushalt;Box;3er Rolle;
+tesafilm;Tesafilm;Haushalt;Box;3er Rolle;
 schere;Haushaltsschere;Haushalt;Scissors;1 Stk Edelstahl;
 zimmerbesen;Besen;Haushalt;Box;Set mit Schaufel;
 bodenwischer;Wischmop-Ersatzbezug;Haushalt;Shield;Vileda Ultramat;
@@ -618,7 +618,7 @@ zahnbuerste;Zahnbürste;Pflege & Gesundheit;Pill;Mittel 2er Pack,Weich;
 elektr_zahnbuerstenkoepfe;Aufsteckbürsten;Pflege & Gesundheit;Pill;4er Pack Precision Clean,Oral-B;
 mundspuelung;Mundspülung;Pflege & Gesundheit;Droplets;500ml Flasche,Cool Mint;
 zahnseide;Zahnseide;Pflege & Gesundheit;Pill;50m Oral-B EssentialFloss;
-bodylotion;Bodylotion / Körpermilch;Pflege & Gesundheit;Bath;Nivea 400ml,Reichhaltig;
+bodylotion;Bodylotion;Pflege & Gesundheit;Bath;Nivea 400ml,Reichhaltig;
 handcreme;Handcreme;Pflege & Gesundheit;Bath;Kamill 100ml,Neutrogena;
 gesichtscreme;Gesichtscreme;Pflege & Gesundheit;Bath;Tagespflege 50ml,Nachtcreme;
 sonnencreme;Sonnencreme;Pflege & Gesundheit;Sun;LSF 30 200ml,LSF 50+;5,6,7,8
@@ -640,7 +640,7 @@ blasenpflaster;Blasenpflaster;Pflege & Gesundheit;Heart;5 Stk Fersengröße,Comp
 verbandpaeckchen;Verband;Pflege & Gesundheit;Heart;DIN 13151-M;
 desinfektionsspray;Desinfektionsspray;Pflege & Gesundheit;Droplets;250ml Flasche,Händedesinfektion,Sagrotan;
 wundsalbe;Wund- und Heilsalbe;Pflege & Gesundheit;Pill;50g Tube,Bepanthen;
-kopfschmerztabletten;Ibuprofen 400 / Paracetamol;Pflege & Gesundheit;Pill;20 Filmtabletten;
+kopfschmerztabletten;Schmerztabletten;Pflege & Gesundheit;Pill;20 Filmtabletten;
 erkaltungsbad;Erkältungsbad;Pflege & Gesundheit;Bath;Kneipp 100ml,Eukalyptus;
 fieberthermometer;Fieberthermometer;Pflege & Gesundheit;Thermometer;Digital 1 Stk;
 nasenspray;Nasenspray;Pflege & Gesundheit;Droplets;Ratiopharm 10ml,Meersalz,Abschwellend;
