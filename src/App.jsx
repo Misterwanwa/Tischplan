@@ -901,28 +901,147 @@ function RecipePickerSheet({ onClose, onPick }) {
   );
 }
 
-function DayHeaderNote({ dayKey, plan, dayIndex, onSaveNote }) {
-  const getDefaultNote = useCallback(() => {
-    if (plan && typeof plan.note === 'string') return plan.note;
-    if (dayIndex === 0) return 'Ich gehe zu Freunden';
-    if (dayIndex === 1) return 'Später Termin';
-    if (dayIndex === 5) return 'Kinoabend';
-    return '';
-  }, [plan, dayIndex]);
+function getDayEffectiveNote(plan, dayIndex) {
+  if (plan && typeof plan.note === 'string') return plan.note;
+  if (dayIndex === 0) return 'Ich gehe zu Freunden';
+  if (dayIndex === 1) return 'Später Termin';
+  if (dayIndex === 5) return 'Kinoabend';
+  return '';
+}
 
-  const [note, setNote] = useState(getDefaultNote);
+function DeleteNoteConfirmModal({ dateFormatted, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 bg-black/55 flex items-center justify-center z-[60] p-4 animate-fade-in" onClick={onCancel}>
+      <div className="bg-white rounded-xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-stone-200 animate-scale-up" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3">
+          <div className="bg-rose-50 p-2.5 rounded-full text-rose-600">
+            <AlertTriangle size={22} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-stone-850 font-mono uppercase tracking-wide text-xs">Notiz löschen?</h3>
+            <p className="text-[10px] text-stone-400 font-mono">{dateFormatted}</p>
+          </div>
+        </div>
+        <p className="text-sm text-stone-600 leading-relaxed">
+          Möchtest du diese Notiz für <strong>{dateFormatted}</strong> wirklich löschen?
+        </p>
+        <div className="flex gap-2 pt-1">
+          <button 
+            type="button"
+            onClick={onConfirm} 
+            className="flex-1 py-2 rounded-lg bg-rose-600 text-white font-mono uppercase tracking-wide text-xs font-semibold hover:bg-rose-700 active:scale-[0.99] transition-colors"
+          >
+            Ja, löschen
+          </button>
+          <button 
+            type="button"
+            onClick={onCancel} 
+            className="flex-1 py-2 rounded-lg border border-stone-300 text-stone-700 text-sm font-medium hover:bg-stone-50 active:scale-[0.99] transition-colors"
+          >
+            Abbrechen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NoteBubbleModal({ dateFormatted, note, onSave, onDelete, onClose }) {
+  const [text, setText] = useState(note);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleSaveAndClose = () => {
+    if (text.trim() !== note.trim()) {
+      onSave(text.trim());
+    }
+    onClose();
+  };
+
+  return (
+    <>
+      <div 
+        className="fixed inset-0 bg-black/45 flex items-center justify-center z-50 p-4 animate-fade-in"
+        onClick={handleSaveAndClose}
+      >
+        <div 
+          className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-stone-200 animate-scale-up space-y-4"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+            <div>
+              <h3 className="font-mono font-semibold uppercase tracking-wide text-xs text-stone-400">Tagesnotiz</h3>
+              <p className="text-sm font-semibold text-stone-850">{dateFormatted}</p>
+            </div>
+            <button 
+              onClick={handleSaveAndClose} 
+              className="text-stone-400 hover:text-stone-700 p-1 rounded-lg hover:bg-stone-100 transition-colors"
+              title="Schließen"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div>
+            <label className={labelCls + " mb-1 block"}>Notiz bearbeiten</label>
+            <textarea
+              autoFocus
+              rows={3}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="Notiz eingeben..."
+              className={inputCls + " resize-none font-sans leading-relaxed text-sm"}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                  handleSaveAndClose();
+                }
+              }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-rose-600 hover:bg-rose-50 border border-rose-200 text-xs font-mono uppercase font-semibold transition-colors"
+            >
+              <Trash2 size={13} /> Notiz löschen
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveAndClose}
+              className="px-5 py-2 rounded-lg bg-stone-900 text-white text-xs font-mono uppercase font-semibold hover:bg-stone-800 transition-colors"
+            >
+              Fertig
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {showDeleteConfirm && (
+        <DeleteNoteConfirmModal
+          dateFormatted={dateFormatted}
+          onConfirm={() => {
+            setShowDeleteConfirm(false);
+            onDelete();
+            onClose();
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function DayHeaderEmptyNote({ onSaveNote }) {
+  const [val, setVal] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef(null);
 
-  useEffect(() => {
-    setNote(getDefaultNote());
-  }, [getDefaultNote]);
-
   const handleBlur = () => {
     setIsFocused(false);
-    const prev = plan?.note ?? getDefaultNote();
-    if (note !== prev) {
-      onSaveNote(note);
+    if (val.trim()) {
+      onSaveNote(val.trim());
+      setVal('');
     }
   };
 
@@ -930,45 +1049,58 @@ function DayHeaderNote({ dayKey, plan, dayIndex, onSaveNote }) {
     if (e.key === 'Enter') {
       inputRef.current?.blur();
     } else if (e.key === 'Escape') {
-      setNote(plan?.note ?? getDefaultNote());
+      setVal('');
       inputRef.current?.blur();
     }
   };
-
-  const hasNote = Boolean(note && note.trim());
 
   return (
     <div
       onClick={() => inputRef.current?.focus()}
       className="w-full relative flex items-center px-2.5 py-1 rounded-lg border border-stone-300 bg-stone-100 hover:bg-stone-200/70 hover:border-stone-400 focus-within:border-stone-500 focus-within:bg-white focus-within:ring-1 focus-within:ring-stone-400/40 transition-all duration-150 cursor-text shadow-2xs"
-      title={hasNote ? 'Notiz bearbeiten' : 'Notiz hinzufügen'}
+      title="Notiz für diesen Tag hinzufügen"
     >
       <input
         ref={inputRef}
         type="text"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
         onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         placeholder="+ Notiz hinzufügen"
         className="w-full bg-transparent text-xs text-stone-700 placeholder:text-stone-400 font-sans outline-none leading-tight selection:bg-stone-200 truncate focus:text-stone-900"
       />
-      {hasNote && isFocused && (
-        <button
-          type="button"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            setNote('');
-            onSaveNote('');
-          }}
-          className="text-stone-400 hover:text-stone-700 p-0.5 rounded transition-colors flex-shrink-0 ml-1"
-          title="Notiz löschen"
-        >
-          <X size={11} />
-        </button>
-      )}
     </div>
+  );
+}
+
+function DayNoteBadge({ note, dateFormatted, onSaveNote, onDeleteNote }) {
+  const [bubbleOpen, setBubbleOpen] = useState(false);
+
+  return (
+    <>
+      <div
+        onClick={() => setBubbleOpen(true)}
+        className="group flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg border border-stone-300/80 bg-stone-100 hover:bg-stone-200/80 hover:border-stone-400 transition-all cursor-pointer shadow-2xs"
+        title="Klicken zum Vergrößern und Bearbeiten"
+      >
+        <span className="text-xs text-stone-800 font-medium font-sans truncate">{note}</span>
+        <span className="text-[10px] text-stone-400 font-mono uppercase tracking-wider group-hover:text-stone-600 flex-shrink-0">
+          Notiz
+        </span>
+      </div>
+
+      {bubbleOpen && (
+        <NoteBubbleModal
+          dateFormatted={dateFormatted}
+          note={note}
+          onSave={onSaveNote}
+          onDelete={onDeleteNote}
+          onClose={() => setBubbleOpen(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -985,21 +1117,32 @@ function DayDetail({ plan, onChange, selectedDay }) {
   const [y, m, d] = selectedDay.split('-').map(Number);
   const dayDate = new Date(y, m - 1, d);
   const dayDow = (dayDate.getDay() + 6) % 7;
+  const formattedDate = formatLongDate(selectedDay);
+  const effectiveNote = getDayEffectiveNote(plan, dayDow);
+  const hasNote = Boolean(effectiveNote && effectiveNote.trim());
 
   return (
     <div className="space-y-3">
       {settings.showDayNotes !== false && (
-        <div className="bg-white rounded-xl border border-stone-200 p-3 flex items-center justify-between gap-2">
-          <div className="text-xs font-mono font-semibold uppercase text-stone-500 flex items-center gap-1.5">
-            <MessageSquare size={13} className="text-stone-400" />
-            Tagesnotiz
+        <div className="bg-white rounded-xl border border-stone-200 p-3 space-y-2">
+          <div className="text-xs font-mono font-semibold uppercase text-stone-500 flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5">
+              <MessageSquare size={13} className="text-stone-400" />
+              Tagesnotiz
+            </span>
           </div>
-          <DayHeaderNote
-            dayKey={selectedDay}
-            plan={plan}
-            dayIndex={dayDow}
-            onSaveNote={(newNote) => onChange({ ...plan, note: newNote })}
-          />
+          {hasNote ? (
+            <DayNoteBadge
+              note={effectiveNote}
+              dateFormatted={formattedDate}
+              onSaveNote={(newNote) => onChange({ ...plan, note: newNote })}
+              onDeleteNote={() => onChange({ ...plan, note: '' })}
+            />
+          ) : (
+            <DayHeaderEmptyNote
+              onSaveNote={(newNote) => onChange({ ...plan, note: newNote })}
+            />
+          )}
         </div>
       )}
       <NutritionSummary totals={totals} people={settings.people} />
@@ -1274,6 +1417,8 @@ function WeekSummary({ selectedDay }) {
       <div className="space-y-3 mt-4">
         {plans.map(({ day, plan }, idx) => {
           const formattedDate = formatLongDate(dateKey(day));
+          const effectiveNote = getDayEffectiveNote(plan, idx);
+          const hasNote = Boolean(effectiveNote && effectiveNote.trim());
           const plannedSlots = [];
           if (plan) {
             for (const mt of MEAL_TIMES) {
@@ -1294,12 +1439,9 @@ function WeekSummary({ selectedDay }) {
               <div className="text-sm font-semibold text-stone-700 font-mono border-b border-stone-100 pb-1.5 flex items-center justify-between gap-3">
                 <span className="truncate flex-shrink-0">{formattedDate}</span>
                 <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                  {settings.showDayNotes !== false && (
+                  {settings.showDayNotes !== false && !hasNote && (
                     <div className="flex-1 max-w-[180px] sm:max-w-xs">
-                      <DayHeaderNote
-                        dayKey={dateKey(day)}
-                        plan={plan}
-                        dayIndex={idx}
+                      <DayHeaderEmptyNote
                         onSaveNote={(newNote) => handleNoteChange(dateKey(day), plan, newNote)}
                       />
                     </div>
@@ -1309,6 +1451,15 @@ function WeekSummary({ selectedDay }) {
                   </button>
                 </div>
               </div>
+              
+              {settings.showDayNotes !== false && hasNote && (
+                <DayNoteBadge
+                  note={effectiveNote}
+                  dateFormatted={formattedDate}
+                  onSaveNote={(newNote) => handleNoteChange(dateKey(day), plan, newNote)}
+                  onDeleteNote={() => handleNoteChange(dateKey(day), plan, '')}
+                />
+              )}
               
               {plannedSlots.length === 0 ? (
                 <div className="text-xs text-stone-400 italic py-1 px-1">Keine Gerichte geplant</div>
@@ -4252,12 +4403,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.17</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.18</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Ingwertee 🫖
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.17 (Ingwertee)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.18 (Ingwertee)
         </div>
       </div>
     </div>
