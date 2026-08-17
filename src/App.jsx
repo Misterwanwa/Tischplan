@@ -54,6 +54,7 @@ const DEFAULT_SETTINGS = {
   cookbookVolumes: [],
   defaultCalendarView: 'week',
   showNextMonday: false,
+  showDayNotes: true,
   aiProvider: 'gemini',
   notificationEnabled: false,
   notificationDay: 1, // 1 = Montag
@@ -987,18 +988,20 @@ function DayDetail({ plan, onChange, selectedDay }) {
 
   return (
     <div className="space-y-3">
-      <div className="bg-white rounded-xl border border-stone-200 p-3 flex items-center justify-between gap-2">
-        <div className="text-xs font-mono font-semibold uppercase text-stone-500 flex items-center gap-1.5">
-          <MessageSquare size={13} className="text-stone-400" />
-          Tagesnotiz
+      {settings.showDayNotes !== false && (
+        <div className="bg-white rounded-xl border border-stone-200 p-3 flex items-center justify-between gap-2">
+          <div className="text-xs font-mono font-semibold uppercase text-stone-500 flex items-center gap-1.5">
+            <MessageSquare size={13} className="text-stone-400" />
+            Tagesnotiz
+          </div>
+          <DayHeaderNote
+            dayKey={selectedDay}
+            plan={plan}
+            dayIndex={dayDow}
+            onSaveNote={(newNote) => onChange({ ...plan, note: newNote })}
+          />
         </div>
-        <DayHeaderNote
-          dayKey={selectedDay}
-          plan={plan}
-          dayIndex={dayDow}
-          onSaveNote={(newNote) => onChange({ ...plan, note: newNote })}
-        />
-      </div>
+      )}
       <NutritionSummary totals={totals} people={settings.people} />
       {MEAL_TIMES.map(mt => (
         <div key={mt.key} className="bg-white rounded-xl border border-stone-200 overflow-hidden">
@@ -1291,14 +1294,16 @@ function WeekSummary({ selectedDay }) {
               <div className="text-sm font-semibold text-stone-700 font-mono border-b border-stone-100 pb-1.5 flex items-center justify-between gap-3">
                 <span className="truncate flex-shrink-0">{formattedDate}</span>
                 <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                  <div className="flex-1 max-w-[180px] sm:max-w-xs">
-                    <DayHeaderNote
-                      dayKey={dateKey(day)}
-                      plan={plan}
-                      dayIndex={idx}
-                      onSaveNote={(newNote) => handleNoteChange(dateKey(day), plan, newNote)}
-                    />
-                  </div>
+                  {settings.showDayNotes !== false && (
+                    <div className="flex-1 max-w-[180px] sm:max-w-xs">
+                      <DayHeaderNote
+                        dayKey={dateKey(day)}
+                        plan={plan}
+                        dayIndex={idx}
+                        onSaveNote={(newNote) => handleNoteChange(dateKey(day), plan, newNote)}
+                      />
+                    </div>
+                  )}
                   <button onClick={() => setAddMealModal({ date: day })} className="text-stone-400 hover:text-stone-700 p-0.5 rounded transition-colors flex-shrink-0" title="Gericht hinzufügen">
                     <Plus size={14} />
                   </button>
@@ -4114,6 +4119,10 @@ function SettingsTab() {
             <input type="checkbox" checked={!!settings.showNextMonday} onChange={e => updateSettings({ showNextMonday: e.target.checked })} className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" />
             <span className="text-sm text-stone-700">Nächsten Montag in Wochenansicht anzeigen (8 Tage)</span>
           </label>
+          <label className="flex items-center gap-2 py-1.5 cursor-pointer">
+            <input type="checkbox" checked={settings.showDayNotes !== false} onChange={e => updateSettings({ showDayNotes: e.target.checked })} className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" />
+            <span className="text-sm text-stone-700">Tagesnotizen im Kalender anzeigen</span>
+          </label>
         </div>
       </div>
 
@@ -4243,12 +4252,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.16</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.17</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Ingwertee 🫖
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.16 (Ingwertee)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.17 (Ingwertee)
         </div>
       </div>
     </div>
