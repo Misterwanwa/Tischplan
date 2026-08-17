@@ -7,6 +7,7 @@ import {
   Apple, Carrot, Fish, Milk, Egg, Wheat, Wine, Flame, Package, Droplets, Heart,
   Shield, Tag, ArrowUpDown, ChevronDown, ChevronUp, MoreVertical, PlusCircle,
   CheckCircle2, Clock, Grid, ListFilter, RotateCcw, HelpCircle, Layers,
+  MessageSquare,
 } from 'lucide-react';
 import {
   SHOPPING_CATEGORIES,
@@ -899,6 +900,86 @@ function RecipePickerSheet({ onClose, onPick }) {
   );
 }
 
+function DayHeaderNote({ dayKey, plan, dayIndex, onSaveNote }) {
+  const getDefaultNote = useCallback(() => {
+    if (plan && typeof plan.note === 'string') return plan.note;
+    if (dayIndex === 0) return 'Ich gehe zu Freunden';
+    if (dayIndex === 1) return 'Später Termin';
+    if (dayIndex === 5) return 'Kinoabend';
+    return '';
+  }, [plan, dayIndex]);
+
+  const [note, setNote] = useState(getDefaultNote);
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    setNote(getDefaultNote());
+  }, [getDefaultNote]);
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    const prev = plan?.note ?? getDefaultNote();
+    if (note !== prev) {
+      onSaveNote(note);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      inputRef.current?.blur();
+    } else if (e.key === 'Escape') {
+      setNote(plan?.note ?? getDefaultNote());
+      inputRef.current?.blur();
+    }
+  };
+
+  const hasNote = Boolean(note && note.trim());
+
+  return (
+    <div
+      onClick={() => inputRef.current?.focus()}
+      className={`group relative flex items-center gap-1.5 px-2 py-0.5 rounded-lg transition-all duration-150 cursor-text max-w-[140px] sm:max-w-xs ${
+        hasNote || isFocused
+          ? 'border border-stone-200 bg-stone-50/70 hover:border-stone-300 focus-within:border-stone-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-stone-300 shadow-2xs'
+          : 'border border-transparent hover:border-stone-200 hover:bg-stone-50/60 focus-within:border-stone-300 focus-within:bg-white focus-within:ring-1 focus-within:ring-stone-200'
+      }`}
+      title={hasNote ? 'Notiz bearbeiten' : 'Notiz für diesen Tag hinzufügen'}
+    >
+      {hasNote ? (
+        <Edit2 size={11} className="text-stone-400 flex-shrink-0 group-hover:text-stone-600 transition-colors" />
+      ) : (
+        <MessageSquare size={11} className="text-stone-300 group-hover:text-stone-500 flex-shrink-0 transition-colors" />
+      )}
+      <input
+        ref={inputRef}
+        type="text"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        onFocus={() => setIsFocused(true)}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        placeholder="+ Notiz hinzufügen"
+        className="w-full min-w-[60px] sm:min-w-[100px] bg-transparent text-xs text-stone-600 placeholder:text-stone-300 font-sans outline-none leading-tight selection:bg-stone-200 truncate focus:text-stone-800"
+      />
+      {hasNote && isFocused && (
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setNote('');
+            onSaveNote('');
+          }}
+          className="text-stone-300 hover:text-stone-600 p-0.5 rounded transition-colors flex-shrink-0"
+          title="Notiz löschen"
+        >
+          <X size={11} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function DayDetail({ plan, onChange, selectedDay }) {
   const { recipes, settings, openRecipeDetail, openMoveMeal } = useApp();
   const [pickerSlot, setPickerSlot] = useState(null);
@@ -909,8 +990,24 @@ function DayDetail({ plan, onChange, selectedDay }) {
   };
   const totals = useMemo(() => computeDayNutrition(plan, recipes), [plan, recipes]);
 
+  const [y, m, d] = selectedDay.split('-').map(Number);
+  const dayDate = new Date(y, m - 1, d);
+  const dayDow = (dayDate.getDay() + 6) % 7;
+
   return (
     <div className="space-y-3">
+      <div className="bg-white rounded-xl border border-stone-200 p-3 flex items-center justify-between gap-2">
+        <div className="text-xs font-mono font-semibold uppercase text-stone-500 flex items-center gap-1.5">
+          <MessageSquare size={13} className="text-stone-400" />
+          Tagesnotiz
+        </div>
+        <DayHeaderNote
+          dayKey={selectedDay}
+          plan={plan}
+          dayIndex={dayDow}
+          onSaveNote={(newNote) => onChange({ ...plan, note: newNote })}
+        />
+      </div>
       <NutritionSummary totals={totals} people={settings.people} />
       {MEAL_TIMES.map(mt => (
         <div key={mt.key} className="bg-white rounded-xl border border-stone-200 overflow-hidden">
@@ -1164,6 +1261,13 @@ function WeekSummary({ selectedDay }) {
     return () => { alive = false; };
   }, [selectedDay, recipes, settings.showNextMonday, getDayPlan, refreshKey]);
 
+  const handleNoteChange = async (dk, currentPlan, newNote) => {
+    const updatedPlan = { ...(currentPlan || emptyDayPlan()), note: newNote };
+    setPlans(prev => prev.map(p => dateKey(p.day) === dk ? { ...p, plan: updatedPlan } : p));
+    await saveDayPlan(dk, updatedPlan);
+    triggerRefresh();
+  };
+
   if (!totals) return <div className={cardCls + " text-center text-stone-300"}><Loader2 className="animate-spin inline" size={18} /></div>;
 
   const dayCount = settings.showNextMonday ? 8 : 7;
@@ -1174,7 +1278,7 @@ function WeekSummary({ selectedDay }) {
       <NutritionSummary totals={totals} people={weeklyPeople} />
       
       <div className="space-y-3 mt-4">
-        {plans.map(({ day, plan }) => {
+        {plans.map(({ day, plan }, idx) => {
           const formattedDate = formatLongDate(dateKey(day));
           const plannedSlots = [];
           if (plan) {
@@ -1193,11 +1297,17 @@ function WeekSummary({ selectedDay }) {
           
           return (
             <div key={dateKey(day)} className="bg-white rounded-xl border border-stone-200 p-4 space-y-3">
-              <div className="text-sm font-semibold text-stone-700 font-mono border-b border-stone-100 pb-1.5 flex justify-between items-center">
-                <span>{formattedDate}</span>
-                <div className="flex items-center gap-1.5">
+              <div className="text-sm font-semibold text-stone-700 font-mono border-b border-stone-100 pb-1.5 flex justify-between items-center gap-2">
+                <span className="truncate">{formattedDate}</span>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <DayHeaderNote
+                    dayKey={dateKey(day)}
+                    plan={plan}
+                    dayIndex={idx}
+                    onSaveNote={(newNote) => handleNoteChange(dateKey(day), plan, newNote)}
+                  />
                   {plannedSlots.length > 0 && (
-                    <span className="text-xs font-normal text-stone-400">
+                    <span className="text-xs font-normal text-stone-400 font-mono">
                       {plannedSlots.length} {plannedSlots.length === 1 ? 'Gericht' : 'Gerichte'}
                     </span>
                   )}
@@ -4145,12 +4255,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.14</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.15</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Ingwertee 🫖
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.14 (Ingwertee)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.15 (Ingwertee)
         </div>
       </div>
     </div>
