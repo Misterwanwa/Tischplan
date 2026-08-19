@@ -62,6 +62,12 @@ const DEFAULT_SETTINGS = {
   snoozedUntil: null,
   lastNotifiedAt: null,
   cookbookSort: 'date-desc',
+  recurringMealEnabled: false,
+  recurringMealDays: [1],
+  recurringMealTime: 'dinner',
+  recurringMealCourse: 'main',
+  recurringMealDish: '',
+  recurringMealSaveAsRecipe: true,
 };
 
 /* ---------------------------------- Helpers ---------------------------------- */
@@ -4279,6 +4285,121 @@ function SettingsTab() {
 
       <div className={cardCls}>
         <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
+          <RotateCcw size={15} /> Mahlzeiten-Vorbelegung
+        </div>
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 py-1.5 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={!!settings.recurringMealEnabled} 
+              onChange={e => updateSettings({ recurringMealEnabled: e.target.checked })} 
+              className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" 
+            />
+            <span className="text-sm font-medium text-stone-800">Mahlzeit an Wochentagen fest vorbelegen</span>
+          </label>
+          <p className="text-xs text-stone-500">
+            Wird ab der nächsten beginnenden Woche automatisch für die ausgewählten Tage und Mahlzeiten eingetragen. Im Planer wie gewohnt entfern- und anpassbar.
+          </p>
+
+          {settings.recurringMealEnabled && (
+            <div className="space-y-3 pt-2 border-t border-stone-100">
+              <div>
+                <label className={labelCls}>Wochentage</label>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {[
+                    { day: 1, label: 'Mo', full: 'Montag' },
+                    { day: 2, label: 'Di', full: 'Dienstag' },
+                    { day: 3, label: 'Mi', full: 'Mittwoch' },
+                    { day: 4, label: 'Do', full: 'Donnerstag' },
+                    { day: 5, label: 'Fr', full: 'Freitag' },
+                    { day: 6, label: 'Sa', full: 'Samstag' },
+                    { day: 0, label: 'So', full: 'Sonntag' },
+                  ].map(item => {
+                    const days = Array.isArray(settings.recurringMealDays) ? settings.recurringMealDays : [1];
+                    const isSelected = days.includes(item.day);
+                    return (
+                      <button
+                        key={item.day}
+                        type="button"
+                        title={item.full}
+                        onClick={() => {
+                          const next = isSelected 
+                            ? days.filter(d => d !== item.day) 
+                            : [...days, item.day];
+                          updateSettings({ recurringMealDays: next });
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all ${
+                          isSelected 
+                            ? 'bg-stone-900 text-white shadow-sm' 
+                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Mahlzeit (Tageszeit)</label>
+                  <select
+                    value={settings.recurringMealTime || 'dinner'}
+                    onChange={e => updateSettings({ recurringMealTime: e.target.value })}
+                    className={inputCls + " text-sm font-mono mt-1"}
+                  >
+                    <option value="breakfast">Frühstück</option>
+                    <option value="lunch">Mittagessen</option>
+                    <option value="dinner">Abendessen</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Gang</label>
+                  <select
+                    value={settings.recurringMealCourse || 'main'}
+                    onChange={e => updateSettings({ recurringMealCourse: e.target.value })}
+                    className={inputCls + " text-sm font-mono mt-1"}
+                  >
+                    <option value="snack">Snack</option>
+                    <option value="main">Hauptspeise</option>
+                    <option value="dessert">Nachspeise / Dessert</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelCls}>Gericht / Mahlzeit</label>
+                <input
+                  type="text"
+                  value={settings.recurringMealDish || ''}
+                  onChange={e => updateSettings({ recurringMealDish: e.target.value })}
+                  placeholder="z. B. Haferflocken mit Beeren, Pasta, Salat..."
+                  className={inputCls + " text-sm mt-1"}
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 py-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.recurringMealSaveAsRecipe !== false}
+                    onChange={e => updateSettings({ recurringMealSaveAsRecipe: e.target.checked })}
+                    className="rounded border-stone-300 text-stone-900 focus:ring-stone-900"
+                  />
+                  <span className="text-sm text-stone-700">Als Rezept im Kochbuch speichern</span>
+                </label>
+                <p className="text-[11px] text-stone-400">
+                  Wenn deaktiviert, wird die Mahlzeit nur im Planer eingetragen, ohne das Kochbuch zu belegen.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
           <Bell size={15} /> Erinnerungen
         </div>
         <div className="space-y-3">
@@ -4403,12 +4524,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.18</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.19</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Ingwertee 🫖
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.18 (Ingwertee)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.19 (Ingwertee)
         </div>
       </div>
     </div>
@@ -4604,11 +4725,16 @@ export default function App() {
   const [plannerOpen, setPlannerOpen] = useState(false);
 
   const recipesRef = useRef([]);
+  const settingsRef = useRef(settings);
   const mealplanIndexRef = useRef({});
 
   useEffect(() => {
     recipesRef.current = recipes;
   }, [recipes]);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
   useEffect(() => {
     mealplanIndexRef.current = mealplanIndex;
@@ -4654,6 +4780,7 @@ export default function App() {
 
       setRecipes(recipesNext); setSettings(settingsNext); setProfile(p); setMealplanIndex(idx);
       recipesRef.current = recipesNext;
+      settingsRef.current = settingsNext;
       mealplanIndexRef.current = idx;
       setBookmarksRecipes(bmRecipes); setBookmarksPages(bmPages);
       setLoading(false);
@@ -4700,6 +4827,7 @@ export default function App() {
   const updateSettings = async (patch) => {
     const next = { ...settings, ...patch };
     setSettings(next);
+    settingsRef.current = next;
     await storageSet('settings', next, true);
   };
   const closeVolume = async (newTitle) => {
@@ -4714,7 +4842,6 @@ export default function App() {
     setProfile(next);
     await storageSet('profile', next, false);
   };
-  const getDayPlan = useCallback((dk) => storageGet(`mealplan:${dk}`, true, emptyDayPlan()), []);
   const saveDayPlan = useCallback(async (dk, plan) => {
     await storageSet(`mealplan:${dk}`, plan, true);
     const counts = mealTimeCounts(plan);
@@ -4725,6 +4852,60 @@ export default function App() {
     mealplanIndexRef.current = nextIndex;
     await storageSet('mealplan_index', nextIndex, true);
   }, []);
+  const getDayPlan = useCallback(async (dk) => {
+    const raw = await storageGet(`mealplan:${dk}`, true, null);
+    if (raw !== null) return raw;
+
+    const curSettings = settingsRef.current || settings;
+    if (curSettings && curSettings.recurringMealEnabled && curSettings.recurringMealDish && curSettings.recurringMealDish.trim()) {
+      const nextMon = getNextWeekMonday();
+      const nextMonKey = dateKey(nextMon);
+      if (dk >= nextMonKey) {
+        const [y, m, d] = dk.split('-').map(Number);
+        const dayDate = new Date(y, m - 1, d);
+        const dayOfWeek = dayDate.getDay(); // 0 = Sunday, 1 = Monday, ...
+        const targetDays = Array.isArray(curSettings.recurringMealDays) ? curSettings.recurringMealDays : [1];
+
+        if (targetDays.includes(dayOfWeek)) {
+          const dishTitle = curSettings.recurringMealDish.trim();
+          const saveAsRecipe = curSettings.recurringMealSaveAsRecipe !== false;
+          const mealTime = curSettings.recurringMealTime || 'dinner';
+          const course = curSettings.recurringMealCourse || 'main';
+
+          let recipe = (recipesRef.current || []).find(r => (r.title || '').trim().toLowerCase() === dishTitle.toLowerCase());
+          if (!recipe) {
+            const vol = currentOpenVolume(curSettings);
+            const newRecipe = {
+              id: uid(),
+              title: dishTitle,
+              servings: 1,
+              ingredients: [],
+              steps: [],
+              nutrition: null,
+              photo: null,
+              rating: null,
+              placeholder: false,
+              source: { type: 'manual', label: 'Vorbelegung' },
+              doNotSaveInBook: !saveAsRecipe,
+              createdAt: new Date().toISOString(),
+              bookVolume: (saveAsRecipe && vol) ? vol.id : null,
+            };
+            const nextRecs = [...(recipesRef.current || []), newRecipe];
+            setRecipes(nextRecs);
+            recipesRef.current = nextRecs;
+            await storageSet('recipes', nextRecs, true);
+            recipe = newRecipe;
+          }
+
+          const prefilled = emptyDayPlan();
+          prefilled[mealTime] = { ...prefilled[mealTime], [course]: { recipeId: recipe.id, multiplier: 1 } };
+          await saveDayPlan(dk, prefilled);
+          return prefilled;
+        }
+      }
+    }
+    return emptyDayPlan();
+  }, [saveDayPlan, settings]);
   const triggerRefresh = useCallback(() => setRefreshKey(prev => prev + 1), []);
   const saveBookmarksRecipes = async (newLinks) => {
     const map = new Map(bookmarksRecipes.map(b => [b.url, b]));
