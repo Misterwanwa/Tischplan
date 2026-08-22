@@ -862,7 +862,7 @@ function SlotRow({ course, recipe, multiplier, onPick, onRemove, onMultiplier, o
           <div className="text-xs text-stone-400 font-mono uppercase flex items-center gap-1">
             {course.label}{recipe.placeholder && <span className="text-amber-600">· ausfüllen</span>}
           </div>
-          <div className="text-sm font-medium truncate">{recipe.title}</div>
+          <div className="text-sm font-medium text-stone-800 line-clamp-2 break-words leading-snug">{recipe.title}</div>
         </div>
       </div>
       <input type="number" step="0.5" min="0.1" value={localVal} onChange={handleInputChange} className="w-14 text-center text-sm border border-stone-300 rounded-lg py-1 focus:outline-none focus:ring-1 focus:ring-stone-900" />
@@ -1205,11 +1205,11 @@ function PlannedMealItem({ meal, course, slot, recipe, onLongPressRecipe, onClic
             <course.icon size={14} className="text-stone-400" />
           </div>
         )}
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="text-[10px] text-stone-400 font-mono uppercase tracking-wider flex items-center gap-1">
             {meal.label} ({course.label})
           </div>
-          <div className="text-sm font-medium text-stone-800 truncate">{recipe.title}</div>
+          <div className="text-sm font-medium text-stone-800 line-clamp-2 break-words leading-snug">{recipe.title}</div>
         </div>
       </div>
       {slot.multiplier !== 1 && (
@@ -2672,17 +2672,15 @@ function CookModeModal({ recipe, multiplier = 1, onClose }) {
           ))}
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-mono uppercase px-2 py-0.5 rounded-full font-semibold">
-              Schritt {stepIdx + 1} / {totalSteps}
-            </span>
-            <h3 className="font-bold text-base text-white truncate max-w-[200px] sm:max-w-xs">{recipe.title}</h3>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-full bg-stone-800 text-stone-300 hover:text-white hover:bg-stone-700">
+        <div className="flex items-center justify-between gap-2">
+          <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-mono uppercase px-2.5 py-0.5 rounded-full font-semibold">
+            Schritt {stepIdx + 1} / {totalSteps}
+          </span>
+          <button onClick={onClose} className="p-1.5 rounded-full bg-stone-800 text-stone-300 hover:text-white hover:bg-stone-700" title="Kochmodus beenden">
             <X size={20} />
           </button>
         </div>
+        <h3 className="font-bold text-base sm:text-lg text-white leading-snug break-words">{recipe.title}</h3>
       </div>
 
       {/* Main Story Slide Container */}
@@ -2918,11 +2916,11 @@ function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-full flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
-          <span className="font-mono font-semibold truncate">{recipe.title}</span>
-          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-            <button onClick={() => setEditing(true)} className="text-stone-400 hover:text-stone-900"><Edit2 size={17} /></button>
-            <button onClick={onClose}><X size={20} /></button>
+        <div className="p-4 border-b border-stone-200 flex items-start justify-between gap-3 flex-shrink-0">
+          <h3 className="font-mono font-semibold text-stone-900 leading-snug break-words flex-1 min-w-0">{recipe.title}</h3>
+          <div className="flex items-center gap-2 flex-shrink-0 ml-2 pt-0.5">
+            <button onClick={() => setEditing(true)} className="text-stone-400 hover:text-stone-900" title="Bearbeiten"><Edit2 size={17} /></button>
+            <button onClick={onClose} className="text-stone-400 hover:text-stone-900" title="Schließen"><X size={20} /></button>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
@@ -3047,7 +3045,7 @@ function RecipeGridItem({ recipe, onClick, onLongPress }) {
         </div>
       )}
       <div className="p-2.5">
-        <div className="text-sm font-medium truncate flex items-center gap-1">
+        <div className="text-sm font-medium line-clamp-2 break-words leading-snug flex items-center gap-1">
           {recipe.title}
           {recipe.placeholder && <span className="text-amber-500">●</span>}
         </div>
@@ -4521,12 +4519,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.20</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.21</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Ingwertee 🫖
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.20 (Ingwertee)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.21 (Ingwertee)
         </div>
       </div>
     </div>
