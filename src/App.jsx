@@ -7,7 +7,7 @@ import {
   Apple, Carrot, Fish, Milk, Egg, Wheat, Wine, Flame, Package, Droplets, Heart,
   Shield, Tag, ArrowUpDown, ChevronDown, ChevronUp, MoreVertical, PlusCircle,
   CheckCircle2, Clock, Grid, ListFilter, RotateCcw, HelpCircle, Layers,
-  MessageSquare,
+  MessageSquare, Shuffle,
 } from 'lucide-react';
 import {
   SHOPPING_CATEGORIES,
@@ -46,8 +46,8 @@ const NUTRIENT_LABELS = { kcal: 'kcal', protein: 'Eiweiß', carbs: 'Kohlenh.', f
 
 const DEFAULT_SETTINGS = {
   people: [
-    { name: 'Person 1', targets: { kcal: 2000, protein: 80, carbs: 250, fat: 70 } },
-    { name: 'Person 2', targets: { kcal: 2000, protein: 80, carbs: 250, fat: 70 } },
+    { name: 'Person 1', showNutrition: true, targets: { kcal: 2000, protein: 80, carbs: 250, fat: 70 } },
+    { name: 'Person 2', showNutrition: true, targets: { kcal: 2000, protein: 80, carbs: 250, fat: 70 } },
   ],
   cookbooks: [],
   coverTitle: 'Unser Kochbuch',
@@ -76,6 +76,17 @@ function dateKey(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
 function todayKey() { return dateKey(new Date()); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
+function normalizeGerman(str) {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/ß/g, 'ss')
+    .replace(/ae/g, 'a')
+    .replace(/oe/g, 'o')
+    .replace(/ue/g, 'u');
+}
+
 function formatLongDate(dk) {
   const [y, m, d] = dk.split('-').map(Number);
   const date = new Date(y, m - 1, d);
@@ -89,9 +100,40 @@ function emptyDayPlan() {
 }
 
 function mealTimeCounts(plan) {
+  if (!plan) return { breakfast: 0, lunch: 0, dinner: 0 };
   const counts = {};
-  for (const mt of MEAL_KEYS) counts[mt] = COURSE_KEYS.filter(co => plan[mt] && plan[mt][co]).length;
+  for (const mt of MEAL_KEYS) {
+    counts[mt] = COURSE_KEYS.filter(co => {
+      const slot = plan[mt] && plan[mt][co];
+      return Boolean(slot && slot.recipeId);
+    }).length;
+  }
   return counts;
+}
+
+function dayHasMeals(key, mealplanIndex, settings) {
+  const entry = mealplanIndex && mealplanIndex[key];
+  if (entry) {
+    if (typeof entry === 'number' && entry > 0) return true;
+    if (typeof entry === 'object') {
+      const total = Object.values(entry).reduce((sum, val) => sum + (typeof val === 'number' ? val : (val ? 1 : 0)), 0);
+      if (total > 0) return true;
+    }
+  }
+  if (settings && settings.recurringMealEnabled && settings.recurringMealDish && settings.recurringMealDish.trim()) {
+    const nextMon = getNextWeekMonday();
+    const nextMonKey = dateKey(nextMon);
+    if (key >= nextMonKey) {
+      const [y, m, dVal] = key.split('-').map(Number);
+      const dayDate = new Date(y, m - 1, dVal);
+      const dayOfWeek = dayDate.getDay();
+      const targetDays = Array.isArray(settings.recurringMealDays) ? settings.recurringMealDays : [1];
+      if (targetDays.includes(dayOfWeek)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 function parseIngredientLine(line) {
@@ -674,9 +716,11 @@ function NutrientBar({ label, value, target, unit }) {
   );
 }
 function NutritionSummary({ totals, people }) {
+  const visiblePeople = (people || []).filter(p => p.showNutrition !== false);
+  if (visiblePeople.length === 0) return null;
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {people.map((p, i) => (
+    <div className={`grid grid-cols-1 ${visiblePeople.length > 1 ? 'sm:grid-cols-2' : ''} gap-3`}>
+      {visiblePeople.map((p, i) => (
         <div key={i} className={cardCls}>
           <div className="text-sm font-semibold text-stone-700 mb-2 font-mono">{p.name}</div>
           <NutrientBar label="Kalorien" value={totals.kcal} target={p.targets.kcal} unit="kcal" />
@@ -778,7 +822,7 @@ function ProfilePicker({ settings, onChoose, onUpdateSettings }) {
 
 /* ---------------------------------- Calendar tab ---------------------------------- */
 function MonthGrid({ viewDate, setViewDate, selectedDay, setSelectedDay }) {
-  const { mealplanIndex } = useApp();
+  const { mealplanIndex, settings, saveDayPlan } = useApp();
   const year = viewDate.getFullYear(), month = viewDate.getMonth();
   const first = new Date(year, month, 1);
   const startOffset = (first.getDay() + 6) % 7;
@@ -786,6 +830,29 @@ function MonthGrid({ viewDate, setViewDate, selectedDay, setSelectedDay }) {
   const cells = [];
   for (let i = 0; i < startOffset; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+
+  // Background reconciliation for days of this month to ensure accurate dots
+  useEffect(() => {
+    let alive = true;
+    const reconcile = async () => {
+      for (let d = 1; d <= daysInMonth; d++) {
+        if (!alive) break;
+        const dk = dateKey(new Date(year, month, d));
+        const raw = await storageGet(`mealplan:${dk}`, true, null);
+        if (raw !== null) {
+          const counts = mealTimeCounts(raw);
+          const total = Object.values(counts).reduce((a, b) => a + b, 0);
+          const currentEntry = mealplanIndex ? mealplanIndex[dk] : null;
+          const currentTotal = currentEntry ? Object.values(currentEntry).reduce((a, b) => a + (typeof b === 'number' ? b : (b ? 1 : 0)), 0) : 0;
+          if (total !== currentTotal) {
+            await saveDayPlan(dk, raw);
+          }
+        }
+      }
+    };
+    reconcile();
+    return () => { alive = false; };
+  }, [year, month, daysInMonth, saveDayPlan]);
 
   return (
     <div className={cardCls}>
@@ -803,12 +870,12 @@ function MonthGrid({ viewDate, setViewDate, selectedDay, setSelectedDay }) {
           const key = dateKey(d);
           const isSelected = key === selectedDay;
           const isToday = key === todayKey();
-          const entry = mealplanIndex[key];
+          const hasMeals = dayHasMeals(key, mealplanIndex, settings);
           return (
             <button key={i} onClick={() => setSelectedDay(key)}
               className={`aspect-square rounded-lg flex flex-col items-center justify-center text-sm relative ${isSelected ? 'bg-stone-900 text-white' : isToday ? 'bg-stone-200 text-stone-900 font-semibold' : 'hover:bg-stone-100 text-stone-700'}`}>
               {d.getDate()}
-              {entry && (
+              {hasMeals && (
                 <div className="flex justify-center mt-0.5 h-1">
                   <span className={`w-1 h-1 rounded-full ${isSelected ? 'bg-stone-300' : 'bg-stone-400'}`} />
                 </div>
@@ -1737,6 +1804,8 @@ function FirefoxImportPanel({ onBack, onNext }) {
   const [error, setError] = useState(null);
   const [importing, setImporting] = useState(false);
   const [category, setCategory] = useState('recipes');
+  const [highlightedUrl, setHighlightedUrl] = useState(null);
+  const itemRefs = useRef({});
 
   const activeBookmarks = category === 'recipes' ? bookmarksRecipes : bookmarksPages;
 
@@ -1759,13 +1828,37 @@ function FirefoxImportPanel({ onBack, onNext }) {
 
   const filtered = activeBookmarks.filter(l => l.title.toLowerCase().includes(query.toLowerCase()) || l.url.toLowerCase().includes(query.toLowerCase()));
 
+  const handleRandomPick = () => {
+    const list = filtered.length > 0 ? filtered : activeBookmarks;
+    if (list.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * list.length);
+    const chosen = list[randomIndex];
+    setHighlightedUrl(chosen.url);
+    setTimeout(() => {
+      const el = itemRefs.current[chosen.url];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 50);
+  };
+
   return (
     <div className="space-y-3">
       <button onClick={onBack} className="text-sm text-stone-400 flex items-center gap-1"><ChevronLeft size={14} /> Zurück</button>
       
       <div className="flex gap-1 bg-stone-100 rounded-lg p-0.5 w-full">
-        <button onClick={() => setCategory('recipes')} className={`flex-1 py-1.5 rounded-md text-xs font-mono ${category === 'recipes' ? 'bg-white shadow-sm font-semibold' : 'text-stone-500'}`}>Rezepte</button>
-        <button onClick={() => setCategory('pages')} className={`flex-1 py-1.5 rounded-md text-xs font-mono ${category === 'pages' ? 'bg-white shadow-sm font-semibold' : 'text-stone-500'}`}>Seiten</button>
+        <button 
+          onClick={() => { setCategory('recipes'); setHighlightedUrl(null); }} 
+          className={`flex-1 py-1.5 rounded-md text-xs font-mono transition-all ${category === 'recipes' ? 'bg-white shadow-sm font-semibold text-stone-900' : 'text-stone-500'}`}
+        >
+          Rezepte
+        </button>
+        <button 
+          onClick={() => { setCategory('pages'); setHighlightedUrl(null); }} 
+          className={`flex-1 py-1.5 rounded-md text-xs font-mono transition-all ${category === 'pages' ? 'bg-white shadow-sm font-semibold text-stone-900' : 'text-stone-500'}`}
+        >
+          Seiten
+        </button>
       </div>
 
       {activeBookmarks.length === 0 ? (
@@ -1787,14 +1880,55 @@ function FirefoxImportPanel({ onBack, onNext }) {
               <input type="file" accept=".html,.htm" className="hidden" onChange={e => e.target.files[0] && handleFile(e.target.files[0])} />
             </label>
           </div>
-          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Filtern..." className={inputCls + " mb-2"} />
-          <div className="max-h-72 overflow-y-auto space-y-1">
-            {filtered.map((l, i) => (
-              <button key={i} onClick={() => onNext({ title: l.title, source: { type: 'firefox', url: l.url, label: `Firefox-Favoriten (${category === 'recipes' ? 'Rezepte' : 'Seiten'})` } })} className="w-full text-left p-2.5 rounded-lg hover:bg-stone-50 border border-stone-100">
-                <div className="text-sm font-medium truncate">{l.title}</div>
-                <div className="text-xs text-stone-400 truncate">{l.url}</div>
-              </button>
-            ))}
+          <div className="flex gap-2 mb-2">
+            <div className="relative flex-1">
+              <input 
+                value={query} 
+                onChange={e => { setQuery(e.target.value); setHighlightedUrl(null); }} 
+                placeholder={category === 'recipes' ? "Rezepte filtern..." : "Seiten filtern..."} 
+                className={inputCls} 
+              />
+              {query && (
+                <button onClick={() => { setQuery(''); setHighlightedUrl(null); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleRandomPick}
+              className="px-3 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white rounded-lg text-xs font-mono font-semibold flex items-center gap-1.5 shadow-sm transition-all flex-shrink-0"
+              title={category === 'recipes' ? "Zufälliges Rezept auswählen" : "Zufällige Seite auswählen"}
+            >
+              <Shuffle size={14} /> Zufall
+            </button>
+          </div>
+          <div className="max-h-72 overflow-y-auto space-y-1 pr-0.5">
+            {filtered.map((l, i) => {
+              const isHighlighted = l.url === highlightedUrl;
+              return (
+                <button 
+                  key={l.url || i} 
+                  ref={el => { if (el) itemRefs.current[l.url] = el; }}
+                  onClick={() => onNext({ title: l.title, source: { type: 'firefox', url: l.url, label: `Firefox-Favoriten (${category === 'recipes' ? 'Rezepte' : 'Seiten'})` } })} 
+                  className={`w-full text-left p-2.5 rounded-lg border transition-all ${
+                    isHighlighted 
+                      ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-400 shadow-sm' 
+                      : 'hover:bg-stone-50 border-stone-100 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className={`text-sm font-medium truncate ${isHighlighted ? 'text-amber-950 font-semibold' : 'text-stone-900'}`}>{l.title}</div>
+                    {isHighlighted && (
+                      <span className="text-[10px] bg-amber-200/90 text-amber-900 px-1.5 py-0.5 rounded font-mono font-bold flex-shrink-0 animate-pulse">
+                        Zufallstreffer
+                      </span>
+                    )}
+                  </div>
+                  <div className={`text-xs truncate ${isHighlighted ? 'text-amber-700' : 'text-stone-400'}`}>{l.url}</div>
+                </button>
+              );
+            })}
             {filtered.length === 0 && <div className="text-sm text-stone-400 text-center py-4">Keine Treffer</div>}
           </div>
         </div>
@@ -3512,9 +3646,15 @@ function ShoppingTab() {
 
   // Search Autocomplete Suggestions
   const suggestions = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return [];
-    return allProducts.filter(p => p.name.toLowerCase().includes(q)).slice(0, 8);
+    const raw = search.trim();
+    if (!raw) return [];
+    const qLower = raw.toLowerCase();
+    const qNorm = normalizeGerman(raw);
+    return allProducts.filter(p => {
+      const pLower = p.name.toLowerCase();
+      const pNorm = normalizeGerman(p.name);
+      return pLower.includes(qLower) || pNorm.includes(qNorm);
+    }).slice(0, 8);
   }, [search, allProducts]);
 
   // Add / Activate product from search or catalog
@@ -3523,7 +3663,10 @@ function ShoppingTab() {
     const name = isObject ? productOrName.name : productOrName.trim();
     if (!name) return;
 
-    const matchedProd = isObject ? productOrName : allProducts.find(p => p.name.toLowerCase() === name.toLowerCase());
+    const normName = normalizeGerman(name);
+    const matchedProd = isObject 
+      ? productOrName 
+      : (allProducts.find(p => p.name.toLowerCase() === name.toLowerCase()) || allProducts.find(p => normalizeGerman(p.name) === normName));
 
     const newItem = {
       id: uid(),
@@ -4240,20 +4383,55 @@ function SettingsTab() {
     <div className="space-y-4">
       <div className={cardCls}>
         <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide"><Users size={15} /> Personen &amp; Tagesziele</div>
-        {people.map((p, i) => (
-          <div key={i} className="mb-3 last:mb-0 p-3 bg-stone-50 rounded-lg">
-            <input value={p.name} onChange={e => { const next = [...people]; next[i] = { ...next[i], name: e.target.value }; setPeople(next); }} className={inputCls + " text-sm font-medium mb-2"} />
-            <div className="grid grid-cols-4 gap-2">
-              {NUTRIENT_KEYS.map(k => (
-                <div key={k}>
-                  <input type="number" value={p.targets[k]} onChange={e => { const next = [...people]; next[i] = { ...next[i], targets: { ...next[i].targets, [k]: parseInt(e.target.value) || 0 } }; setPeople(next); }} className="w-full px-2 py-1 rounded-lg border border-stone-300 text-sm text-center focus:outline-none focus:ring-1 focus:ring-stone-900" />
-                  <div className="text-xs text-stone-400 text-center mt-0.5 font-mono">{NUTRIENT_LABELS[k]}</div>
+        {people.map((p, i) => {
+          const isNutritionOn = p.showNutrition !== false;
+          return (
+            <div key={i} className="mb-3 last:mb-0 p-3 bg-stone-50 rounded-lg space-y-2.5">
+              <input 
+                value={p.name} 
+                onChange={e => { const next = [...people]; next[i] = { ...next[i], name: e.target.value }; setPeople(next); }} 
+                className={inputCls + " text-sm font-medium"} 
+                placeholder={`Person ${i + 1}`}
+              />
+              
+              <label className="flex items-center gap-2 py-0.5 cursor-pointer select-none">
+                <input 
+                  type="checkbox" 
+                  checked={isNutritionOn} 
+                  onChange={e => { 
+                    const next = [...people]; 
+                    next[i] = { ...next[i], showNutrition: e.target.checked }; 
+                    setPeople(next); 
+                  }} 
+                  className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" 
+                />
+                <span className="text-xs font-mono font-medium text-stone-700">Nährwerte erfassen &amp; anzeigen</span>
+              </label>
+
+              {isNutritionOn && (
+                <div className="grid grid-cols-4 gap-2 pt-1">
+                  {NUTRIENT_KEYS.map(k => (
+                    <div key={k}>
+                      <input 
+                        type="number" 
+                        value={p.targets ? p.targets[k] : 0} 
+                        onChange={e => { 
+                          const next = [...people]; 
+                          next[i] = { ...next[i], targets: { ...(next[i].targets || {}), [k]: parseInt(e.target.value) || 0 } }; 
+                          setPeople(next); 
+                        }} 
+                        className="w-full px-2 py-1 rounded-lg border border-stone-300 text-sm text-center focus:outline-none focus:ring-1 focus:ring-stone-900" 
+                      />
+                      <div className="text-xs text-stone-400 text-center mt-0.5 font-mono">{NUTRIENT_LABELS[k]}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {profile.personIndex === i && <div className="text-xs text-stone-400 mt-1 font-mono">DIESES GERÄT</div>}
             </div>
-            {profile.personIndex === i && <div className="text-xs text-stone-400 mt-1.5 font-mono">DIESES GERÄT</div>}
-          </div>
-        ))}
+          );
+        })}
         <button onClick={savePeople} className={primaryBtnCls + " mt-1"}>Speichern</button>
       </div>
 
@@ -4772,6 +4950,16 @@ export default function App() {
       }
       const fixedRecipes = recipesNext.map(rec => ('rating' in rec ? rec : { ...rec, rating: null, placeholder: !!rec.placeholder }));
       if (fixedRecipes.some((rec, i) => rec !== recipesNext[i])) { recipesNext = fixedRecipes; persistRecipes = true; }
+
+      if (settingsNext.people && settingsNext.people.length > 0) {
+        settingsNext = {
+          ...settingsNext,
+          people: settingsNext.people.map(p => ({
+            ...p,
+            showNutrition: p.showNutrition !== false,
+          }))
+        };
+      }
 
       setRecipes(recipesNext); setSettings(settingsNext); setProfile(p); setMealplanIndex(idx);
       recipesRef.current = recipesNext;
