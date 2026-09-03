@@ -9,7 +9,7 @@ export async function onRequestPost(context) {
   };
   
   try {
-    const { provider, prompt, useSearch } = await context.request.json();
+    const { provider, prompt, useSearch, image, maxTokens } = await context.request.json();
     
     let result;
     
@@ -18,9 +18,19 @@ export async function onRequestPost(context) {
       const apiKey = context.env.GEMINI_API_KEY;
       if (!apiKey) return new Response('GEMINI_API_KEY not set', { status: 500, headers: corsHeaders });
       
+      const parts = [{ text: prompt }];
+      if (image && image.data) {
+        parts.push({
+          inline_data: {
+            mime_type: image.mimeType || 'image/jpeg',
+            data: image.data
+          }
+        });
+      }
+
       const body = {
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 }
+        contents: [{ role: 'user', parts }],
+        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: maxTokens || 4096 }
       };
       
       // Gemini 2.0 Flash mit Google Search Grounding (falls useSearch)
@@ -52,10 +62,23 @@ export async function onRequestPost(context) {
       const apiKey = context.env.ANTHROPIC_API_KEY;
       if (!apiKey) return new Response('ANTHROPIC_API_KEY not set', { status: 500, headers: corsHeaders });
       
+      const content = [];
+      if (image && image.data) {
+        content.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: image.mimeType || 'image/jpeg',
+            data: image.data
+          }
+        });
+      }
+      content.push({ type: 'text', text: prompt });
+
       const body = {
         model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }]
+        max_tokens: maxTokens || 4096,
+        messages: [{ role: 'user', content }]
       };
       if (useSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
       

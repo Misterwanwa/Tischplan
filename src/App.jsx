@@ -16,6 +16,7 @@ import {
   BUILTIN_PRODUCTS,
   ProductPictogram,
 } from './productDatabase';
+import CaloriesTab from './CaloriesTab';
 
 /* ---------------------------------- Design tokens ---------------------------------- */
 const inputCls = "w-full px-3 py-2 rounded-lg border border-stone-300 text-sm focus:outline-none focus:ring-1 focus:ring-stone-900 bg-white";
@@ -46,8 +47,8 @@ const NUTRIENT_LABELS = { kcal: 'kcal', protein: 'Eiweiß', carbs: 'Kohlenh.', f
 
 const DEFAULT_SETTINGS = {
   people: [
-    { name: 'Person 1', showNutrition: true, targets: { kcal: 2000, protein: 80, carbs: 250, fat: 70 } },
-    { name: 'Person 2', showNutrition: true, targets: { kcal: 2000, protein: 80, carbs: 250, fat: 70 } },
+    { name: 'Person 1', showNutrition: true, caloriesEnabled: true, caloriesPin: '', waterTarget: 2.2, targets: { kcal: 2000, protein: 80, carbs: 250, fat: 70 } },
+    { name: 'Person 2', showNutrition: true, caloriesEnabled: true, caloriesPin: '', waterTarget: 2.2, targets: { kcal: 2000, protein: 80, carbs: 250, fat: 70 } },
   ],
   cookbooks: [],
   coverTitle: 'Unser Kochbuch',
@@ -59,6 +60,8 @@ const DEFAULT_SETTINGS = {
   notificationEnabled: false,
   notificationDay: 1, // 1 = Montag
   notificationTime: '18:00',
+  calorieReminderEnabled: false,
+  calorieReminderTimes: ['09:00', '13:00', '19:00', '20:30'],
   snoozedUntil: null,
   lastNotifiedAt: null,
   cookbookSort: 'date-desc',
@@ -352,7 +355,7 @@ function extractRecipeFromHtml(html, url) {
   }
 }
 
-async function callAI(prompt, useSearch = false, provider = 'gemini') {
+async function callAI(prompt, useSearch = false, provider = 'gemini', image = null) {
   let activeProvider = provider;
   try {
     const savedSettings = localStorage.getItem('shared_settings') || localStorage.getItem('settings');
@@ -372,12 +375,19 @@ async function callAI(prompt, useSearch = false, provider = 'gemini') {
   console.log('Provider:', activeProvider);
   console.log('Prompt (erste 200 Zeichen):', prompt.slice(0, 200));
   console.log('Web Search aktiv:', useSearch);
+  if (image) console.log('Bildanalyse aktiv');
   
   try {
     const res = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider: activeProvider, prompt, useSearch }),
+      body: JSON.stringify({
+        provider: activeProvider,
+        prompt,
+        useSearch,
+        image,
+        maxTokens: image ? 200 : 4096,
+      }),
     });
     
     if (!res.ok) {
@@ -772,9 +782,10 @@ function TopBar() {
     </div>
   );
 }
-function BottomNav({ tab, setTab }) {
+function BottomNav({ tab, setTab, isCaloriesEnabled = true }) {
   const items = [
     { key: 'calendar', label: 'Plan', icon: Calendar },
+    ...(isCaloriesEnabled ? [{ key: 'calories', label: 'Kalorien', icon: Flame }] : []),
     { key: 'recipes', label: 'Rezepte', icon: Utensils },
     { key: 'shopping', label: 'Einkaufsliste', icon: ShoppingCart },
     { key: 'cookbook', label: 'Buch', icon: BookOpen },
@@ -782,10 +793,10 @@ function BottomNav({ tab, setTab }) {
   ];
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 no-print z-30">
-      <div className="max-w-2xl mx-auto grid grid-cols-5">
+      <div className={`max-w-2xl mx-auto grid ${isCaloriesEnabled ? 'grid-cols-6' : 'grid-cols-5'}`}>
         {items.map(it => (
-          <button key={it.key} onClick={() => setTab(it.key)} className={`flex flex-col items-center gap-0.5 py-2.5 text-[10px] sm:text-xs font-mono truncate px-0.5 ${tab === it.key ? 'text-stone-900 font-semibold' : 'text-stone-400'}`}>
-            <it.icon size={19} />
+          <button key={it.key} onClick={() => setTab(it.key)} className={`flex flex-col items-center gap-0.5 py-2 text-[9px] sm:text-xs font-mono truncate px-0.5 ${tab === it.key ? 'text-stone-900 font-bold' : 'text-stone-400'}`}>
+            <it.icon size={18} />
             <span className="truncate">{it.label}</span>
           </button>
         ))}
@@ -4428,6 +4439,76 @@ function SettingsTab() {
                 </div>
               )}
 
+              {/* Kalorien-Reiter Einstellungen */}
+              <div className="pt-2 border-t border-stone-200/60 space-y-2">
+                <label className="flex items-center gap-2 py-0.5 cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={p.caloriesEnabled !== false} 
+                    onChange={e => { 
+                      const next = [...people]; 
+                      next[i] = { ...next[i], caloriesEnabled: e.target.checked }; 
+                      setPeople(next); 
+                    }} 
+                    className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" 
+                  />
+                  <span className="text-xs font-mono font-medium text-stone-700">Reiter "Kalorien" aktivieren</span>
+                </label>
+
+                {p.caloriesEnabled !== false && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    <div>
+                      <label className={labelCls}>PIN / Passwort (optional)</label>
+                      <input 
+                        type="password"
+                        value={p.caloriesPin || ''} 
+                        placeholder="Kein Passwort"
+                        onChange={e => { 
+                          const next = [...people]; 
+                          next[i] = { ...next[i], caloriesPin: e.target.value }; 
+                          setPeople(next); 
+                        }} 
+                        className={inputCls + " text-sm font-mono mt-1"} 
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Wasser-Ziel (Liter)</label>
+                      <input 
+                        type="number"
+                        step="0.1"
+                        value={p.waterTarget ?? 2.2} 
+                        onChange={e => { 
+                          const next = [...people]; 
+                          next[i] = { ...next[i], waterTarget: parseFloat(e.target.value) || 2.2 }; 
+                          setPeople(next); 
+                        }} 
+                        className={inputCls + " text-sm font-mono mt-1"} 
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {p.caloriesPin && (
+                  <div className="flex items-center justify-between text-xs pt-0.5">
+                    <span className="text-emerald-700 font-mono text-[11px] flex items-center gap-1">
+                      <Check size={12} /> Passwort aktiv
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = [...people];
+                        next[i] = { ...next[i], caloriesPin: '' };
+                        setPeople(next);
+                        showToast('Passwort zurückgesetzt (Entwickler-Reset)');
+                      }}
+                      className="text-stone-400 hover:text-rose-600 underline font-mono text-[11px]"
+                    >
+                      Passwort zurücksetzen (Entwickler-Reset)
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {profile.personIndex === i && <div className="text-xs text-stone-400 mt-1 font-mono">DIESES GERÄT</div>}
             </div>
           );
@@ -4615,6 +4696,27 @@ function SettingsTab() {
               </div>
             </div>
           )}
+
+          <div className="pt-3 border-t border-stone-200/60 space-y-2">
+            <label className="flex items-center gap-2 py-1.5 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={!!settings.calorieReminderEnabled} 
+                onChange={async e => {
+                  const en = e.target.checked;
+                  if (en && 'Notification' in window) {
+                    await Notification.requestPermission();
+                  }
+                  updateSettings({ calorieReminderEnabled: en });
+                }} 
+                className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" 
+              />
+              <span className="text-sm font-semibold text-stone-800">Kalorien- &amp; Streak-Erinnerungen (Duolingo-Stil 🔥)</span>
+            </label>
+            <p className="text-xs text-stone-500 leading-normal">
+              Erinnert regelmäßig an Mahlzeiten (09:00, 13:00, 19:00) und warnt abends um 20:30 Uhr vor dem Verlust deines Streaks!
+            </p>
+          </div>
         </div>
       </div>
 
@@ -4697,12 +4799,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.8.21</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.9.0</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
-          Codename: Ingwertee 🫖
+          Codename: Jägerschnitzel 🥩
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.21 (Ingwertee)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.0 (Jägerschnitzel)
         </div>
       </div>
     </div>
@@ -5182,6 +5284,30 @@ export default function App() {
         shouldNotify = true;
       }
 
+      // Duolingo-style calorie reminder check
+      if (settings.calorieReminderEnabled) {
+        const times = settings.calorieReminderTimes || ['09:00', '13:00', '19:00', '20:30'];
+        if (times.includes(currentHourMin)) {
+          const lastCalRemKey = `last_cal_rem_${now.getDate()}_${currentHourMin}`;
+          if (!localStorage.getItem(lastCalRemKey)) {
+            localStorage.setItem(lastCalRemKey, '1');
+            const isLate = currentHourMin >= '20:00';
+            const title = isLate ? 'Streak in Gefahr! 🔥' : 'Mahlzeit tracken 🥗';
+            const body = isLate
+              ? 'Vergiss nicht, dein Essen heute noch einzutragen, um deinen Streak zu sichern!'
+              : 'Trage deine Mahlzeiten in Tischplan ein, um deine Nährwerte im Blick zu behalten.';
+
+            if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+              navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(title, { body, icon: '/icon.svg', badge: '/icon.svg', tag: 'calorie-reminder' });
+              });
+            } else if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification(title, { body });
+            }
+          }
+        }
+      }
+
       if (shouldNotify) {
         // Update notification state to prevent multiple fires
         await updateSettings({
@@ -5219,6 +5345,9 @@ export default function App() {
   if (loading) return <LoadingScreen />;
   if (!profile) return <ProfilePicker settings={settings} onChoose={chooseProfile} onUpdateSettings={updateSettings} />;
 
+  const activePerson = settings.people?.[profile?.personIndex ?? 0];
+  const isCaloriesEnabled = activePerson?.caloriesEnabled !== false;
+
   return (
     <AppCtx.Provider value={{
       recipes, settings, profile, setProfile, mealplanIndex,
@@ -5244,12 +5373,24 @@ export default function App() {
         <TopBar />
         <main className="max-w-2xl mx-auto px-4 py-4">
           {tab === 'calendar' && <CalendarTab />}
+          {tab === 'calories' && isCaloriesEnabled && (
+            <CaloriesTab
+              profile={profile}
+              settings={settings}
+              onUpdateSettings={updateSettings}
+              getDayPlan={getDayPlan}
+              storageGet={storageGet}
+              storageSet={storageSet}
+              showToast={showToast}
+              callAI={callAI}
+            />
+          )}
           {tab === 'recipes' && <RecipesTab />}
           {tab === 'shopping' && <ShoppingTab />}
           {tab === 'cookbook' && <CookbookTab />}
           {tab === 'settings' && <SettingsTab />}
         </main>
-        <BottomNav tab={tab} setTab={setTab} />
+        <BottomNav tab={tab} setTab={setTab} isCaloriesEnabled={isCaloriesEnabled} />
         {addModal && <AddRecipeModal onClose={() => setAddModal(null)} onSaved={addModal.onSaved} />}
         {recipeDetailModal && (
           <RecipeDetailModal
