@@ -774,6 +774,29 @@ function MealEntryModal({
   const [suggestions, setSuggestions] = useState([]);
   const [plannedRecipes, setPlannedRecipes] = useState([]);
   const [shoppingItems, setShoppingItems] = useState([]);
+  const suggestionsContainerRef = useRef(null);
+
+  // Click outside and Escape key listener to dismiss suggestions
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (suggestionsContainerRef.current && !suggestionsContainerRef.current.contains(e.target)) {
+        setSuggestions([]);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setSuggestions([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // AI State
   const [aiImage, setAiImage] = useState(null);
@@ -1232,20 +1255,63 @@ function MealEntryModal({
           {/* TAB 1: FREIFELD */}
           {tab === 'free' && (
             <div className="space-y-3">
-              <div className="relative">
-                <label className={labelCls}>Bezeichnung / Gericht</label>
-                <input
-                  type="text"
-                  placeholder="z.B. Haferflocken, Pizza, Apfel..."
-                  value={name}
-                  onChange={e => handleNameChange(e.target.value)}
-                  onFocus={handleFocus}
-                  className={inputCls + " mt-1"}
-                />
+              <div ref={suggestionsContainerRef} className="relative">
+                <div className="flex items-center justify-between">
+                  <label className={labelCls}>Bezeichnung / Gericht</label>
+                  {suggestions.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSuggestions([])}
+                      className="text-[11px] font-mono text-stone-400 hover:text-stone-700 flex items-center gap-1 transition-colors"
+                    >
+                      <X size={12} /> Einklappen
+                    </button>
+                  )}
+                </div>
+                <div className="relative mt-1">
+                  <input
+                    type="text"
+                    placeholder="z.B. Haferflocken, Pizza, Apfel..."
+                    value={name}
+                    onChange={e => handleNameChange(e.target.value)}
+                    onFocus={handleFocus}
+                    onKeyDown={e => {
+                      if (e.key === 'Escape') setSuggestions([]);
+                    }}
+                    className={inputCls + (name ? " pr-8" : "")}
+                  />
+                  {name && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setName('');
+                        setSelectedFoodRef(null);
+                        setSuggestions([]);
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5 rounded-full"
+                      title="Eingabe leeren"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
 
                 {/* Suggestions Dropdown */}
                 {suggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-stone-200 shadow-lg z-30 divide-y divide-stone-100 max-h-52 overflow-y-auto">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-stone-200 shadow-xl z-30 divide-y divide-stone-100 max-h-56 overflow-y-auto">
+                    <div className="px-2.5 py-1.5 bg-stone-50 border-b border-stone-100 flex items-center justify-between text-[10px] font-mono text-stone-500 uppercase tracking-wide">
+                      <span>Vorschläge ({suggestions.length})</span>
+                      <button
+                        type="button"
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          setSuggestions([]);
+                        }}
+                        className="text-stone-400 hover:text-stone-700 flex items-center gap-0.5 normal-case font-sans"
+                      >
+                        <X size={11} /> Schließen
+                      </button>
+                    </div>
                     {suggestions.map(s => (
                       <div
                         key={s.id}
@@ -1358,9 +1424,6 @@ function MealEntryModal({
                     </div>
                     <div>
                       <h4 className="font-bold text-stone-900 text-sm">Foto deiner Mahlzeit</h4>
-                      <p className="text-xs text-stone-500 mt-1 max-w-xs mx-auto">
-                        Mache ein Foto oder wähle ein Bild. Die KI schätzt die Kalorien und Nährwerte tokensparend und präzise.
-                      </p>
                     </div>
                     <button
                       onClick={() => fileInputRef.current?.click()}
