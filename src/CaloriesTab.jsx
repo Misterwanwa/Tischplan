@@ -33,6 +33,8 @@ export default function CaloriesTab({
   storageSet,
   showToast,
   callAI,
+  recipes = [],
+  mealplanIndex = {},
 }) {
   const activePersonIndex = profile?.personIndex ?? 0;
   const person = settings.people?.[activePersonIndex] || {
@@ -558,7 +560,7 @@ export default function CaloriesTab({
           }}
           className="w-full py-3.5 px-4 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl shadow-lg flex items-center justify-center gap-2 font-mono uppercase tracking-wide text-xs font-bold transition-all active:scale-[0.99]"
         >
-          <Plus size={18} /> Mahlzeit erfassen (#Freifeld, #KI-Foto, #Barcode)
+          <Plus size={18} /> Mahlzeit erfassen (Freifeld, KI-Foto, Barcode)
         </button>
       </div>
 
@@ -653,7 +655,7 @@ export default function CaloriesTab({
         })}
       </div>
 
-      {/* MODAL: Mahlzeit erfassen (#Freifeld, #KI-Foto, #Barcode) */}
+      {/* MODAL: Mahlzeit erfassen (Freifeld, KI-Foto, Barcode) */}
       {modalMode && modalMode !== 'burned' && (
         <MealEntryModal
           initialMode={modalMode}
@@ -671,6 +673,11 @@ export default function CaloriesTab({
             showToast(`"${item.name}" erfasst!`);
           }}
           callAI={callAI}
+          recipes={recipes}
+          mealplanIndex={mealplanIndex}
+          settings={settings}
+          getDayPlan={getDayPlan}
+          storageGet={storageGet}
         />
       )}
 
@@ -737,8 +744,19 @@ function CalorieCircularGauge({ eaten, target }) {
   );
 }
 
-/* ---------------------------------- Meal Entry Modal (#Freifeld, #KI-Foto, #Barcode) ---------------------------------- */
-function MealEntryModal({ initialMode, activeMealKey, onClose, onSave, callAI }) {
+/* ---------------------------------- Meal Entry Modal (Freifeld, KI-Foto, Barcode) ---------------------------------- */
+function MealEntryModal({
+  initialMode,
+  activeMealKey,
+  onClose,
+  onSave,
+  callAI,
+  recipes = [],
+  mealplanIndex = {},
+  settings = {},
+  getDayPlan,
+  storageGet,
+}) {
   const [tab, setTab] = useState(initialMode || 'free'); // 'free' | 'ai' | 'barcode'
   const [mealKey, setMealKey] = useState(activeMealKey || 'lunch');
 
@@ -754,6 +772,8 @@ function MealEntryModal({ initialMode, activeMealKey, onClose, onSave, callAI })
   // Suggestions for Freifeld
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
+  const [plannedRecipes, setPlannedRecipes] = useState([]);
+  const [shoppingItems, setShoppingItems] = useState([]);
 
   // AI State
   const [aiImage, setAiImage] = useState(null);
@@ -769,26 +789,186 @@ function MealEntryModal({ initialMode, activeMealKey, onClose, onSave, callAI })
   const [scannerActive, setScannerActive] = useState(false);
   const scannerRef = useRef(null);
 
+  // Load planned recipes for today/future & shopping items
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      const today = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const todayDk = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+      const recipeMap = new Map((recipes || []).map(r => [r.id, r]));
+      const plannedList = [];
+      const seenRecipeIds = new Set();
+
+      // Dates in mealplanIndex >= todayDk
+      const futureDates = Object.keys(mealplanIndex || {})
+        .filter(dk => dk >= todayDk)
+        .sort();
+
+      for (const dk of futureDates) {
+        let plan = null;
+        try {
+          if (typeof getDayPlan === 'function') {
+            plan = await getDayPlan(dk);
+          } else if (typeof storageGet === 'function') {
+            plan = await storageGet(`mealplan:${dk}`, true, null);
+          }
+        } catch (_) {}
+
+        if (plan) {
+          for (const mt of ['breakfast', 'lunch', 'dinner']) {
+            if (!plan[mt]) continue;
+            for (const co of ['snack', 'main', 'dessert']) {
+              const slot = plan[mt][co];
+              if (slot && slot.recipeId && !seenRecipeIds.has(slot.recipeId)) {
+                const rec = recipeMap.get(slot.recipeId);
+                if (rec) {
+                  seenRecipeIds.add(slot.recipeId);
+                  plannedList.push({
+                    id: rec.id,
+                    title: rec.title,
+                    nutrition: rec.nutrition || null,
+                    servings: rec.servings || 1,
+                    plannedDate: dk,
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Also check recurring meal dish from settings
+      if (settings?.recurringMealEnabled && settings?.recurringMealDish?.trim()) {
+        const dishTitle = settings.recurringMealDish.trim().toLowerCase();
+        const rec = (recipes || []).find(r => (r.title || '').trim().toLowerCase() === dishTitle);
+        if (rec && !seenRecipeIds.has(rec.id)) {
+          seenRecipeIds.add(rec.id);
+          plannedList.push({
+            id: rec.id,
+            title: rec.title,
+            nutrition: rec.nutrition || null,
+            servings: rec.servings || 1,
+          });
+        }
+      }
+
+      // Load shopping items
+      let shopItems = [];
+      try {
+        if (typeof storageGet === 'function') {
+          shopItems = await storageGet('shopping_items_v2', true, []);
+        }
+      } catch (_) {}
+
+      if (isMounted) {
+        setPlannedRecipes(plannedList);
+        setShoppingItems(shopItems || []);
+      }
+    })();
+
+    return () => { isMounted = false; };
+  }, [recipes, mealplanIndex, settings, getDayPlan, storageGet]);
+
+  // Compute suggestions: Planned recipes first; otherwise shopping list ingredients; otherwise built-in foods
+  const computeSuggestions = (query, currentPlanned = plannedRecipes, currentShop = shoppingItems) => {
+    const q = (query || '').trim().toLowerCase();
+
+    // 1. Priority: Recipes planned today or in the future
+    const matchingPlanned = currentPlanned.filter(r =>
+      !q || r.title.toLowerCase().includes(q)
+    );
+
+    if (matchingPlanned.length > 0) {
+      return matchingPlanned.slice(0, 8).map(r => ({
+        type: 'recipe',
+        id: `recipe_${r.id}`,
+        name: r.title,
+        subtitle: r.nutrition?.kcal ? `${r.nutrition.kcal} kcal/Portion` : 'Rezept im Plan',
+        badge: 'Im Plan',
+        recipe: r,
+      }));
+    }
+
+    // 2. Otherwise ("Ansonsten"): All ingredients from shopping list
+    const matchingShopping = currentShop.filter(item =>
+      !q || (item.name && item.name.toLowerCase().includes(q))
+    );
+
+    if (matchingShopping.length > 0) {
+      return matchingShopping.slice(0, 8).map(item => {
+        const builtinMatch = searchBuiltinFoods(item.name)[0];
+        return {
+          type: 'shopping',
+          id: `shop_${item.id || item.name}`,
+          name: item.name,
+          subtitle: builtinMatch ? `${builtinMatch.per100g.kcal} kcal/100g` : (item.detail || 'Aus Einkaufsliste'),
+          badge: 'Einkaufsliste',
+          builtinFood: builtinMatch,
+        };
+      });
+    }
+
+    // 3. Fallback to built-in food database if query >= 2 chars
+    if (q.length >= 2) {
+      const builtin = searchBuiltinFoods(q);
+      return builtin.slice(0, 8).map(b => ({
+        type: 'builtin',
+        id: `builtin_${b.id}`,
+        name: b.name,
+        subtitle: `${b.per100g.kcal} kcal/100g`,
+        badge: 'Datenbank',
+        builtinFood: b,
+      }));
+    }
+
+    return [];
+  };
+
   // Handle Autocomplete
   const handleNameChange = (val) => {
     setName(val);
     setSearchQuery(val);
-    if (val.trim().length >= 2) {
-      setSuggestions(searchBuiltinFoods(val));
-    } else {
-      setSuggestions([]);
-    }
+    setSuggestions(computeSuggestions(val));
   };
 
-  const selectFood = (food) => {
-    setSelectedFoodRef(food);
-    setName(food.name);
-    setPortionGrams(food.defaultGrams);
-    const p = calculatePortion(food.per100g, food.defaultGrams);
-    setKcal(p.kcal);
-    setProtein(p.protein);
-    setCarbs(p.carbs);
-    setFat(p.fat);
+  const handleFocus = () => {
+    setSuggestions(computeSuggestions(name));
+  };
+
+  const selectSuggestion = (s) => {
+    if (s.type === 'recipe') {
+      const r = s.recipe;
+      setName(r.title);
+      setSelectedFoodRef(null);
+      setPortionGrams('1 Portion');
+      if (r.nutrition) {
+        setKcal(r.nutrition.kcal ?? '');
+        setProtein(r.nutrition.protein ?? '');
+        setCarbs(r.nutrition.carbs ?? '');
+        setFat(r.nutrition.fat ?? '');
+      } else {
+        setKcal('');
+        setProtein('');
+        setCarbs('');
+        setFat('');
+      }
+    } else if (s.builtinFood) {
+      const food = s.builtinFood;
+      setSelectedFoodRef(food);
+      setName(s.name || food.name);
+      setPortionGrams(food.defaultGrams || 100);
+      const p = calculatePortion(food.per100g, food.defaultGrams || 100);
+      setKcal(p.kcal);
+      setProtein(p.protein);
+      setCarbs(p.carbs);
+      setFat(p.fat);
+    } else {
+      setName(s.name);
+      setSelectedFoodRef(null);
+      setPortionGrams('');
+    }
     setSuggestions([]);
   };
 
@@ -849,9 +1029,9 @@ function MealEntryModal({ initialMode, activeMealKey, onClose, onSave, callAI })
     const prompt = "Bestimme Kalorien und Makros dieser Mahlzeit. Antworte AUSSCHLIESSLICH im JSON-Format ohne Markdown: {\"name\":\"kurzer deutscher Gerichtsname\",\"kcal\":Zahl,\"protein\":Zahl,\"carbs\":Zahl,\"fat\":Zahl}";
 
     try {
-      let rawText = '';
+      let rawResult = null;
       if (typeof callAI === 'function') {
-        rawText = await callAI(prompt, false, 'gemini', {
+        rawResult = await callAI(prompt, false, 'gemini', {
           data: aiImage.base64Data,
           mimeType: aiImage.mimeType,
         });
@@ -867,20 +1047,29 @@ function MealEntryModal({ initialMode, activeMealKey, onClose, onSave, callAI })
           })
         });
         const data = await res.json();
-        rawText = data.text || '';
+        rawResult = data.text || '';
       }
 
-      // Parse JSON from result
-      const cleaned = rawText.replace(/```json|```/g, '').trim();
-      const match = cleaned.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('Die KI konnte keine Nährwerte ermitteln.');
+      // Handle parsed object or JSON string
+      let parsed = rawResult;
+      if (typeof rawResult === 'string') {
+        const cleaned = rawResult.replace(/```json|```/g, '').trim();
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('Die KI konnte keine Nährwerte ermitteln.');
+        parsed = JSON.parse(match[0]);
+      }
 
-      const parsed = JSON.parse(match[0]);
+      if (!parsed || typeof parsed !== 'object') {
+        throw new Error('Die KI konnte keine Nährwerte ermitteln.');
+      }
+
       setName(parsed.name || 'Mahlzeit vom Foto');
-      setKcal(parsed.kcal || 0);
-      setProtein(parsed.protein || 0);
-      setCarbs(parsed.carbs || 0);
-      setFat(parsed.fat || 0);
+      setKcal(parsed.kcal ?? 0);
+      setProtein(parsed.protein ?? 0);
+      setCarbs(parsed.carbs ?? 0);
+      setFat(parsed.fat ?? 0);
+      setSelectedFoodRef(null);
+      setPortionGrams('1 Portion');
 
       // Switch to free tab to let user review
       setTab('free');
@@ -918,30 +1107,34 @@ function MealEntryModal({ initialMode, activeMealKey, onClose, onSave, callAI })
   const startScanner = async () => {
     setScannerActive(true);
     setBarcodeError('');
-    setTimeout(async () => {
-      try {
-        const html5QrCode = new Html5Qrcode('barcode-reader');
-        scannerRef.current = html5QrCode;
-        await html5QrCode.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 250, height: 160 } },
-          (decodedText) => {
-            lookupBarcode(decodedText);
-          },
-          () => {}
-        );
-      } catch (e) {
-        setBarcodeError('Kamera konnte nicht gestartet werden. Bitte Barcode manuell eingeben.');
-        setScannerActive(false);
-      }
-    }, 100);
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+      const scanner = new Html5Qrcode("barcode-reader");
+      scannerRef.current = scanner;
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        (decodedText) => {
+          lookupBarcode(decodedText);
+          stopScanner();
+        },
+        () => {}
+      );
+    } catch (err) {
+      console.error(err);
+      setBarcodeError('Kamera konnte nicht gestartet werden.');
+      setScannerActive(false);
+    }
   };
 
-  const stopScanner = () => {
+  const stopScanner = async () => {
     if (scannerRef.current) {
       try {
-        scannerRef.current.stop().then(() => scannerRef.current.clear());
-      } catch (e) {}
+        await scannerRef.current.stop();
+        scannerRef.current.clear();
+      } catch (e) {
+        console.error('Stop scanner error', e);
+      }
       scannerRef.current = null;
     }
     setScannerActive(false);
@@ -953,35 +1146,36 @@ function MealEntryModal({ initialMode, activeMealKey, onClose, onSave, callAI })
     };
   }, []);
 
-  // Save Final Meal
   const handleSave = () => {
     if (!name.trim()) return;
-    const item = {
+    onSave({
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       name: name.trim(),
-      kcal: Math.round(Number(kcal) || 0),
-      protein: Math.round((Number(protein) || 0) * 10) / 10,
-      carbs: Math.round((Number(carbs) || 0) * 10) / 10,
-      fat: Math.round((Number(fat) || 0) * 10) / 10,
-      time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
-    };
-    onSave(item, mealKey);
+      kcal: Number(kcal) || 0,
+      protein: Number(protein) || 0,
+      carbs: Number(carbs) || 0,
+      fat: Number(fat) || 0,
+      portionGrams: portionGrams ? String(portionGrams) : null,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    }, mealKey);
   };
 
   return (
-    <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden my-6">
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md overflow-hidden shadow-2xl border border-stone-200 animate-scale-up" onClick={e => e.stopPropagation()}>
+        
         {/* Header */}
-        <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between">
-          <div className="font-mono text-sm font-bold uppercase tracking-wide text-stone-900">
-            Mahlzeit erfassen
+        <div className="p-4 border-b border-stone-150 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Plus size={18} className="text-stone-900" />
+            <h3 className="font-mono font-bold text-sm text-stone-900">Mahlzeit erfassen</h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-stone-400 hover:text-stone-900">
+          <button onClick={onClose} className="text-stone-400 hover:text-stone-700">
             <X size={20} />
           </button>
         </div>
 
-        {/* 3 Tabs: #Freifeld, #KI-Foto, #Barcode */}
+        {/* 3 Tabs: Freifeld, KI-Foto, Barcode */}
         <div className="grid grid-cols-3 border-b border-stone-200 bg-stone-50 text-xs font-mono">
           <button
             onClick={() => { stopScanner(); setTab('free'); }}
@@ -989,7 +1183,7 @@ function MealEntryModal({ initialMode, activeMealKey, onClose, onSave, callAI })
               tab === 'free' ? 'bg-white text-stone-900 border-b-2 border-stone-900' : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            <Edit3 size={15} /> #Freifeld
+            <Edit3 size={15} /> Freifeld
           </button>
           <button
             onClick={() => { stopScanner(); setTab('ai'); }}
@@ -997,7 +1191,7 @@ function MealEntryModal({ initialMode, activeMealKey, onClose, onSave, callAI })
               tab === 'ai' ? 'bg-white text-emerald-700 border-b-2 border-emerald-600' : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            <Camera size={15} /> #KI-Foto
+            <Camera size={15} /> KI-Foto
           </button>
           <button
             onClick={() => setTab('barcode')}
@@ -1005,7 +1199,7 @@ function MealEntryModal({ initialMode, activeMealKey, onClose, onSave, callAI })
               tab === 'barcode' ? 'bg-white text-stone-900 border-b-2 border-stone-900' : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            <BarcodeIcon size={15} /> #Barcode
+            <BarcodeIcon size={15} /> Barcode
           </button>
         </div>
 
@@ -1045,20 +1239,33 @@ function MealEntryModal({ initialMode, activeMealKey, onClose, onSave, callAI })
                   placeholder="z.B. Haferflocken, Pizza, Apfel..."
                   value={name}
                   onChange={e => handleNameChange(e.target.value)}
+                  onFocus={handleFocus}
                   className={inputCls + " mt-1"}
                 />
 
                 {/* Suggestions Dropdown */}
                 {suggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-stone-200 shadow-lg z-30 divide-y divide-stone-100 max-h-48 overflow-y-auto">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-stone-200 shadow-lg z-30 divide-y divide-stone-100 max-h-52 overflow-y-auto">
                     {suggestions.map(s => (
                       <div
                         key={s.id}
-                        onClick={() => selectFood(s)}
-                        className="p-2.5 hover:bg-stone-50 cursor-pointer flex items-center justify-between text-xs"
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          selectSuggestion(s);
+                        }}
+                        className="p-2.5 hover:bg-stone-50 cursor-pointer flex items-center justify-between text-xs transition-colors"
                       >
-                        <span className="font-medium text-stone-900">{s.name}</span>
-                        <span className="text-stone-400 font-mono">{s.per100g.kcal} kcal/100g</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono uppercase font-bold shrink-0 ${
+                            s.badge === 'Im Plan' ? 'bg-emerald-100 text-emerald-800' :
+                            s.badge === 'Einkaufsliste' ? 'bg-rose-100 text-rose-800' :
+                            'bg-stone-100 text-stone-600'
+                          }`}>
+                            {s.badge}
+                          </span>
+                          <span className="font-medium text-stone-900 truncate">{s.name}</span>
+                        </div>
+                        <span className="text-stone-400 font-mono shrink-0 ml-2">{s.subtitle}</span>
                       </div>
                     ))}
                   </div>

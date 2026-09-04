@@ -21,8 +21,8 @@ export async function onRequestPost(context) {
       const parts = [{ text: prompt }];
       if (image && image.data) {
         parts.push({
-          inline_data: {
-            mime_type: image.mimeType || 'image/jpeg',
+          inlineData: {
+            mimeType: image.mimeType || 'image/jpeg',
             data: image.data
           }
         });
@@ -33,21 +33,33 @@ export async function onRequestPost(context) {
         generationConfig: { responseMimeType: 'application/json', maxOutputTokens: maxTokens || 4096 }
       };
       
-      // Gemini 2.0 Flash mit Google Search Grounding (falls useSearch)
+      // Google Search Grounding (falls useSearch)
       if (useSearch) {
         delete body.generationConfig.responseMimeType;
         body.tools = [{ googleSearch: {} }];
       }
       
-      const model = 'gemini-2.0-flash';
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-      );
+      const candidateModels = [
+        context.env.GEMINI_MODEL,
+        'gemini-2.5-flash',
+        'gemini-1.5-flash',
+        'gemini-2.0-flash',
+      ].filter(Boolean);
+
+      let res = null;
+      let lastErr = '';
+      for (const model of candidateModels) {
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+        );
+        if (res.ok) break;
+        lastErr = await res.text();
+        if (res.status !== 404) break;
+      }
       
-      if (!res.ok) {
-        const err = await res.text();
-        return new Response(JSON.stringify({ error: `Gemini API error: ${err}` }), { status: res.status, headers: corsHeaders });
+      if (!res || !res.ok) {
+        return new Response(JSON.stringify({ error: `Gemini API error: ${lastErr}` }), { status: res ? res.status : 500, headers: corsHeaders });
       }
       
       const data = await res.json();
