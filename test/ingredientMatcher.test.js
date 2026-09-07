@@ -80,3 +80,66 @@ test('Ingredient Matcher: Analyze week usage with automatic tag and recipe sourc
   assert.ok(spaghettiItem.sourceRecipes.includes('Bolognese'));
   assert.ok(spaghettiItem.sourceRecipes.includes('Carbonara'));
 });
+
+test('Ingredient Matcher: parseIngredientTextLine parses trailing and leading quantities', async () => {
+  const { parseIngredientTextLine } = await import('../src/modules/ingredientMatcher.js');
+
+  const p1 = parseIngredientTextLine('Gnocchi 600g');
+  assert.strictEqual(p1.name, 'Gnocchi');
+  assert.strictEqual(p1.amount, 600);
+  assert.strictEqual(p1.unit, 'g');
+
+  const p2 = parseIngredientTextLine('Gnocchi 600 g');
+  assert.strictEqual(p2.name, 'Gnocchi');
+  assert.strictEqual(p2.amount, 600);
+  assert.strictEqual(p2.unit, 'g');
+
+  const p3 = parseIngredientTextLine('Gnocchi (600g)');
+  assert.strictEqual(p3.name, 'Gnocchi');
+  assert.strictEqual(p3.amount, 600);
+  assert.strictEqual(p3.unit, 'g');
+
+  const p4 = parseIngredientTextLine('600g Gnocchi');
+  assert.strictEqual(p4.name, 'Gnocchi');
+  assert.strictEqual(p4.amount, 600);
+  assert.strictEqual(p4.unit, 'g');
+
+  const p5 = parseIngredientTextLine('1 Dose Tomaten');
+  assert.strictEqual(p5.name, 'Tomaten');
+  assert.strictEqual(p5.amount, 1);
+  assert.strictEqual(p5.unit, 'Dose');
+
+  const p6 = parseIngredientTextLine('Gnocchi');
+  assert.strictEqual(p6.name, 'Gnocchi');
+  assert.strictEqual(p6.amount, null);
+  assert.strictEqual(p6.unit, '');
+});
+
+test('Ingredient Matcher: Weekly import correctly parses "Gnocchi 600g" and matches catalog', () => {
+  const productsWithGnocchi = [
+    ...mockProducts,
+    { id: 'gnocchi_frisch', name: 'Gnocchi', category: 'Getreideprodukte', icon: 'Wheat' }
+  ];
+
+  const usage = [
+    {
+      recipe: {
+        title: 'Gnocchi Pfanne',
+        ingredients: [
+          'Gnocchi 600g'
+        ]
+      },
+      multiplier: 1
+    }
+  ];
+
+  const { autoItems, pendingChoices } = analyzeWeekIngredients(usage, productsWithGnocchi);
+  assert.strictEqual(pendingChoices.length, 0, 'Should not require resolution modal');
+  assert.strictEqual(autoItems.length, 1);
+  const item = autoItems[0];
+  assert.strictEqual(item.name, 'Gnocchi');
+  assert.strictEqual(item.productId, 'gnocchi_frisch');
+  assert.ok(item.details.includes('600g'));
+  assert.ok(item.details.includes('Rezept: Gnocchi Pfanne'));
+});
+

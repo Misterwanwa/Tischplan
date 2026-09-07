@@ -16,6 +16,103 @@ export function normalizeIngredientName(str) {
 }
 
 /**
+ * Known culinary units in German and international recipes
+ */
+export const KNOWN_UNITS_SET = new Set([
+  'g', 'gramm', 'kg', 'kilo', 'kilogramm', 'pound', 'pounds', 'lb', 'lbs',
+  'ml', 'milliliter', 'l', 'liter', 'dl', 'cl',
+  'el', 'esslöffel', 'tl', 'teelöffel',
+  'stk', 'stück', 'stueck',
+  'prise', 'prisen', 'tasse', 'tassen', 'becher',
+  'dose', 'dosen', 'packung', 'packungen', 'pck', 'pkg',
+  'bund', 'bünde', 'zehe', 'zehen', 'scheibe', 'scheiben',
+  'msp', 'handvoll', 'glas', 'gläser', 'tropfen'
+]);
+
+export function isKnownUnit(unitStr) {
+  if (!unitStr) return false;
+  return KNOWN_UNITS_SET.has(unitStr.toLowerCase().trim());
+}
+
+/**
+ * Robust ingredient line parser that extracts quantity, unit and food name,
+ * supporting leading quantities ("600g Gnocchi", "600 g Gnocchi", "1 Dose Tomaten"),
+ * trailing quantities ("Gnocchi 600g", "Gnocchi 600 g", "Gnocchi (600g)"),
+ * and standalone names ("Gnocchi").
+ */
+export function parseIngredientTextLine(line) {
+  if (!line || typeof line !== 'string') {
+    return { amount: null, unit: '', name: '', raw: '' };
+  }
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return { amount: null, unit: '', name: '', raw: '' };
+  }
+
+  // 1. Check for trailing quantity: e.g. "Gnocchi 600g", "Gnocchi 600 g", "Gnocchi (600g)", "Gnocchi, 600g"
+  const trailingMatch = trimmed.match(/^(.*?)(?:,\s*|\s+-\s*|\s*\(\s*|\s+)(\d+(?:[.,]\d+)?)\s*([a-zA-ZäöüÄÖÜß]+)?\s*\)?$/i);
+  if (trailingMatch) {
+    const potentialName = trailingMatch[1].replace(/[(),\-:]/g, '').trim();
+    const num = parseFloat(trailingMatch[2].replace(',', '.'));
+    const unitStr = (trailingMatch[3] || '').trim();
+    if (potentialName && (isKnownUnit(unitStr) || !unitStr)) {
+      return {
+        amount: num,
+        unit: unitStr,
+        name: potentialName,
+        raw: trimmed,
+      };
+    }
+  }
+
+  // 2. Check for leading quantity with space: "600 g Gnocchi", "1 Dose Tomaten", "2 Äpfel"
+  const leadingSpaceMatch = trimmed.match(/^(\d+(?:[.,]\d+)?)\s+([a-zA-ZäöüÄÖÜß]+)(?:\s*-\s*|\s+)(.+)$/i);
+  if (leadingSpaceMatch) {
+    const num = parseFloat(leadingSpaceMatch[1].replace(',', '.'));
+    const unitCand = leadingSpaceMatch[2].trim();
+    const restName = leadingSpaceMatch[3].trim();
+    if (isKnownUnit(unitCand)) {
+      return {
+        amount: num,
+        unit: unitCand,
+        name: restName,
+        raw: trimmed,
+      };
+    } else {
+      return {
+        amount: num,
+        unit: '',
+        name: `${unitCand} ${restName}`.trim(),
+        raw: trimmed,
+      };
+    }
+  }
+
+  // 3. Check for leading quantity with attached unit or standalone number: "600g Gnocchi", "2 Äpfel"
+  const leadingAttachedMatch = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*([a-zA-ZäöüÄÖÜß]+)?(?:\s*-\s*|\s+)(.+)$/i);
+  if (leadingAttachedMatch) {
+    const num = parseFloat(leadingAttachedMatch[1].replace(',', '.'));
+    const unitCand = (leadingAttachedMatch[2] || '').trim();
+    const restName = leadingAttachedMatch[3].trim();
+    if (isKnownUnit(unitCand) || !unitCand) {
+      return {
+        amount: num,
+        unit: unitCand,
+        name: restName,
+        raw: trimmed,
+      };
+    }
+  }
+
+  return {
+    amount: null,
+    unit: '',
+    name: trimmed,
+    raw: trimmed,
+  };
+}
+
+/**
  * Compatible unit groups for arithmetic aggregation
  */
 const UNIT_GROUPS = {
@@ -209,14 +306,43 @@ export function analyzeWeekIngredients(usageList, allProducts) {
   for (const { recipe, multiplier } of usageList) {
     const recipeTitle = recipe.title || 'Rezept';
     for (const ing of (recipe.ingredients || [])) {
-      const rawName = (ing.name || ing.raw || '').trim();
-      if (!rawName) continue;
+      const rawText = (typeof ing === 'string' ? ing : (ing?.raw || ing?.name || '')).trim();
+      if (!rawText) continue;
 
-      const amt = ing.amount != null ? ing.amount * multiplier : null;
-      const unit = ing.unit || '';
-      const normAmt = normalizeUnitAndAmount(amt, unit);
+      let extracted = parseIngredientTextLine(rawText);
 
-      const match = findProductMatch(rawName, allProducts);
+      // Determine initial clean name and amounts
+      let cleanName = (typeof ing === 'object' && ing.name ? ing.name.trim() : extracted.name) || extracted.name;
+      let amt = (typeof ing === 'object' && ing.amount != null ? ing.amount : extracted.amount);
+      let unit = (typeof ing === 'object' && ing.unit ? ing.unit : extracted.unit) || '';
+
+      // Safeguard: if cleanName is purely a quantity/unit (e.g. "600g" or "600 g" or "1kg"),
+      // recover actual ingredient name from rawText!
+      if (/^\d+\s*[a-zA-Z]*$/i.test(cleanName) || isKnownUnit(cleanName)) {
+        const fromRaw = parseIngredientTextLine(rawText);
+        if (fromRaw.name && !/^\d+\s*[a-zA-Z]*$/i.test(fromRaw.name)) {
+          cleanName = fromRaw.name;
+          if (amt == null) amt = fromRaw.amount;
+          if (!unit) unit = fromRaw.unit;
+        }
+      }
+
+      // If cleanName still has trailing or leading quantity (e.g. "Gnocchi 600g"), parse it
+      if (cleanName) {
+        const subParse = parseIngredientTextLine(cleanName);
+        if (subParse.amount != null && subParse.name && subParse.name.toLowerCase() !== cleanName.toLowerCase()) {
+          cleanName = subParse.name;
+          if (amt == null) amt = subParse.amount;
+          if (!unit) unit = subParse.unit;
+        }
+      }
+
+      if (!cleanName) continue;
+
+      const finalAmt = amt != null ? amt * multiplier : null;
+      const normAmt = normalizeUnitAndAmount(finalAmt, unit);
+
+      const match = findProductMatch(cleanName, allProducts);
 
       if (match.type === 'exact' || match.type === 'variant') {
         const prod = match.product;
@@ -247,18 +373,22 @@ export function analyzeWeekIngredients(usageList, allProducts) {
         }
       } else {
         // Needs user decision: ambiguous or new product
+        const defaultCandidate = match.candidates?.[0] || null;
         pendingChoices.push({
           id: 'choice_' + Math.random().toString(36).slice(2, 9),
-          rawName,
-          amount: amt,
-          unit,
+          rawName: cleanName,
+          ingredientRaw: cleanName,
+          amount: finalAmt,
+          unit: unit,
+          sources: [recipeTitle],
           recipeTitle,
           candidates: match.candidates || [],
-          suggestedName: rawName,
-          // Default choice: create as new product or pick first candidate
+          suggestedProduct: defaultCandidate,
+          suggestedName: defaultCandidate?.name || cleanName,
+          isNewProduct: !match.candidates || match.candidates.length === 0,
           selectedAction: match.candidates && match.candidates.length > 0 ? 'candidate' : 'new',
-          selectedProductId: match.candidates?.[0]?.id || null,
-          customName: rawName,
+          selectedProductId: defaultCandidate?.id || null,
+          customName: defaultCandidate?.name || cleanName,
         });
       }
     }
@@ -292,5 +422,5 @@ export function analyzeWeekIngredients(usageList, allProducts) {
     };
   });
 
-  return { autoItems, pendingChoices };
+  return { autoItems, resolvedItems: autoItems, pendingChoices };
 }

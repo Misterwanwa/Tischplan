@@ -19,7 +19,7 @@ import {
 import CaloriesTab from './CaloriesTab';
 import { setSyncStatus, subscribeSyncStatus, SYNC_STATES, SYNC_LABELS } from './modules/syncStatus';
 import { getItemDetails, addDetailToItem, updateDetailInItem, removeDetailFromItem, formatDetailsSummary } from './modules/multiDetails';
-import { analyzeWeekIngredients, findProductMatch } from './modules/ingredientMatcher';
+import { analyzeWeekIngredients, findProductMatch, parseIngredientTextLine } from './modules/ingredientMatcher';
 import { STATS_STORAGE_KEY, EVENT_TYPES, createStatEvent, appendStatEvent, generateRewindReport } from './modules/statistics';
 
 /* ---------------------------------- Design tokens ---------------------------------- */
@@ -144,20 +144,7 @@ function dayHasMeals(key, mealplanIndex, settings) {
 }
 
 function parseIngredientLine(line) {
-  const trimmed = line.trim();
-  if (!trimmed) return null;
-  const tokens = trimmed.split(/\s+/);
-  let amount = null, unit = '', nameTokens = tokens;
-  const numToken = tokens[0] ? tokens[0].replace(',', '.') : '';
-  if (/^\d+(\.\d+)?$/.test(numToken)) {
-    amount = parseFloat(numToken);
-    nameTokens = tokens.slice(1);
-    if (nameTokens[0] && KNOWN_UNITS.includes(nameTokens[0].toLowerCase())) {
-      unit = nameTokens[0];
-      nameTokens = nameTokens.slice(1);
-    }
-  }
-  return { amount, unit, name: nameTokens.join(' ') || trimmed, raw: trimmed };
+  return parseIngredientTextLine(line);
 }
 function parseIngredientsText(text) {
   return text.split('\n').map(parseIngredientLine).filter(Boolean);
@@ -3865,11 +3852,14 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
 /* ---------------------------------- Week Ingredient Resolution Modal ---------------------------------- */
 function WeekIngredientResolutionModal({ pendingChoices, allProducts, onConfirm, onCancel }) {
   const [choices, setChoices] = useState(() => {
-    return pendingChoices.map((pc, idx) => ({
-      idx,
-      mode: 'suggested', // 'suggested' or 'custom'
-      customName: pc.suggestedProduct ? pc.suggestedProduct.name : pc.ingredientRaw,
-    }));
+    return pendingChoices.map((pc, idx) => {
+      const fallbackName = pc.suggestedProduct ? pc.suggestedProduct.name : (pc.suggestedName || pc.rawName || pc.ingredientRaw || '');
+      return {
+        idx,
+        mode: 'suggested', // 'suggested' or 'custom'
+        customName: fallbackName,
+      };
+    });
   });
 
   const handleToggleMode = (idx, mode) => {
@@ -3884,7 +3874,8 @@ function WeekIngredientResolutionModal({ pendingChoices, allProducts, onConfirm,
     const resolvedResults = pendingChoices.map((pc, idx) => {
       const choice = choices.find(c => c.idx === idx);
       const useSuggested = !choice || choice.mode === 'suggested';
-      const productName = useSuggested ? (pc.suggestedProduct?.name || pc.ingredientRaw) : (choice.customName.trim() || pc.ingredientRaw);
+      const defaultName = pc.suggestedProduct?.name || pc.suggestedName || pc.rawName || pc.ingredientRaw;
+      const productName = useSuggested ? defaultName : (choice.customName.trim() || defaultName);
       const isNew = useSuggested ? pc.isNewProduct : !allProducts.some(p => p.name.toLowerCase() === productName.toLowerCase());
       return {
         ...pc,
@@ -3912,16 +3903,21 @@ function WeekIngredientResolutionModal({ pendingChoices, allProducts, onConfirm,
           {pendingChoices.map((pc, idx) => {
             const currentChoice = choices.find(c => c.idx === idx);
             const isSuggested = !currentChoice || currentChoice.mode === 'suggested';
+            const displayName = pc.rawName || pc.ingredientRaw || pc.suggestedName || 'Zutat';
+            const detailStr = (pc.amount != null || pc.unit) ? `${pc.amount != null ? pc.amount : ''} ${pc.unit || ''}`.trim() : '';
+            const suggestedDisplayName = pc.suggestedProduct?.name || pc.suggestedName || displayName;
+            const sourcesList = pc.sources || (pc.recipeTitle ? [pc.recipeTitle] : []);
+
             return (
               <div key={idx} className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-2.5">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="text-sm font-semibold text-stone-900">
-                      {pc.amount != null ? `${pc.amount} ${pc.unit} ` : ''}{pc.ingredientRaw}
+                      {displayName} {detailStr ? <span className="font-normal text-stone-500 text-xs">({detailStr})</span> : null}
                     </div>
-                    {pc.sources && pc.sources.length > 0 && (
+                    {sourcesList.length > 0 && (
                       <div className="text-[11px] text-stone-400 font-mono">
-                        Aus: {pc.sources.join(', ')}
+                        Aus: {sourcesList.join(', ')}
                       </div>
                     )}
                   </div>
@@ -3942,7 +3938,7 @@ function WeekIngredientResolutionModal({ pendingChoices, allProducts, onConfirm,
                       className="text-stone-900 focus:ring-stone-900"
                     />
                     <span>
-                      Wie vorgeschlagen: <strong>{pc.suggestedProduct?.name || pc.ingredientRaw}</strong>
+                      Wie vorgeschlagen: <strong>{suggestedDisplayName}</strong>
                     </span>
                   </label>
 
@@ -5627,12 +5623,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.1</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.2</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.2 (Kaiserschmarrn)
         </div>
       </div>
 
