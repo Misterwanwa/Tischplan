@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { fetchProductByBarcode, calculatePortion, searchBuiltinFoods, BUILTIN_FOODS } from './foodDatabase';
+import { calculateStreak } from './modules/streak';
 
 function BarcodeIcon({ size = 16, className = "" }) {
   return (
@@ -46,7 +47,6 @@ export default function CaloriesTab({
 
   const [selectedDate, setSelectedDate] = useState(todayKey());
   const [dayLogs, setDayLogs] = useState({});
-  const [streakData, setStreakData] = useState({ currentStreak: 1, lastLoggedDay: '' });
   const [isUnlocked, setIsUnlocked] = useState(() => !person.caloriesPin);
   const [enteredPin, setEnteredPin] = useState('');
   const [pinError, setPinError] = useState(false);
@@ -59,6 +59,11 @@ export default function CaloriesTab({
   // Load daily logs and streak from storage
   const storageKey = `calorie_logs_${activePersonIndex}`;
   const streakStorageKey = `calorie_streak_${activePersonIndex}`;
+
+  // Dynamische, lückenlose Streak-Berechnung direkt aus den Tagesdaten
+  const streakInfo = useMemo(() => {
+    return calculateStreak(dayLogs, { today: todayKey() });
+  }, [dayLogs]);
 
   useEffect(() => {
     // Reset unlock if person pin changes or user switches
@@ -81,15 +86,25 @@ export default function CaloriesTab({
       try {
         const savedLogs = await storageGet(storageKey, true);
         if (mounted && savedLogs) setDayLogs(savedLogs);
-
-        const savedStreak = await storageGet(streakStorageKey, true);
-        if (mounted && savedStreak) setStreakData(savedStreak);
       } catch (e) {
         console.warn('Fehler beim Laden der Kalorien-Logs:', e);
       }
     })();
     return () => { mounted = false; };
-  }, [storageKey, streakStorageKey]);
+  }, [storageKey]);
+
+  // Persistiere Streak-Kennzahlen für externe Auswertungen (z. B. Rewind)
+  useEffect(() => {
+    if (typeof storageSet === 'function') {
+      storageSet(streakStorageKey, {
+        currentStreak: streakInfo.currentStreak,
+        longestStreak: streakInfo.longestStreak,
+        status: streakInfo.status,
+        totalActiveDays: streakInfo.totalActiveDays,
+        lastCalculated: Date.now(),
+      }, true);
+    }
+  }, [streakInfo, streakStorageKey, storageSet]);
 
   // Current Day Log Data
   const currentDay = dayLogs[selectedDate] || {
@@ -103,34 +118,6 @@ export default function CaloriesTab({
     const nextLogs = { ...dayLogs, [selectedDate]: updatedDay };
     setDayLogs(nextLogs);
     await storageSet(storageKey, nextLogs, true);
-
-    // Update streak if today
-    updateStreakOnLog(selectedDate);
-  };
-
-  const updateStreakOnLog = async (logDate) => {
-    const today = todayKey();
-    if (logDate !== today) return;
-
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = dateKey(yesterday);
-
-    let nextStreak = streakData.currentStreak || 1;
-    if (streakData.lastLoggedDay === today) {
-      // Already counted today
-      return;
-    } else if (streakData.lastLoggedDay === yesterdayStr) {
-      nextStreak += 1;
-    } else if (!streakData.lastLoggedDay) {
-      nextStreak = 1;
-    } else {
-      nextStreak = 1;
-    }
-
-    const nextStreakData = { currentStreak: nextStreak, lastLoggedDay: today };
-    setStreakData(nextStreakData);
-    await storageSet(streakStorageKey, nextStreakData, true);
   };
 
   // Calculations
@@ -353,21 +340,35 @@ export default function CaloriesTab({
       <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm shadow-inner">
-            <Flame size={28} className="text-yellow-200 animate-pulse fill-yellow-200" />
+            <Flame size={28} className={`text-yellow-200 fill-yellow-200 ${streakInfo.currentStreak > 0 ? 'animate-pulse' : 'opacity-70'}`} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-mono text-xl font-extrabold tracking-tight">
-                {streakData.currentStreak || 1} Tage Streak
+                {streakInfo.currentStreak} {streakInfo.currentStreak === 1 ? 'Tag' : 'Tage'} Streak
               </span>
-              {isToday && totals.kcal > 0 && (
-                <span className="bg-white/25 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">
-                  Aktiv
+              {streakInfo.status === 'active_today' && (
+                <span className="bg-white/25 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full font-mono">
+                  Heute aktiv
+                </span>
+              )}
+              {streakInfo.status === 'active_waiting_today' && (
+                <span className="bg-amber-800/40 border border-white/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full font-mono">
+                  Heute noch offen
+                </span>
+              )}
+              {streakInfo.longestStreak > 0 && (
+                <span className="text-[11px] text-white/80 font-mono">
+                  (Rekord: {streakInfo.longestStreak} {streakInfo.longestStreak === 1 ? 'Tag' : 'Tage'})
                 </span>
               )}
             </div>
-            <p className="text-xs text-white/90">
-              {totals.kcal > 0 ? "Super! Heute bereits getrackt." : "Erfasse heute eine Mahlzeit, um den Streak zu halten!"}
+            <p className="text-xs text-white/90 mt-0.5">
+              {streakInfo.status === 'active_today'
+                ? "Super! Heute bereits getrackt. Serie gesichert!"
+                : (streakInfo.status === 'active_waiting_today'
+                    ? "Serie läuft noch von gestern! Trage heute etwas ein, um sie fortzusetzen."
+                    : "Serie pausiert. Trage heute eine Mahlzeit ein, um eine neue Serie zu starten!")}
             </p>
           </div>
         </div>
@@ -768,6 +769,7 @@ function MealEntryModal({
   const [fat, setFat] = useState('');
   const [portionGrams, setPortionGrams] = useState('');
   const [selectedFoodRef, setSelectedFoodRef] = useState(null);
+  const [isAiEstimate, setIsAiEstimate] = useState(false);
 
   // Suggestions for Freifeld
   const [searchQuery, setSearchQuery] = useState('');
@@ -1048,57 +1050,96 @@ function MealEntryModal({
     setAiLoading(true);
     setAiError('');
 
-    // Extremely token-efficient strict prompt
-    const prompt = "Bestimme Kalorien und Makros dieser Mahlzeit. Antworte AUSSCHLIESSLICH im JSON-Format ohne Markdown: {\"name\":\"kurzer deutscher Gerichtsname\",\"kcal\":Zahl,\"protein\":Zahl,\"carbs\":Zahl,\"fat\":Zahl}";
+    const prompt = "Bestimme Kalorien und Makronährstoffe dieser Mahlzeit auf dem Foto. Schätze die Portion realistisch und antworte im vorgegebenen JSON-Schema.";
+
+    const schema = {
+      type: "OBJECT",
+      properties: {
+        name: { type: "STRING" },
+        kcal: { type: "NUMBER" },
+        protein: { type: "NUMBER" },
+        carbs: { type: "NUMBER" },
+        fat: { type: "NUMBER" }
+      },
+      required: ["name", "kcal", "protein", "carbs", "fat"]
+    };
 
     try {
-      let rawResult = null;
-      if (typeof callAI === 'function') {
-        rawResult = await callAI(prompt, false, 'gemini', {
-          data: aiImage.base64Data,
-          mimeType: aiImage.mimeType,
-        });
-      } else {
-        // Fallback fetch
-        const res = await fetch('/api/ai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt,
-            image: { data: aiImage.base64Data, mimeType: aiImage.mimeType },
-            maxTokens: 200
-          })
-        });
-        const data = await res.json();
-        rawResult = data.text || '';
+      let parsed = null;
+
+      // API Request to /api/ai
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'gemini',
+          prompt,
+          image: { data: aiImage.base64Data, mimeType: aiImage.mimeType },
+          maxTokens: 1024,
+          schema
+        })
+      });
+
+      if (!res.ok) {
+        if (res.status === 429) {
+          throw new Error('Das KI-Limit wurde kurzzeitig erreicht. Bitte warte einen Moment und versuche es erneut.');
+        }
+        const errText = await res.text().catch(() => '');
+        let errMsg = `Serverfehler (${res.status})`;
+        try {
+          const errObj = JSON.parse(errText);
+          if (errObj.error) errMsg = errObj.error;
+        } catch (_) {}
+        throw new Error(errMsg);
       }
 
-      // Handle parsed object or JSON string
-      let parsed = rawResult;
-      if (typeof rawResult === 'string') {
-        const cleaned = rawResult.replace(/```json|```/g, '').trim();
+      const data = await res.json();
+      const rawText = data.text || '';
+
+      if (!rawText.trim()) {
+        throw new Error('Die KI hat keine Antwort für dieses Bild geliefert.');
+      }
+
+      // Parse structured JSON
+      try {
+        const cleaned = rawText.replace(/```json|```/g, '').trim();
         const match = cleaned.match(/\{[\s\S]*\}/);
-        if (!match) throw new Error('Die KI konnte keine Nährwerte ermitteln.');
+        if (!match) throw new Error('Ungültiges Antwortformat');
         parsed = JSON.parse(match[0]);
+      } catch (parseErr) {
+        console.error('Parse-Fehler bei KI-Antwort:', rawText);
+        throw new Error('Die Nährwerte konnten aus der KI-Antwort nicht gelesen werden.');
       }
 
+      // Plausibility & Schema Validation
       if (!parsed || typeof parsed !== 'object') {
-        throw new Error('Die KI konnte keine Nährwerte ermitteln.');
+        throw new Error('Keine gültigen Nährwertdaten in der KI-Antwort.');
       }
 
-      setName(parsed.name || 'Mahlzeit vom Foto');
-      setKcal(parsed.kcal ?? 0);
-      setProtein(parsed.protein ?? 0);
-      setCarbs(parsed.carbs ?? 0);
-      setFat(parsed.fat ?? 0);
+      const mealName = (parsed.name && typeof parsed.name === 'string' && parsed.name.trim())
+        ? parsed.name.trim()
+        : 'Mahlzeit vom Foto';
+
+      const parsedKcal = Math.max(0, Math.round(Number(parsed.kcal) || 0));
+      const parsedProtein = Math.max(0, Math.round((Number(parsed.protein) || 0) * 10) / 10);
+      const parsedCarbs = Math.max(0, Math.round((Number(parsed.carbs) || 0) * 10) / 10);
+      const parsedFat = Math.max(0, Math.round((Number(parsed.fat) || 0) * 10) / 10);
+
+      // Apply values to Freifeld state
+      setName(mealName);
+      setKcal(parsedKcal);
+      setProtein(parsedProtein);
+      setCarbs(parsedCarbs);
+      setFat(parsedFat);
       setSelectedFoodRef(null);
       setPortionGrams('1 Portion');
+      setIsAiEstimate(true);
 
-      // Switch to free tab to let user review
+      // Switch to Freifeld to let user review and confirm before saving
       setTab('free');
     } catch (err) {
-      console.error(err);
-      setAiError(err.message || 'Fehler bei der Foto-Analyse.');
+      console.error('Fotoanalyse fehlgeschlagen:', err);
+      setAiError(err.message || 'Fehler bei der Foto-Analyse. Bild bleibt erhalten.');
     } finally {
       setAiLoading(false);
     }
@@ -1180,6 +1221,7 @@ function MealEntryModal({
       fat: Number(fat) || 0,
       portionGrams: portionGrams ? String(portionGrams) : null,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isAiEstimate: isAiEstimate || false,
     }, mealKey);
   };
 
@@ -1351,49 +1393,93 @@ function MealEntryModal({
                 </div>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div>
-                  <label className={labelCls}>Kalorien (kcal)</label>
+              {isAiEstimate && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={14} className="text-emerald-600 shrink-0" />
+                    <span>KI-Schätzung vom Foto. Bitte kurz prüfen und ggf. anpassen.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAiEstimate(false)}
+                    className="text-emerald-600 hover:text-emerald-900 p-0.5"
+                    title="Hinweis schließen"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
+
+              {/* Horizontale Makro-Zeile (4 Spalten) */}
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-2 pt-1">
+                <div className="min-w-0">
+                  <label className="text-[10px] sm:text-xs font-mono uppercase tracking-tight text-stone-500 block text-center truncate mb-1" title="Kalorien">
+                    Kcal
+                  </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={kcal}
-                    onChange={e => setKcal(e.target.value)}
+                    onChange={e => {
+                      const v = e.target.value.replace(/[^0-9]/g, '');
+                      setKcal(v);
+                    }}
                     placeholder="0"
-                    className={inputCls + " mt-1 font-mono font-bold text-stone-900"}
+                    className="w-full px-1.5 sm:px-2 py-2 rounded-lg border border-stone-300 text-xs sm:text-sm font-mono font-bold text-stone-900 bg-white focus:outline-none focus:ring-1 focus:ring-stone-900 text-center"
                   />
+                  <span className="text-[9px] font-mono text-stone-400 block text-center mt-0.5">kcal</span>
                 </div>
-                <div>
-                  <label className={labelCls}>Eiweiß (g)</label>
+                <div className="min-w-0">
+                  <label className="text-[10px] sm:text-xs font-mono uppercase tracking-tight text-stone-500 block text-center truncate mb-1" title="Eiweiß">
+                    Eiweiß
+                  </label>
                   <input
-                    type="number"
-                    step="0.1"
+                    type="text"
+                    inputMode="decimal"
                     value={protein}
-                    onChange={e => setProtein(e.target.value)}
+                    onChange={e => {
+                      const v = e.target.value.replace(',', '.').replace(/[^0-9.]/g, '');
+                      setProtein(v);
+                    }}
                     placeholder="0"
-                    className={inputCls + " mt-1 font-mono"}
+                    className="w-full px-1.5 sm:px-2 py-2 rounded-lg border border-stone-300 text-xs sm:text-sm font-mono text-stone-900 bg-white focus:outline-none focus:ring-1 focus:ring-stone-900 text-center"
                   />
+                  <span className="text-[9px] font-mono text-stone-400 block text-center mt-0.5">g</span>
                 </div>
-                <div>
-                  <label className={labelCls}>Kohlenh. (g)</label>
+                <div className="min-w-0">
+                  <label className="text-[10px] sm:text-xs font-mono uppercase tracking-tight text-stone-500 block text-center truncate mb-1" title="Kohlenhydrate">
+                    Kohlenh.
+                  </label>
                   <input
-                    type="number"
-                    step="0.1"
+                    type="text"
+                    inputMode="decimal"
                     value={carbs}
-                    onChange={e => setCarbs(e.target.value)}
+                    onChange={e => {
+                      const v = e.target.value.replace(',', '.').replace(/[^0-9.]/g, '');
+                      setCarbs(v);
+                    }}
                     placeholder="0"
-                    className={inputCls + " mt-1 font-mono"}
+                    className="w-full px-1.5 sm:px-2 py-2 rounded-lg border border-stone-300 text-xs sm:text-sm font-mono text-stone-900 bg-white focus:outline-none focus:ring-1 focus:ring-stone-900 text-center"
                   />
+                  <span className="text-[9px] font-mono text-stone-400 block text-center mt-0.5">g</span>
                 </div>
-                <div>
-                  <label className={labelCls}>Fett (g)</label>
+                <div className="min-w-0">
+                  <label className="text-[10px] sm:text-xs font-mono uppercase tracking-tight text-stone-500 block text-center truncate mb-1" title="Fett">
+                    Fett
+                  </label>
                   <input
-                    type="number"
-                    step="0.1"
+                    type="text"
+                    inputMode="decimal"
                     value={fat}
-                    onChange={e => setFat(e.target.value)}
+                    onChange={e => {
+                      const v = e.target.value.replace(',', '.').replace(/[^0-9.]/g, '');
+                      setFat(v);
+                    }}
                     placeholder="0"
-                    className={inputCls + " mt-1 font-mono"}
+                    className="w-full px-1.5 sm:px-2 py-2 rounded-lg border border-stone-300 text-xs sm:text-sm font-mono text-stone-900 bg-white focus:outline-none focus:ring-1 focus:ring-stone-900 text-center"
                   />
+                  <span className="text-[9px] font-mono text-stone-400 block text-center mt-0.5">g</span>
                 </div>
               </div>
             </div>
@@ -1444,9 +1530,27 @@ function MealEntryModal({
               </div>
 
               {aiError && (
-                <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded-xl flex items-center gap-2 text-left">
-                  <AlertCircle size={16} className="shrink-0" />
-                  <span>{aiError}</span>
+                <div className="space-y-2">
+                  <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded-xl flex items-center gap-2 text-left border border-rose-200">
+                    <AlertCircle size={16} className="shrink-0" />
+                    <span>{aiError}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={analyzeWithAI}
+                      className="flex-1 py-2 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-mono uppercase font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <RefreshCw size={13} /> Erneut versuchen
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTab('free')}
+                      className="flex-1 py-2 rounded-lg border border-stone-300 hover:bg-stone-50 text-stone-700 text-xs font-mono uppercase font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <Edit3 size={13} /> Manuell erfassen
+                    </button>
+                  </div>
                 </div>
               )}
 

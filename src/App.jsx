@@ -17,6 +17,10 @@ import {
   ProductPictogram,
 } from './productDatabase';
 import CaloriesTab from './CaloriesTab';
+import { setSyncStatus, subscribeSyncStatus, SYNC_STATES, SYNC_LABELS } from './modules/syncStatus';
+import { getItemDetails, addDetailToItem, updateDetailInItem, removeDetailFromItem, formatDetailsSummary } from './modules/multiDetails';
+import { analyzeWeekIngredients, findProductMatch } from './modules/ingredientMatcher';
+import { STATS_STORAGE_KEY, EVENT_TYPES, createStatEvent, appendStatEvent, generateRewindReport } from './modules/statistics';
 
 /* ---------------------------------- Design tokens ---------------------------------- */
 const inputCls = "w-full px-3 py-2 rounded-lg border border-stone-300 text-sm focus:outline-none focus:ring-1 focus:ring-stone-900 bg-white";
@@ -475,10 +479,11 @@ function buildRecipeFromExtraction(result, source) {
   };
 }
 
-function getRecipePreview(recipe) {
+function getRecipePreview(recipe, disableExternal = false) {
   if (!recipe) return null;
   if (recipe.photo) return recipe.photo;
-  if (recipe.source && typeof recipe.source.url === 'string' && recipe.source.url.trim() !== '') {
+  if (!disableExternal && recipe.source && typeof recipe.source.url === 'string' && recipe.source.url.trim() !== '') {
+    if (typeof window !== 'undefined' && window.__tischplan_disable_external_screenshots) return null;
     return `https://image.thum.io/get/width/400/crop/800/${recipe.source.url.trim()}`;
   }
   return null;
@@ -519,21 +524,32 @@ async function storageSet(key, value, shared) {
     }
     if (shared) {
       localStorage.setItem(`shared_${key}`, JSON.stringify(value));
+      setSyncStatus(SYNC_STATES.SAVING);
       try {
         const res = await fetch('/api/storage', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ key, value })
         });
-        if (res.ok) return;
+        if (res.ok) {
+          setSyncStatus(SYNC_STATES.SYNCED);
+          return;
+        } else {
+          setSyncStatus(SYNC_STATES.ERROR, `HTTP ${res.status}`);
+          return;
+        }
       } catch (apiError) {
         console.warn('KV storage set failed, stored locally in cache:', apiError);
+        setSyncStatus(SYNC_STATES.OFFLINE, apiError.message);
       }
       return;
     }
     localStorage.setItem(key, JSON.stringify(value));
   }
-  catch (e) { console.error('storage set failed', key, e); }
+  catch (e) {
+    console.error('storage set failed', key, e);
+    setSyncStatus(SYNC_STATES.ERROR, e.message);
+  }
 }
 
 function aggregateIngredients(usageList) {
@@ -774,16 +790,42 @@ function RemoveButton({ onConfirm, size }) {
 /* ---------------------------------- Chrome ---------------------------------- */
 function TopBar() {
   const { settings, profile, setProfile } = useApp();
+  const [sync, setSync] = useState({ status: SYNC_STATES.SYNCED });
+
+  useEffect(() => {
+    return subscribeSyncStatus(setSync);
+  }, []);
+
   return (
     <div className="bg-white border-b border-stone-200 no-print sticky top-0 z-30">
-      <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-        <span className="font-mono text-lg font-bold tracking-tight text-stone-900">KARTEI</span>
+      <div className="max-w-2xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <span className="font-mono text-base font-bold tracking-tight text-stone-900">TISCHPLAN</span>
+          {/* Speicher-/Synchronisationsstatus */}
+          <span
+            className={`text-[10px] font-mono px-2 py-0.5 rounded-full flex items-center gap-1 border transition-colors ${
+              sync.status === SYNC_STATES.SYNCED ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+              sync.status === SYNC_STATES.SAVING ? 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse' :
+              sync.status === SYNC_STATES.OFFLINE ? 'bg-orange-50 text-orange-700 border-orange-200' :
+              'bg-rose-50 text-rose-700 border-rose-200'
+            }`}
+            title={sync.lastError ? `Fehler: ${sync.lastError}` : `Status: ${SYNC_LABELS[sync.status]}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${
+              sync.status === SYNC_STATES.SYNCED ? 'bg-emerald-500' :
+              sync.status === SYNC_STATES.SAVING ? 'bg-amber-500' :
+              sync.status === SYNC_STATES.OFFLINE ? 'bg-orange-500' :
+              'bg-rose-500'
+            }`} />
+            <span>{SYNC_LABELS[sync.status] || 'Synchronisiert'}</span>
+          </span>
+        </div>
         <button
           onClick={() => setProfile(null)}
           className="text-xs px-2.5 py-1 bg-stone-100 hover:bg-stone-200 text-stone-600 hover:text-stone-900 rounded-full flex items-center gap-1 font-mono transition-colors active:scale-95"
           title="Benutzer wechseln"
         >
-          <User size={11} /> {settings.people[profile.personIndex] && settings.people[profile.personIndex].name}
+          <User size={11} /> {settings.people[profile?.personIndex ?? 0]?.name || 'Profil'}
         </button>
       </div>
     </div>
@@ -906,7 +948,7 @@ function MonthGrid({ viewDate, setViewDate, selectedDay, setSelectedDay }) {
   );
 }
 
-function SlotRow({ course, recipe, multiplier, onPick, onRemove, onMultiplier, onClickRecipe, onLongPressRecipe }) {
+function SlotRow({ course, hasSlot = false, recipe, multiplier, onPick, onRemove, onMultiplier, onClickRecipe, onLongPressRecipe }) {
   const [localVal, setLocalVal] = useState(String(multiplier));
 
   useEffect(() => {
@@ -932,6 +974,26 @@ function SlotRow({ course, recipe, multiplier, onPick, onRemove, onMultiplier, o
     }
   );
 
+  if (hasSlot && !recipe) {
+    return (
+      <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-50/80 border border-amber-200">
+        <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600">
+          <AlertTriangle size={16} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-amber-600 font-mono uppercase">{course.label}</div>
+          <div className="text-sm font-medium text-stone-700 italic">Rezept wurde gelöscht</div>
+        </div>
+        <button type="button" onClick={onPick} title="Anderes Rezept wählen" className="px-2 py-1 text-xs font-mono bg-white border border-stone-300 rounded text-stone-700 hover:bg-stone-50">
+          Ersetzen
+        </button>
+        <button type="button" onClick={onRemove} title="Slot leeren" className="p-1.5 text-stone-400 hover:text-rose-500 flex-shrink-0">
+          <X size={16} />
+        </button>
+      </div>
+    );
+  }
+
   if (!recipe) {
     return (
       <button onClick={onPick} className="w-full flex items-center gap-2 p-3 rounded-lg border border-dashed border-stone-300 text-stone-400 hover:border-stone-500 hover:text-stone-700 text-sm">
@@ -956,7 +1018,7 @@ function SlotRow({ course, recipe, multiplier, onPick, onRemove, onMultiplier, o
   );
 }
 
-function RecipePickerSheet({ onClose, onPick }) {
+function RecipePickerSheet({ targetSlot = null, onClose, onPick }) {
   const { recipes, openAddRecipe } = useApp();
   const [query, setQuery] = useState('');
   const filtered = recipes.filter(r => !r.doNotSaveInBook).filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
@@ -975,7 +1037,7 @@ function RecipePickerSheet({ onClose, onPick }) {
         </div>
         <div className="flex-1 overflow-y-auto px-3 space-y-1 min-h-0">
           {filtered.map(r => (
-            <button key={r.id} onClick={() => onPick(r.id)} className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 text-left">
+            <button key={r.id} onClick={() => onPick(r.id, targetSlot)} className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 text-left">
               {getRecipePreview(r) ? <img src={getRecipePreview(r)} className="w-9 h-9 rounded-lg object-cover" /> : <div className="w-9 h-9 rounded-lg bg-stone-100" />}
               <span className="text-sm">{r.title}</span>
             </button>
@@ -983,7 +1045,7 @@ function RecipePickerSheet({ onClose, onPick }) {
           {filtered.length === 0 && <div className="text-center text-sm text-stone-400 py-6">Keine Rezepte gefunden</div>}
         </div>
         <div className="p-3 border-t border-stone-200 flex-shrink-0">
-          <button onClick={() => { onClose(); openAddRecipe({ onSaved: (r) => onPick(r.id) }); }} className={primaryBtnCls}>
+          <button onClick={() => { const savedTarget = targetSlot ? { ...targetSlot } : null; onClose(); openAddRecipe({ onSaved: (r) => onPick(r.id, savedTarget) }); }} className={primaryBtnCls}>
             <Plus size={14} /> Neues Rezept
           </button>
         </div>
@@ -1244,7 +1306,7 @@ function DayDetail({ plan, onChange, selectedDay }) {
               const slot = plan[mt.key] && plan[mt.key][co.key];
               const recipe = slot ? recipes.find(r => r.id === slot.recipeId) : null;
               return (
-                <SlotRow key={co.key} course={co} recipe={recipe} multiplier={slot ? slot.multiplier : 1}
+                <SlotRow key={co.key} course={co} hasSlot={Boolean(slot)} recipe={recipe} multiplier={slot ? slot.multiplier : 1}
                   onPick={() => setPickerSlot({ meal: mt.key, course: co.key })}
                   onRemove={() => setSlot(mt.key, co.key, null)}
                   onMultiplier={(m) => setSlot(mt.key, co.key, slot.recipeId, m)}
@@ -1258,8 +1320,15 @@ function DayDetail({ plan, onChange, selectedDay }) {
       ))}
       {pickerSlot && (
         <RecipePickerSheet
+          targetSlot={pickerSlot}
           onClose={() => setPickerSlot(null)}
-          onPick={(recipeId) => { setSlot(pickerSlot.meal, pickerSlot.course, recipeId, 1); setPickerSlot(null); }}
+          onPick={(recipeId, customSlot) => {
+            const target = customSlot || pickerSlot;
+            if (target && target.meal && target.course) {
+              setSlot(target.meal, target.course, recipeId, 1);
+            }
+            setPickerSlot(null);
+          }}
         />
       )}
     </div>
@@ -1275,6 +1344,30 @@ function PlannedMealItem({ meal, course, slot, recipe, onLongPressRecipe, onClic
       if (onClickRecipe) onClickRecipe();
     }
   );
+
+  if (!recipe) {
+    return (
+      <div 
+        {...longPressHandlers}
+        className="flex items-center justify-between p-2 rounded-lg bg-amber-50/70 border border-amber-200 cursor-pointer hover:bg-amber-100/50 transition-colors"
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-10 h-10 rounded-md bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600">
+            <AlertTriangle size={14} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] text-amber-700 font-mono uppercase tracking-wider flex items-center gap-1">
+              {meal.label} ({course.label})
+            </div>
+            <div className="text-sm font-medium text-stone-700 italic">Rezept wurde gelöscht</div>
+          </div>
+        </div>
+        <span className="text-[10px] font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded flex-shrink-0">
+          Bearbeiten
+        </span>
+      </div>
+    );
+  }
 
   const preview = getRecipePreview(recipe);
   return (
@@ -1402,7 +1495,35 @@ function WeekAddMealModal({ date, onClose }) {
             {filtered.length === 0 && <div className="text-center text-sm text-stone-400 py-6">Keine Rezepte gefunden</div>}
           </div>
           <div className="p-3 border-t border-stone-200 flex-shrink-0">
-            <button onClick={() => { onClose(); openAddRecipe({ onSaved: (r) => handlePick(r.id) }); }} className={primaryBtnCls}>
+            <button
+              type="button"
+              onClick={() => {
+                const targetMeal = selectedMeal;
+                const targetCourse = selectedCourse;
+                const targetDate = date;
+                onClose();
+                openAddRecipe({
+                  onSaved: async (r) => {
+                    try {
+                      const dk = dateKey(targetDate);
+                      const plan = await getDayPlan(dk);
+                      const next = {
+                        ...plan,
+                        [targetMeal]: {
+                          ...plan[targetMeal],
+                          [targetCourse]: { recipeId: r.id, multiplier: 1 }
+                        }
+                      };
+                      await saveDayPlan(dk, next);
+                      triggerRefresh();
+                    } catch (err) {
+                      console.error('Failed to attach new recipe to plan:', err);
+                    }
+                  }
+                });
+              }}
+              className={primaryBtnCls}
+            >
               <Plus size={14} /> Neues Rezept
             </button>
           </div>
@@ -2430,7 +2551,7 @@ function AISearchPanel({ onBack, onNext }) {
 }
 
 function RecipeForm({ initial, onBack, backLabel, onSave }) {
-  const { showToast } = useApp();
+  const { showToast, recipes } = useApp();
   const [title, setTitle] = useState((initial && initial.title) || '');
   const [doNotSaveInBook, setDoNotSaveInBook] = useState((initial && initial.doNotSaveInBook) || false);
   const [servingsText, setServingsText] = useState((initial && initial.servingsText) || '4');
@@ -2441,6 +2562,18 @@ function RecipeForm({ initial, onBack, backLabel, onSave }) {
   const [busyPhoto, setBusyPhoto] = useState(false);
   const [busyNutrition, setBusyNutrition] = useState(false);
   const source = (initial && initial.source) || { type: 'manual', label: 'Manuell' };
+
+  const duplicateNotice = useMemo(() => {
+    const trimmed = (title || '').trim().toLowerCase();
+    if (!trimmed || trimmed.length < 3) return null;
+    const match = (recipes || []).find(r => (r.title || '').trim().toLowerCase() === trimmed);
+    if (match) return `Hinweis: Es existiert bereits ein Rezept namens „${match.title}“.`;
+    if (source && source.url) {
+      const urlMatch = (recipes || []).find(r => r.source?.url && r.source.url.replace(/\/+$/, '') === source.url.replace(/\/+$/, ''));
+      if (urlMatch) return `Hinweis: Diese Quell-URL ist bereits für „${urlMatch.title}“ gespeichert.`;
+    }
+    return null;
+  }, [title, recipes, source]);
 
   const handlePhoto = async (file) => {
     setBusyPhoto(true);
@@ -2484,6 +2617,12 @@ function RecipeForm({ initial, onBack, backLabel, onSave }) {
       <div>
         <label className={labelCls}>Titel</label>
         <input value={title} onChange={e => setTitle(e.target.value)} className={inputCls + " mt-1"} />
+        {duplicateNotice && (
+          <div className="mt-1.5 text-xs bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
+            <AlertTriangle size={13} className="text-amber-600 flex-shrink-0" />
+            <span>{duplicateNotice}</span>
+          </div>
+        )}
       </div>
       <label className="flex items-center gap-2 py-1 cursor-pointer">
         <input 
@@ -2544,16 +2683,63 @@ function RecipeForm({ initial, onBack, backLabel, onSave }) {
 }
 
 function OtherPickerPanel({ onBack, onSelect }) {
+  const [customText, setCustomText] = useState('');
+  const [busy, setBusy] = useState(false);
   const options = ["Essen gehen", "Party", "bei Freunden", "Urlaub", "Bestellen", "Tiefkühl", "SinfOrMa"];
+
+  const handleSelectOption = async (text) => {
+    if (busy || !text || !text.trim()) return;
+    setBusy(true);
+    try {
+      await onSelect(text.trim());
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <div className="space-y-3">
-      <button onClick={onBack} className="text-sm text-stone-400 flex items-center gap-1 mb-2"><ChevronLeft size={14} /> Zurück</button>
-      <div className="grid grid-cols-1 gap-2">
-        {options.map(opt => (
-          <button key={opt} onClick={() => onSelect(opt)} className="w-full text-left p-3 rounded-lg border border-stone-250 hover:border-stone-400 hover:bg-stone-50 text-sm font-medium">
-            {opt}
+    <div className="space-y-4">
+      <button type="button" onClick={onBack} className="text-sm text-stone-400 flex items-center gap-1 mb-2"><ChevronLeft size={14} /> Zurück</button>
+
+      {/* Freitext-Eingabe für Weiteres */}
+      <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-2">
+        <label className={labelCls}>Eigenen Eintrag hinzufügen</label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={customText}
+            onChange={e => setCustomText(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSelectOption(customText)}
+            placeholder="z. B. Grillabend, Fasten, Kantine..."
+            className={inputCls}
+            disabled={busy}
+          />
+          <button
+            type="button"
+            disabled={busy || !customText.trim()}
+            onClick={() => handleSelectOption(customText)}
+            className="px-3 py-2 rounded-lg bg-stone-900 text-white font-mono uppercase text-xs font-semibold disabled:opacity-40 flex-shrink-0 flex items-center gap-1"
+          >
+            <Plus size={14} /> Hinzufügen
           </button>
-        ))}
+        </div>
+      </div>
+
+      <div>
+        <label className={labelCls + " block mb-1.5"}>Schnellauswahl</label>
+        <div className="grid grid-cols-1 gap-2">
+          {options.map(opt => (
+            <button
+              key={opt}
+              type="button"
+              disabled={busy}
+              onClick={() => handleSelectOption(opt)}
+              className="w-full text-left p-3 rounded-lg border border-stone-250 hover:border-stone-400 hover:bg-stone-50 text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -2563,6 +2749,7 @@ function AddRecipeModal({ onClose, onSaved }) {
   const { addRecipe, showToast } = useApp();
   const [step, setStep] = useState('source');
   const [draft, setDraft] = useState(null);
+  const [saving, setSaving] = useState(false);
   const goForm = (prefill) => { setDraft(prefill); setStep('form'); };
 
   return (
@@ -2581,26 +2768,44 @@ function AddRecipeModal({ onClose, onSaved }) {
             <OtherPickerPanel
               onBack={() => setStep('source')}
               onSelect={async (title) => {
-                const recipe = {
-                  title,
-                  servings: 1,
-                  ingredients: [],
-                  steps: [],
-                  nutrition: null,
-                  source: { type: 'other', label: 'Weiteres' },
-                };
-                const saved = await addRecipe(recipe);
-                showToast(`${title} hinzugefügt`);
-                if (onSaved) onSaved(saved);
-                onClose();
+                if (saving) return;
+                setSaving(true);
+                try {
+                  const recipe = {
+                    title: title.trim(),
+                    servings: 1,
+                    ingredients: [],
+                    steps: [],
+                    nutrition: null,
+                    source: { type: 'other', label: 'Weiteres' },
+                  };
+                  const saved = await addRecipe(recipe);
+                  showToast(`${title} hinzugefügt`);
+                  if (onSaved) await onSaved(saved);
+                  onClose();
+                } catch (err) {
+                  console.error('Failed to add other meal:', err);
+                  showToast('Fehler beim Hinzufügen', 'error');
+                } finally {
+                  setSaving(false);
+                }
               }}
             />
           )}
           {step === 'form' && <RecipeForm initial={draft} onBack={() => setStep('source')} onSave={async (recipe) => {
-            const saved = await addRecipe(recipe);
-            showToast('Rezept gespeichert');
-            if (onSaved) onSaved(saved);
-            onClose();
+            if (saving) return;
+            setSaving(true);
+            try {
+              const saved = await addRecipe(recipe);
+              showToast('Rezept gespeichert');
+              if (onSaved) await onSaved(saved);
+              onClose();
+            } catch (err) {
+              console.error('Failed to save recipe:', err);
+              showToast('Fehler beim Speichern', 'error');
+            } finally {
+              setSaving(false);
+            }
           }} />}
         </div>
       </div>
@@ -2897,10 +3102,19 @@ function CookModeModal({ recipe, multiplier = 1, onClose }) {
             </button>
           ) : (
             <button
-              onClick={onClose}
+              onClick={async () => {
+                try {
+                  const ev = createStatEvent(EVENT_TYPES.RECIPE_COOKED, { recipeId: recipe.id, recipeTitle: recipe.title });
+                  await appendStatEvent(ev, storageGet, storageSet);
+                  showToast('Rezept als gekocht verbucht! 🍳');
+                } catch (e) {
+                  console.error(e);
+                }
+                onClose();
+              }}
               className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-mono uppercase text-xs font-bold shadow-lg flex items-center justify-center gap-1"
             >
-              <Check size={18} /> Fertig!
+              <Check size={18} /> Fertig! (Gekocht)
             </button>
           )}
         </div>
@@ -3115,6 +3329,22 @@ function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
           <div className="flex items-center justify-between gap-2">
             <StarRating value={recipe.rating} onChange={(v) => updateRecipe(recipe.id, { rating: v })} size={20} />
             <div className="flex items-center gap-1.5">
+              <button
+                onClick={async () => {
+                  try {
+                    const ev = createStatEvent(EVENT_TYPES.RECIPE_COOKED, { recipeId: recipe.id, recipeTitle: recipe.title });
+                    await appendStatEvent(ev, storageGet, storageSet);
+                    showToast('Als gekocht verbucht! 🍳');
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white shadow transition-all"
+                title="Als tatsächlich gekocht verbuchen"
+              >
+                <Check size={13} />
+                <span>Gekocht</span>
+              </button>
               <button
                 onClick={() => setCookMode(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-amber-600 hover:bg-amber-700 active:scale-95 text-white shadow transition-all"
@@ -3375,7 +3605,10 @@ function triggerShoppingThrottledNotification(actionText) {
 
 /* ---------------------------------- Product Detail & Save Modal ---------------------------------- */
 function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem, onSaveToDatabase }) {
-  const [detail, setDetail] = useState(item.detail || '');
+  const [detailsList, setDetailsList] = useState(() => getItemDetails(item));
+  const [newDetailInput, setNewDetailInput] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editingText, setEditingText] = useState('');
   const [showSaveDb, setShowSaveDb] = useState(false);
   const [customCat, setCustomCat] = useState(product ? product.category : 'Grundzutaten');
   const [customIcon, setCustomIcon] = useState(product ? product.icon : 'Package');
@@ -3388,8 +3621,36 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
     return Array.from(set);
   }, [product]);
 
+  const handleAddTag = (text) => {
+    const trimmed = (text || '').trim();
+    if (!trimmed) return;
+    const nextItem = addDetailToItem({ details: detailsList }, trimmed);
+    setDetailsList(nextItem.details);
+    setNewDetailInput('');
+  };
+
+  const handleRemoveTag = (detailId) => {
+    const nextItem = removeDetailFromItem({ details: detailsList }, detailId);
+    setDetailsList(nextItem.details);
+  };
+
+  const handleStartEdit = (d) => {
+    setEditingId(d.id);
+    setEditingText(d.text);
+  };
+
+  const handleFinishEdit = () => {
+    if (editingId && editingText.trim()) {
+      const nextItem = updateDetailInItem({ details: detailsList }, editingId, editingText);
+      setDetailsList(nextItem.details);
+    }
+    setEditingId(null);
+    setEditingText('');
+  };
+
   const handleSave = () => {
-    onSaveDetail(item.id, detail.trim());
+    const summary = formatDetailsSummary(detailsList);
+    onSaveDetail(item.id, summary, detailsList);
     onClose();
   };
 
@@ -3401,8 +3662,8 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] p-4 animate-fade-in">
-      <div className="bg-white text-stone-800 rounded-xl max-w-sm w-full p-5 shadow-xl space-y-4 border border-stone-200 animate-scale-up">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] p-4 animate-fade-in" onClick={onClose}>
+      <div className="bg-white text-stone-800 rounded-xl max-w-sm w-full p-5 shadow-xl space-y-4 border border-stone-200 animate-scale-up" onClick={e => e.stopPropagation()}>
         {/* Header with tile preview */}
         <div className="flex items-center gap-3 border-b border-stone-200 pb-3">
           <div className="w-12 h-12 rounded-xl bg-rose-100 border border-rose-200 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -3417,33 +3678,105 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
           </button>
         </div>
 
+        {/* Aktuelle Details (Tags / Chips) */}
+        <div className="space-y-2">
+          <label className="text-xs font-mono uppercase tracking-wide text-stone-400 block">Zugeordnete Angaben ({detailsList.length})</label>
+          <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-stone-50 rounded-lg border border-stone-200">
+            {detailsList.length === 0 && (
+              <span className="text-xs text-stone-400 italic">Noch keine Details hinterlegt</span>
+            )}
+            {detailsList.map(d => (
+              <span
+                key={d.id}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border shadow-xs ${
+                  d.type === 'origin'
+                    ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : 'bg-white border-stone-300 text-stone-800'
+                }`}
+              >
+                {editingId === d.id ? (
+                  <input
+                    type="text"
+                    value={editingText}
+                    onChange={e => setEditingText(e.target.value)}
+                    onBlur={handleFinishEdit}
+                    onKeyDown={e => e.key === 'Enter' && handleFinishEdit()}
+                    className="w-20 px-1 py-0.5 text-xs bg-white border border-stone-400 rounded outline-none"
+                    autoFocus
+                  />
+                ) : (
+                  <span
+                    onClick={() => handleStartEdit(d)}
+                    className="cursor-pointer hover:underline"
+                    title="Klicken zum Bearbeiten"
+                  >
+                    {d.text}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveTag(d.id)}
+                  className="text-stone-400 hover:text-rose-600 transition-colors"
+                  title="Detail entfernen"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
         {/* Detail Input */}
         <div>
-          <label className="text-xs font-mono uppercase tracking-wide text-stone-400 mb-1 block">Details / Menge / Notiz</label>
-          <input
-            type="text"
-            value={detail}
-            onChange={e => setDetail(e.target.value)}
-            placeholder="z. B. 1kg, Gala, zero, Freitag..."
-            className="w-full px-3 py-2 rounded-lg bg-stone-50 border border-stone-300 text-stone-900 text-sm focus:outline-none focus:ring-1 focus:ring-stone-900"
-            autoFocus
-          />
+          <label className="text-xs font-mono uppercase tracking-wide text-stone-400 mb-1 block">Weiteres Detail hinzufügen</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newDetailInput}
+              onChange={e => setNewDetailInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAddTag(newDetailInput)}
+              placeholder="z. B. 1kg, Gala, bio, Freitag..."
+              className="flex-1 px-3 py-1.5 rounded-lg bg-stone-50 border border-stone-300 text-stone-900 text-sm focus:outline-none focus:ring-1 focus:ring-stone-900"
+            />
+            <button
+              type="button"
+              onClick={() => handleAddTag(newDetailInput)}
+              disabled={!newDetailInput.trim()}
+              className="px-3 py-1.5 rounded-lg bg-stone-900 text-white font-mono uppercase text-xs font-semibold disabled:opacity-40"
+            >
+              +
+            </button>
+          </div>
         </div>
 
         {/* Vorgefertigte Details */}
         <div>
-          <label className="text-xs font-mono uppercase tracking-wide text-stone-400 mb-1.5 block">Vorschläge & Mengen</label>
-          <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-            {presetOptions.map((opt, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setDetail(opt)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${detail === opt ? 'bg-stone-900 text-white font-bold' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
-              >
-                {opt}
-              </button>
-            ))}
+          <label className="text-xs font-mono uppercase tracking-wide text-stone-400 mb-1.5 block">Vorschläge & Mengen antippen</label>
+          <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1">
+            {presetOptions.map((opt, i) => {
+              const isSelected = detailsList.some(d => d.text.toLowerCase() === opt.toLowerCase());
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    if (isSelected) {
+                      const found = detailsList.find(d => d.text.toLowerCase() === opt.toLowerCase());
+                      if (found) handleRemoveTag(found.id);
+                    } else {
+                      handleAddTag(opt);
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                    isSelected
+                      ? 'bg-stone-900 text-white font-bold'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                  }`}
+                >
+                  {isSelected ? `✓ ${opt}` : `+ ${opt}`}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -3513,6 +3846,284 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
               Abbrechen
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- Week Ingredient Resolution Modal ---------------------------------- */
+function WeekIngredientResolutionModal({ pendingChoices, allProducts, onConfirm, onCancel }) {
+  const [choices, setChoices] = useState(() => {
+    return pendingChoices.map((pc, idx) => ({
+      idx,
+      mode: 'suggested', // 'suggested' or 'custom'
+      customName: pc.suggestedProduct ? pc.suggestedProduct.name : pc.ingredientRaw,
+    }));
+  });
+
+  const handleToggleMode = (idx, mode) => {
+    setChoices(prev => prev.map(c => c.idx === idx ? { ...c, mode } : c));
+  };
+
+  const handleCustomChange = (idx, customName) => {
+    setChoices(prev => prev.map(c => c.idx === idx ? { ...c, customName } : c));
+  };
+
+  const handleSubmit = () => {
+    const resolvedResults = pendingChoices.map((pc, idx) => {
+      const choice = choices.find(c => c.idx === idx);
+      const useSuggested = !choice || choice.mode === 'suggested';
+      const productName = useSuggested ? (pc.suggestedProduct?.name || pc.ingredientRaw) : (choice.customName.trim() || pc.ingredientRaw);
+      const isNew = useSuggested ? pc.isNewProduct : !allProducts.some(p => p.name.toLowerCase() === productName.toLowerCase());
+      return {
+        ...pc,
+        finalProductName: productName,
+        isNewProduct: isNew,
+      };
+    });
+    onConfirm(resolvedResults);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/45 flex items-end sm:items-center justify-center z-[75] p-3 animate-fade-in" onClick={onCancel}>
+      <div className="bg-white text-stone-800 rounded-t-2xl sm:rounded-xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl border border-stone-200" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+          <div>
+            <span className="font-mono font-bold uppercase text-xs tracking-wider text-amber-700 flex items-center gap-1.5">
+              <HelpCircle size={15} /> Zutaten-Abgleich
+            </span>
+            <p className="text-xs text-stone-500 mt-0.5">Folgende Zutaten konnten nicht eindeutig zugeordnet werden:</p>
+          </div>
+          <button onClick={onCancel} className="text-stone-400 hover:text-stone-700 p-1"><X size={18} /></button>
+        </div>
+
+        <div className="p-4 overflow-y-auto space-y-4 flex-1 min-h-0">
+          {pendingChoices.map((pc, idx) => {
+            const currentChoice = choices.find(c => c.idx === idx);
+            const isSuggested = !currentChoice || currentChoice.mode === 'suggested';
+            return (
+              <div key={idx} className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-2.5">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="text-sm font-semibold text-stone-900">
+                      {pc.amount != null ? `${pc.amount} ${pc.unit} ` : ''}{pc.ingredientRaw}
+                    </div>
+                    {pc.sources && pc.sources.length > 0 && (
+                      <div className="text-[11px] text-stone-400 font-mono">
+                        Aus: {pc.sources.join(', ')}
+                      </div>
+                    )}
+                  </div>
+                  {pc.isNewProduct && (
+                    <span className="text-[10px] font-mono uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">
+                      Neues Produkt
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <label className="flex items-center gap-2 text-xs font-medium text-stone-700 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`choice_${idx}`}
+                      checked={isSuggested}
+                      onChange={() => handleToggleMode(idx, 'suggested')}
+                      className="text-stone-900 focus:ring-stone-900"
+                    />
+                    <span>
+                      Wie vorgeschlagen: <strong>{pc.suggestedProduct?.name || pc.ingredientRaw}</strong>
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-2 text-xs font-medium text-stone-700 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`choice_${idx}`}
+                      checked={!isSuggested}
+                      onChange={() => handleToggleMode(idx, 'custom')}
+                      className="text-stone-900 focus:ring-stone-900"
+                    />
+                    <span>Selbst eingeben / zuordnen:</span>
+                  </label>
+
+                  {!isSuggested && (
+                    <div className="pl-6 pt-1">
+                      <input
+                        type="text"
+                        value={currentChoice?.customName || ''}
+                        onChange={e => handleCustomChange(idx, e.target.value)}
+                        placeholder="Produktname..."
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 text-xs text-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="p-3 border-t border-stone-200 flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-2 rounded-lg border border-stone-300 text-stone-700 text-xs font-mono uppercase font-semibold hover:bg-stone-50"
+          >
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="flex-2 py-2.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-mono uppercase font-bold shadow"
+          >
+            Auswahl übernehmen &amp; hinzufügen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- Rewind Modal (Jahresrückblick) ---------------------------------- */
+function RewindModal({ report, year, profileName, onClose }) {
+  if (!report) return null;
+  const { topShoppingProducts, mostCookedRecipes, activeMonths, titleWords, totalEvents, isPreview, collectionStartedAt } = report;
+
+  const monthNames = ['', 'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[80] p-3 animate-fade-in" onClick={onClose}>
+      <div className="bg-stone-950 text-stone-100 rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] flex flex-col shadow-2xl border border-stone-800 select-none" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="p-5 border-b border-stone-800 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-white tracking-tight">Tischplan Rewind {year}</h2>
+              {isPreview && (
+                <span className="text-[10px] font-mono uppercase tracking-widest bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded-full font-bold">
+                  Vorschau
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-stone-400 mt-1">
+              Dein kulinarisches Jahr auf einen Blick 🥞
+            </p>
+          </div>
+          <button onClick={onClose} className="text-stone-400 hover:text-white p-1 rounded-lg">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Info banner */}
+        <div className="px-5 py-2.5 bg-stone-900/80 border-b border-stone-800/80 text-[11px] font-mono text-stone-400 flex items-center justify-between">
+          <span>Auswertung bis {new Date().toLocaleDateString('de-DE')}</span>
+          <span>{totalEvents} Ereignisse erfasst</span>
+        </div>
+
+        {/* Scrollable Story Cards */}
+        <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0">
+          {/* Card 1: Meistgekochte Rezepte */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-stone-900 to-stone-900/60 border border-stone-800 space-y-3">
+            <div className="flex items-center gap-2 text-amber-400 font-mono text-xs uppercase tracking-wider font-semibold">
+              <Utensils size={14} /> Meistgekochte Rezepte
+            </div>
+            {mostCookedRecipes.length > 0 ? (
+              <div className="space-y-2">
+                {mostCookedRecipes.map((r, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm py-1 border-b border-stone-800/50 last:border-0">
+                    <span className="truncate pr-2 font-medium text-stone-200">
+                      <span className="text-amber-500 font-mono mr-2 font-bold">{i + 1}.</span> {r.title}
+                    </span>
+                    <span className="font-mono text-xs bg-amber-500/10 text-amber-300 px-2 py-0.5 rounded-full flex-shrink-0">
+                      {r.count}x gekocht
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-stone-400 italic py-2">
+                Noch keine Rezepte als gekocht bestätigt. Starte dein erstes Kochabenteuer!
+              </p>
+            )}
+          </div>
+
+          {/* Card 2: Top Einkaufsprodukte */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-stone-900 to-stone-900/60 border border-stone-800 space-y-3">
+            <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs uppercase tracking-wider font-semibold">
+              <ShoppingCart size={14} /> Häufigste Einkaufsprodukte
+            </div>
+            {topShoppingProducts.length > 0 ? (
+              <div className="space-y-2">
+                {topShoppingProducts.map((p, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm py-1 border-b border-stone-800/50 last:border-0">
+                    <span className="truncate pr-2 font-medium text-stone-200">
+                      <span className="text-emerald-500 font-mono mr-2 font-bold">{i + 1}.</span> {p.name}
+                    </span>
+                    <span className="font-mono text-[11px] text-stone-400 flex items-center gap-1.5">
+                      <span className="text-emerald-300 font-bold">{p.total}x</span>
+                      <span className="text-[10px] text-stone-500">({p.manual} man. / {p.auto} auto)</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-stone-400 italic py-2">
+                Bisher keine Einkaufslisten-Ereignisse verzeichnet.
+              </p>
+            )}
+          </div>
+
+          {/* Card 3: Aktivste Monate */}
+          {activeMonths.length > 0 && (
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-stone-900 to-stone-900/60 border border-stone-800 space-y-3">
+              <div className="flex items-center gap-2 text-indigo-400 font-mono text-xs uppercase tracking-wider font-semibold">
+                <Calendar size={14} /> Koch-Aktivität nach Monat
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {activeMonths.slice(0, 4).map(m => {
+                  const mNum = parseInt(m.month.split('-')[1]);
+                  return (
+                    <div key={m.month} className="p-2 bg-stone-950/60 rounded-lg border border-stone-800 flex justify-between items-center">
+                      <span className="font-medium text-stone-300">{monthNames[mNum] || m.month}</span>
+                      <span className="font-mono font-bold text-indigo-300">{m.count}x</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Card 4: Häufige Rezept-Titelwörter */}
+          {titleWords.length > 0 && (
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-stone-900 to-stone-900/60 border border-stone-800 space-y-3">
+              <div className="flex items-center gap-2 text-rose-400 font-mono text-xs uppercase tracking-wider font-semibold">
+                <Tag size={14} /> Beliebte Themen im Rezeptbestand
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {titleWords.map(tw => (
+                  <span key={tw.word} className="px-2.5 py-1 rounded-full text-xs font-mono bg-rose-500/10 border border-rose-500/20 text-rose-300">
+                    #{tw.word} <span className="opacity-60 text-[10px]">({tw.count})</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Profil-Hinweis */}
+          <div className="text-center text-xs text-stone-500 font-mono pt-2">
+            Zusammenfassung für {profileName || 'deinen Haushalt'} · Tischplan
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-stone-800 flex justify-end">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-stone-100 hover:bg-white text-stone-950 font-mono uppercase text-xs font-bold transition-colors"
+          >
+            Schließen
+          </button>
         </div>
       </div>
     </div>
@@ -3618,6 +4229,7 @@ function ShoppingTab() {
   const [detailModalItem, setDetailModalItem] = useState(null);
   const [showWeeklyConfirm, setShowWeeklyConfirm] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState({});
+  const [resolutionData, setResolutionData] = useState(null);
 
   // Load state from localStorage on mount & check daily CSV auto-sync
   useEffect(() => {
@@ -3703,6 +4315,13 @@ function ShoppingTab() {
     updateShoppingItems(next, `${name} zur Einkaufsliste hinzugefügt.`);
     setSearch('');
     showToast(`${name} auf die Liste gesetzt`);
+
+    try {
+      const ev = createStatEvent(EVENT_TYPES.SHOPPING_ADD, { productName: name, isManual: true });
+      appendStatEvent(ev, storageGet, storageSet);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   // Short Click on Tile: Toggle active (Rot) vs inactive (Teal in Zuletzt verwendet)
@@ -3716,11 +4335,31 @@ function ShoppingTab() {
 
     const text = isNowCompleted ? `${item.name} abgehakt.` : `${item.name} wieder auf die Einkaufsliste gesetzt.`;
     updateShoppingItems(next, text);
+
+    if (!isNowCompleted) {
+      try {
+        const ev = createStatEvent(EVENT_TYPES.SHOPPING_ADD, { productName: item.name, isManual: true });
+        appendStatEvent(ev, storageGet, storageSet);
+      } catch (e) {
+        console.error(e);
+      }
+    }
   };
 
   // Update Item Details
-  const handleSaveDetail = (itemId, newDetail) => {
-    const next = items.map(i => i.id === itemId ? { ...i, detail: newDetail } : i);
+  const handleSaveDetail = (itemId, newDetail, newDetailsArray = null) => {
+    const next = items.map(i => {
+      if (i.id !== itemId) return i;
+      const updated = { ...i };
+      if (Array.isArray(newDetailsArray)) {
+        updated.details = newDetailsArray;
+        updated.detail = formatDetailsSummary(newDetailsArray);
+      } else {
+        updated.detail = newDetail;
+        updated.details = getItemDetails({ ...i, detail: newDetail });
+      }
+      return updated;
+    });
     updateShoppingItems(next);
     showToast('Details aktualisiert');
   };
@@ -3806,6 +4445,95 @@ function ShoppingTab() {
     return ['Saisonales', ...cats];
   }, []);
 
+  // Apply resolved items to shopping state
+  const applyWeeklyResolvedItems = async (resolvedList, dateObj = new Date()) => {
+    let nextItems = [...items];
+    let addedCount = 0;
+
+    for (const newItem of resolvedList) {
+      const existingIdx = nextItems.findIndex(i => (i.productId && i.productId === newItem.productId) || i.name.toLowerCase() === newItem.name.toLowerCase());
+      const newTags = Array.isArray(newItem.details) ? newItem.details : getItemDetails(newItem);
+
+      if (existingIdx >= 0) {
+        const existing = nextItems[existingIdx];
+        let mergedDetails = getItemDetails(existing);
+        newTags.forEach(t => {
+          mergedDetails = addDetailToItem({ details: mergedDetails }, t.text, t.type, t.origin).details;
+        });
+        nextItems[existingIdx] = {
+          ...existing,
+          completed: false,
+          details: mergedDetails,
+          detail: formatDetailsSummary(mergedDetails),
+          addedAt: Date.now(),
+        };
+      } else {
+        nextItems.unshift({
+          ...newItem,
+          details: newTags,
+          detail: formatDetailsSummary(newTags),
+          addedAt: Date.now(),
+          completed: false,
+          lastUsedAt: Date.now(),
+        });
+      }
+
+      try {
+        const ev = createStatEvent(EVENT_TYPES.SHOPPING_ADD, { productName: newItem.name, isManual: false });
+        await appendStatEvent(ev, storageGet, storageSet);
+      } catch (e) {
+        console.error(e);
+      }
+
+      addedCount++;
+    }
+
+    const currentWeekKey = getISOWeekKey(dateObj);
+    const importedWeeks = await storageGet('shopping_imported_weeks', true, []);
+    if (!importedWeeks.includes(currentWeekKey)) {
+      await storageSet('shopping_imported_weeks', [...importedWeeks, currentWeekKey], true);
+    }
+
+    await updateShoppingItems(nextItems, `Zutaten der kommenden Woche hinzugefügt (${addedCount} Artikel).`);
+    showToast(`${addedCount} Zutaten der Woche zur Liste hinzugefügt!`);
+  };
+
+  const handleResolutionConfirm = async (resolvedDecisions) => {
+    if (!resolutionData) return;
+    const { resolvedItems, today } = resolutionData;
+    const additionalItems = resolvedDecisions.map(rd => {
+      const matched = allProducts.find(p => p.name.toLowerCase() === rd.finalProductName.toLowerCase());
+      const prodId = matched ? matched.id : (rd.isNewProduct ? uid() : rd.finalProductName.toLowerCase());
+      const category = matched ? matched.category : 'Grundzutaten';
+      const icon = matched ? matched.icon : 'Package';
+
+      let amountStr = '';
+      if (rd.amount != null && rd.amount > 0) {
+        amountStr = `${Math.round(rd.amount * 10) / 10} ${rd.unit || ''}`.trim();
+      }
+
+      let tags = [{ id: uid(), text: 'Automatisch hinzugefügt', type: 'origin', origin: 'week_plan' }];
+      if (amountStr) tags.push({ id: uid(), text: amountStr, type: 'amount' });
+      if (rd.sources && rd.sources.length > 0) {
+        rd.sources.forEach(src => tags.push({ id: uid(), text: src, type: 'source' }));
+      }
+
+      return {
+        id: uid(),
+        productId: prodId,
+        name: rd.finalProductName,
+        category,
+        icon,
+        details: tags,
+        detail: formatDetailsSummary(tags),
+      };
+    });
+
+    const fullList = [...resolvedItems, ...additionalItems];
+    setResolutionData(null);
+    await applyWeeklyResolvedItems(fullList, today);
+  };
+
   // Weekly Import Handler
   const executeWeeklyImport = async () => {
     const today = new Date();
@@ -3828,36 +4556,14 @@ function ShoppingTab() {
       return;
     }
 
-    // Consolidated ingredients
-    const consolidated = consolidateIngredientsForNextWeek(usage, allProducts);
+    const { resolvedItems, pendingChoices } = analyzeWeekIngredients(usage, allProducts);
 
-    let nextItems = [...items];
-    let addedCount = 0;
-
-    consolidated.forEach(newItem => {
-      const existingIdx = nextItems.findIndex(i => (i.productId && i.productId === newItem.productId) || i.name.toLowerCase() === newItem.name.toLowerCase());
-      if (existingIdx >= 0) {
-        nextItems[existingIdx] = {
-          ...nextItems[existingIdx],
-          completed: false,
-          detail: newItem.detail || nextItems[existingIdx].detail,
-          addedAt: Date.now(),
-        };
-      } else {
-        nextItems.unshift(newItem);
-      }
-      addedCount++;
-    });
-
-    // Record imported week key
-    const currentWeekKey = getISOWeekKey(today);
-    const importedWeeks = await storageGet('shopping_imported_weeks', true, []);
-    if (!importedWeeks.includes(currentWeekKey)) {
-      await storageSet('shopping_imported_weeks', [...importedWeeks, currentWeekKey], true);
+    if (pendingChoices.length > 0) {
+      setResolutionData({ resolvedItems, pendingChoices, today });
+      return;
     }
 
-    await updateShoppingItems(nextItems, `Zutaten der kommenden Woche hinzugefügt (${addedCount} Artikel).`);
-    showToast(`${addedCount} Zutaten der Woche zur Liste hinzugefügt!`);
+    await applyWeeklyResolvedItems(resolvedItems, today);
   };
 
   const handleWeeklyImportClick = async () => {
@@ -4100,6 +4806,16 @@ function ShoppingTab() {
           onClose={() => setShowWeeklyConfirm(false)}
         />
       )}
+
+      {/* Week Ingredient Resolution Modal */}
+      {resolutionData && (
+        <WeekIngredientResolutionModal
+          pendingChoices={resolutionData.pendingChoices}
+          allProducts={allProducts}
+          onConfirm={handleResolutionConfirm}
+          onCancel={() => setResolutionData(null)}
+        />
+      )}
     </div>
   );
 }
@@ -4326,9 +5042,41 @@ function SettingsTab() {
   const [people, setPeople] = useState(settings.people);
   const [cookbookInput, setCookbookInput] = useState('');
   const [bmBusy, setBmBusy] = useState(null);
+  const [testCodeInput, setTestCodeInput] = useState('');
+  const [rewindData, setRewindData] = useState(null);
   const cookbookSort = settings.cookbookSort || 'date-desc';
   const setCookbookSort = async (val) => { await updateSettings({ cookbookSort: val }); };
   useEffect(() => { setPeople(settings.people); }, [settings.people]);
+
+  const openRewindModal = async (targetYear = new Date().getFullYear(), isPreview = true) => {
+    try {
+      const events = await storageGet(STATS_STORAGE_KEY, true, []);
+      const report = generateRewindReport(events, recipes, targetYear, isPreview);
+      const activePerson = settings.people?.[profile?.personIndex ?? 0];
+      setRewindData({ report, year: targetYear, profileName: activePerson?.name || 'Haushalt' });
+    } catch (e) {
+      console.error(e);
+      showToast('Konnte Jahresrückblick nicht laden', 'error');
+    }
+  };
+
+  const handleTestCodeSubmit = () => {
+    const code = (testCodeInput || '').trim().toUpperCase();
+    if (code === 'TISCHPLAN-REWIND') {
+      openRewindModal(new Date().getFullYear(), true);
+      setTestCodeInput('');
+      showToast('Vorschau-Modus geöffnet! 🎉');
+    } else {
+      showToast('Ungültiger Code', 'error');
+    }
+  };
+
+  const handleClearStats = async () => {
+    if (window.confirm('Möchtest du die gespeicherten internen Nutzungsstatistiken wirklich unwiderruflich löschen?')) {
+      await storageSet(STATS_STORAGE_KEY, [], true);
+      showToast('Statistiken gelöscht');
+    }
+  };
 
   const savePeople = async () => { await updateSettings({ people }); showToast('Gespeichert'); };
   const handleNotificationToggle = async (enabled) => {
@@ -4801,19 +5549,88 @@ function SettingsTab() {
         </div>
       </div>
 
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
+          <Shield size={15} className="text-stone-700" /> Datenschutz &amp; Vorschauen
+        </div>
+        <label className="flex items-center gap-2 py-0.5 cursor-pointer select-none">
+          <input 
+            type="checkbox" 
+            checked={!!settings.disableExternalScreenshots} 
+            onChange={e => updateSettings({ disableExternalScreenshots: e.target.checked })} 
+            className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" 
+          />
+          <span className="text-xs font-mono font-medium text-stone-700">Keine Rezept-URLs an externe Screenshot-Dienste senden</span>
+        </label>
+        <p className="text-xs text-stone-500 mt-1">
+          Standardmäßig wird ein externer Dienst genutzt, um Webseiten-Vorschauen von Rezeptlinks anzuzeigen. Wenn aktiviert, werden keine URLs übertragen.
+        </p>
+      </div>
 
-
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
+          <Sparkles size={15} className="text-amber-500" /> Jahresrückblick &amp; Statistiken
+        </div>
+        <p className="text-xs text-stone-500 mb-3 leading-relaxed">
+          Interne Erfassung von Kochvorgängen und Einkaufsaktionen. Keine Weitergabe an Dritte oder Tracking-Server.
+        </p>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={testCodeInput}
+              onChange={e => setTestCodeInput(e.target.value)}
+              placeholder="Testcode (z. B. TISCHPLAN-REWIND)"
+              className={inputCls + " text-xs font-mono uppercase"}
+              onKeyDown={e => e.key === 'Enter' && handleTestCodeSubmit()}
+            />
+            <button
+              type="button"
+              onClick={handleTestCodeSubmit}
+              className="px-3 py-2 bg-stone-900 text-white rounded-lg text-xs font-mono font-semibold uppercase flex-shrink-0 active:scale-95"
+            >
+              Öffnen
+            </button>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => openRewindModal(new Date().getFullYear(), true)}
+              className="flex-1 py-2 rounded-lg border border-stone-300 hover:bg-stone-50 text-xs font-mono font-medium text-stone-700 flex items-center justify-center gap-1.5"
+            >
+              <Sparkles size={13} className="text-amber-500" /> Rückblick {new Date().getFullYear()} ansehen
+            </button>
+            <button
+              type="button"
+              onClick={handleClearStats}
+              className="px-3 py-2 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-mono"
+              title="Gespeicherte Statistiken löschen"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.9.1</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.0</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
-          Codename: Jägermeister 🦌
+          Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn)
         </div>
       </div>
+
+      {rewindData && (
+        <RewindModal
+          report={rewindData.report}
+          year={rewindData.year}
+          profileName={rewindData.profileName}
+          onClose={() => setRewindData(null)}
+        />
+      )}
     </div>
   );
 }
@@ -5016,6 +5833,9 @@ export default function App() {
 
   useEffect(() => {
     settingsRef.current = settings;
+    if (typeof window !== 'undefined') {
+      window.__tischplan_disable_external_screenshots = Boolean(settings?.disableExternalScreenshots);
+    }
   }, [settings]);
 
   useEffect(() => {
@@ -5295,9 +6115,22 @@ export default function App() {
       if (settings.calorieReminderEnabled) {
         const times = settings.calorieReminderTimes || ['09:00', '13:00', '19:00', '20:30'];
         if (times.includes(currentHourMin)) {
-          const lastCalRemKey = `last_cal_rem_${now.getDate()}_${currentHourMin}`;
+          const todayIso = dateKey(now);
+          const lastCalRemKey = `last_cal_rem_${todayIso}_${currentHourMin}`;
           if (!localStorage.getItem(lastCalRemKey)) {
             localStorage.setItem(lastCalRemKey, '1');
+            try {
+              for (let k = 0; k < localStorage.length; k++) {
+                const kName = localStorage.key(k);
+                if (kName && kName.startsWith('last_cal_rem_')) {
+                  const segs = kName.split('_');
+                  if (segs[3]) {
+                    const diffDays = (now.getTime() - new Date(segs[3]).getTime()) / 86400000;
+                    if (diffDays > 7) localStorage.removeItem(kName);
+                  }
+                }
+              }
+            } catch (pruneErr) {}
             const isLate = currentHourMin >= '20:00';
             const title = isLate ? 'Streak in Gefahr! 🔥' : 'Mahlzeit tracken 🥗';
             const body = isLate
