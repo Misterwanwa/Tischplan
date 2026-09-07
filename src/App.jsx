@@ -3607,7 +3607,7 @@ function triggerShoppingThrottledNotification(actionText) {
 function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem, onSaveToDatabase }) {
   const [detailsList, setDetailsList] = useState(() => getItemDetails(item));
   const [newDetailInput, setNewDetailInput] = useState('');
-  const [editingId, setEditingId] = useState(null);
+  const [editingIdx, setEditingIdx] = useState(null);
   const [editingText, setEditingText] = useState('');
   const [showSaveDb, setShowSaveDb] = useState(false);
   const [customCat, setCustomCat] = useState(product ? product.category : 'Grundzutaten');
@@ -3624,27 +3624,27 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
   const handleAddTag = (text) => {
     const trimmed = (text || '').trim();
     if (!trimmed) return;
-    const nextItem = addDetailToItem({ details: detailsList }, trimmed);
-    setDetailsList(nextItem.details);
+    const nextList = addDetailToItem(detailsList, trimmed);
+    setDetailsList(nextList);
     setNewDetailInput('');
   };
 
-  const handleRemoveTag = (detailId) => {
-    const nextItem = removeDetailFromItem({ details: detailsList }, detailId);
-    setDetailsList(nextItem.details);
+  const handleRemoveTag = (index) => {
+    const nextList = removeDetailFromItem(detailsList, index);
+    setDetailsList(nextList);
   };
 
-  const handleStartEdit = (d) => {
-    setEditingId(d.id);
-    setEditingText(d.text);
+  const handleStartEdit = (idx, text) => {
+    setEditingIdx(idx);
+    setEditingText(text);
   };
 
   const handleFinishEdit = () => {
-    if (editingId && editingText.trim()) {
-      const nextItem = updateDetailInItem({ details: detailsList }, editingId, editingText);
-      setDetailsList(nextItem.details);
+    if (editingIdx !== null) {
+      const nextList = updateDetailInItem(detailsList, editingIdx, editingText);
+      setDetailsList(nextList);
     }
-    setEditingId(null);
+    setEditingIdx(null);
     setEditingText('');
   };
 
@@ -3685,44 +3685,48 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
             {detailsList.length === 0 && (
               <span className="text-xs text-stone-400 italic">Noch keine Details hinterlegt</span>
             )}
-            {detailsList.map(d => (
-              <span
-                key={d.id}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border shadow-xs ${
-                  d.type === 'origin'
-                    ? 'bg-amber-50 border-amber-200 text-amber-800'
-                    : 'bg-white border-stone-300 text-stone-800'
-                }`}
-              >
-                {editingId === d.id ? (
-                  <input
-                    type="text"
-                    value={editingText}
-                    onChange={e => setEditingText(e.target.value)}
-                    onBlur={handleFinishEdit}
-                    onKeyDown={e => e.key === 'Enter' && handleFinishEdit()}
-                    className="w-20 px-1 py-0.5 text-xs bg-white border border-stone-400 rounded outline-none"
-                    autoFocus
-                  />
-                ) : (
-                  <span
-                    onClick={() => handleStartEdit(d)}
-                    className="cursor-pointer hover:underline"
-                    title="Klicken zum Bearbeiten"
-                  >
-                    {d.text}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTag(d.id)}
-                  className="text-stone-400 hover:text-rose-600 transition-colors"
-                  title="Detail entfernen"
+            {detailsList.map((tagText, idx) => {
+              const text = typeof tagText === 'string' ? tagText : (tagText?.text || '');
+              const isOrigin = text.startsWith('aus ') || text.startsWith('vom ') || tagText?.type === 'origin';
+              return (
+                <span
+                  key={idx}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border shadow-xs ${
+                    isOrigin
+                      ? 'bg-amber-50 border-amber-200 text-amber-800'
+                      : 'bg-white border-stone-300 text-stone-800'
+                  }`}
                 >
-                  <X size={12} />
-                </button>
-              </span>
-            ))}
+                  {editingIdx === idx ? (
+                    <input
+                      type="text"
+                      value={editingText}
+                      onChange={e => setEditingText(e.target.value)}
+                      onBlur={handleFinishEdit}
+                      onKeyDown={e => e.key === 'Enter' && handleFinishEdit()}
+                      className="w-20 px-1 py-0.5 text-xs bg-white border border-stone-400 rounded outline-none"
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      onClick={() => handleStartEdit(idx, text)}
+                      className="cursor-pointer hover:underline"
+                      title="Klicken zum Bearbeiten"
+                    >
+                      {text}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(idx)}
+                    className="text-stone-400 hover:text-rose-600 transition-colors"
+                    title="Detail entfernen"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              );
+            })}
           </div>
         </div>
 
@@ -3754,22 +3758,28 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
           <label className="text-xs font-mono uppercase tracking-wide text-stone-400 mb-1.5 block">Vorschläge & Mengen antippen</label>
           <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1">
             {presetOptions.map((opt, i) => {
-              const isSelected = detailsList.some(d => d.text.toLowerCase() === opt.toLowerCase());
+              const isSelected = detailsList.some(d => {
+                const t = typeof d === 'string' ? d : (d?.text || '');
+                return t.toLowerCase() === opt.toLowerCase();
+              });
               return (
                 <button
                   key={i}
                   type="button"
                   onClick={() => {
                     if (isSelected) {
-                      const found = detailsList.find(d => d.text.toLowerCase() === opt.toLowerCase());
-                      if (found) handleRemoveTag(found.id);
+                      const foundIdx = detailsList.findIndex(d => {
+                        const t = typeof d === 'string' ? d : (d?.text || '');
+                        return t.toLowerCase() === opt.toLowerCase();
+                      });
+                      if (foundIdx >= 0) handleRemoveTag(foundIdx);
                     } else {
                       handleAddTag(opt);
                     }
                   }}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                     isSelected
-                      ? 'bg-stone-900 text-white font-bold'
+                      ? 'bg-stone-900 text-white font-bold shadow-xs'
                       : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                   }`}
                 >
@@ -4458,7 +4468,10 @@ function ShoppingTab() {
         const existing = nextItems[existingIdx];
         let mergedDetails = getItemDetails(existing);
         newTags.forEach(t => {
-          mergedDetails = addDetailToItem({ details: mergedDetails }, t.text, t.type, t.origin).details;
+          const text = typeof t === 'string' ? t : (t?.text || '');
+          if (text) {
+            mergedDetails = addDetailToItem(mergedDetails, text);
+          }
         });
         nextItems[existingIdx] = {
           ...existing,
@@ -5614,12 +5627,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.0</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.1</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn)
         </div>
       </div>
 

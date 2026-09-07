@@ -42,3 +42,27 @@ test('MultiDetails: Adding, updating, and removing details without duplicates', 
 
   assert.strictEqual(formatDetailsSummary(details), 'Demeter Bio');
 });
+
+test('MultiDetails: Preset option toggling logic', () => {
+  let detailsList = ['1kg'];
+  const preset = 'Bio';
+
+  // Check selection
+  const isSelected1 = detailsList.some(d => (typeof d === 'string' ? d : d.text).toLowerCase() === preset.toLowerCase());
+  assert.strictEqual(isSelected1, false);
+
+  // Add preset
+  detailsList = addDetailToItem(detailsList, preset);
+  assert.deepStrictEqual(detailsList, ['1kg', 'Bio']);
+
+  // Now selected
+  const isSelected2 = detailsList.some(d => (typeof d === 'string' ? d : d.text).toLowerCase() === preset.toLowerCase());
+  assert.strictEqual(isSelected2, true);
+
+  // Toggle off by finding index
+  const foundIdx = detailsList.findIndex(d => (typeof d === 'string' ? d : d.text).toLowerCase() === preset.toLowerCase());
+  assert.strictEqual(foundIdx, 1);
+  detailsList = removeDetailFromItem(detailsList, foundIdx);
+  assert.deepStrictEqual(detailsList, ['1kg']);
+});
+
