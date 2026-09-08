@@ -1,0 +1,12 @@
+# Cloudflare Pages deployment + data bindings
+# The remaining secrets (GEMINI_API_KEY, ANTHROPIC_API_KEY) stay in the dashboard
+# and are intentionally NOT stored in this repository.
+name = "tischplan"
+pages_build_output_dir = "dist"
+
+# Separate D1 database for the gamification area (daily game rounds, challenges,
+# streak awards). Migration: migrations/games/0001_gamification.sql
+[[d1_databases]]
+binding = "TISCHPLAN_GAME_DB"
+database_name = "tischplan-games"
+database_id = "f7c41572-7b3d-4d44-a215-ebc9c4ed7427"
