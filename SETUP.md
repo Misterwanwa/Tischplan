@@ -1,12 +1,13 @@
+The user wants me to apply the suggested edit to the original code. The edit replaces the section "## Spielplatz und Punkte ab Version 1.10.3" content with new content. I need to output the complete modified file with only that section changed.```
 # Deployment & API-Keys
 
 ## Spielplatz und Punkte ab Version 1.10.3
 
-Zusätzlich zum bestehenden KV-Namespace benötigt die Punktewertung eine D1-Bindung
-`TISCHPLAN_GAME_DB`. Einrichtung, SQL-Migration, lokale Tests und Spielregeln:
-[GAMIFICATION.md](GAMIFICATION.md). Ohne D1 funktioniert nur das Catch-Training;
-gewertete Runden und Challenges bleiben deaktiviert.
-
+Die Punktewertung nutzt die D1-Datenbank `tischplan-games` (Binding
+`TISCHPLAN_GAME_DB`). Datenbank, Migration und Warnung zum Überschreiben von
+Dashboard-Bindings durch `wrangler.toml`: [GAMIFICATION.md](GAMIFICATION.md).
+Ohne D1 funktioniert nur das Catch-Training; gewertete Runden und Challenges
+bleiben deaktiviert.
 ## Cloudflare Pages – Environment Variables
 
 Gehe zu: Cloudflare Dashboard → Pages → Tischplan → Settings → Environment Variables
@@ -26,9 +27,4 @@ Füge hinzu:
 
 ## Lokale Entwicklung
 Erstelle `.dev.vars` (ist in .gitignore!):
-```env
-GEMINI_API_KEY=dein-key
-ANTHROPIC_API_KEY=sk-ant-...
-```
 
-Starte dann mit: `npx wrangler pages dev --compatibility-date=2024-01-01`

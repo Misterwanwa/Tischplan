@@ -2,30 +2,29 @@
 
 ## Cloudflare-Einrichtung
 
-Die vorhandenen Rezepte, Einstellungen und Kalorientage bleiben im KV-Namespace
-`TISCHPLAN_STORAGE`. Für die Punktewertung ist zusätzlich eine **D1-Datenbank**
-notwendig. KV bietet keine atomare Reservierung einer täglichen Spielrunde;
-D1 erzwingt die Begrenzung auch bei parallelen Anfragen von mehreren Geräten.
+Die Rezepte, Einstellungen und Kalorientage liegen im KV-Namespace
+`TISCHPLAN_STORAGE`, die Punktedaten in der separaten D1-Datenbank
+`tischplan-games`. Beide Bindings sind in der `wrangler.toml` deklariert und
+werden bei jedem Git-Deployment mitgebunden. Die Secrets (`GEMINI_API_KEY`,
+`ANTHROPIC_API_KEY`) bleiben bewusst im Dashboard.
 
-1. Im Cloudflare-Dashboard eine D1-Datenbank `tischplan-games` anlegen.
-2. Den Inhalt von `migrations/games/0001_gamification.sql` in deren SQL-Konsole
-   ausführen (idempotent; vier Tabellen und ein Index).
-3. Im Pages-Projekt eine D1-Bindung mit dem Namen **`TISCHPLAN_GAME_DB`** hinzufügen
-   und auf diese Datenbank verweisen lassen. Auch für Preview eine getrennte
-   Datenbank einrichten, damit Tests keine produktiven Tagesversuche verbrauchen.
-4. Erneut deployen. `/api/games?profile=0` muss eine JSON-Antwort mit `leaderboard`
-   liefern. Ohne Binding oder Migration zeigt die App eine verständliche Meldung;
-   Training ist trotzdem verfügbar, gewertete Runden bleiben gesperrt.
+> Wichtig: Eine vorhandene `wrangler.toml` **ersetzt** die im Dashboard
+> konfigurierten Bindings. Deshalb müssen **alle** benötigten Bindings in
+> dieser Datei stehen – nicht nur D1, sondern auch das Produktions-KV
+> `TISCHPLAN_STORAGE`. Nur dann funktionieren `/api/storage` und `/api/games`.
+> Ohne Binding oder Migration zeigt die App eine verständliche Meldung;
+> Training ist trotzdem verfügbar, gewertete Runden bleiben gesperrt.
 
-Alternativ, mit bereits angemeldetem Wrangler und angelegter Datenbank:
+Einmalige Einrichtung (mit angemeldetem Wrangler):
 
 ```powershell terminal
+npx wrangler d1 create tischplan-games
 npx wrangler d1 execute tischplan-games --remote --file=migrations/games/0001_gamification.sql
 ```
 
-**Die Implementierung erstellt keine Cloudflare-Ressourcen und führt keine
-Remote-Migration automatisch aus.** Die Bindung wird nicht ins Repository
-festgeschrieben, weil die konkrete Datenbank-ID projektspezifisch ist.
+Die Migration ist idempotent und legt vier Tabellen und einen Index an.
+Verifikation: `/api/games?profile=0` muss eine JSON-Antwort mit `leaderboard`
+liefern und `/api/storage?key=settings` wieder die Einstellungen zurückgeben.
 
 ## Lokales Testen
 
