@@ -6,7 +6,9 @@ import {
 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { fetchProductByBarcode, calculatePortion, searchBuiltinFoods, BUILTIN_FOODS } from './foodDatabase';
-import { calculateStreak } from './modules/streak';
+import { calculateStreak, isDayActive } from './modules/streak';
+import { gameDay, hasNormalMeal } from './modules/gamification';
+import GamesHub from './components/GamesHub';
 
 function BarcodeIcon({ size = 16, className = "" }) {
   return (
@@ -22,9 +24,13 @@ const primaryBtnCls = "w-full flex items-center justify-center gap-2 py-2.5 roun
 
 function pad(n) { return String(n).padStart(2, '0'); }
 function dateKey(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
-function todayKey() { return dateKey(new Date()); }
+function todayKey() { return gameDay(); }
 
-export default function CaloriesTab({
+export default function CaloriesTab(props) {
+  return <CaloriesProfile key={props.profile?.personIndex ?? 0} {...props} />;
+}
+
+function CaloriesProfile({
   profile,
   settings,
   onUpdateSettings,
@@ -47,6 +53,10 @@ export default function CaloriesTab({
 
   const [selectedDate, setSelectedDate] = useState(todayKey());
   const [dayLogs, setDayLogs] = useState({});
+  const [logsLoaded, setLogsLoaded] = useState(false);
+  const [gamesRefresh, setGamesRefresh] = useState(0);
+  const logsRef = useRef({});
+  const saveQueue = useRef(Promise.resolve());
   const [isUnlocked, setIsUnlocked] = useState(() => !person.caloriesPin);
   const [enteredPin, setEnteredPin] = useState('');
   const [pinError, setPinError] = useState(false);
@@ -85,7 +95,11 @@ export default function CaloriesTab({
     (async () => {
       try {
         const savedLogs = await storageGet(storageKey, true);
-        if (mounted && savedLogs) setDayLogs(savedLogs);
+        if (mounted) {
+          logsRef.current = savedLogs || {};
+          setDayLogs(logsRef.current);
+          setLogsLoaded(true);
+        }
       } catch (e) {
         console.warn('Fehler beim Laden der Kalorien-Logs:', e);
       }
@@ -95,7 +109,7 @@ export default function CaloriesTab({
 
   // Persistiere Streak-Kennzahlen für externe Auswertungen (z. B. Rewind)
   useEffect(() => {
-    if (typeof storageSet === 'function') {
+    if (logsLoaded && typeof storageSet === 'function') {
       storageSet(streakStorageKey, {
         currentStreak: streakInfo.currentStreak,
         longestStreak: streakInfo.longestStreak,
@@ -104,7 +118,7 @@ export default function CaloriesTab({
         lastCalculated: Date.now(),
       }, true);
     }
-  }, [streakInfo, streakStorageKey, storageSet]);
+  }, [streakInfo, streakStorageKey, storageSet, logsLoaded]);
 
   // Current Day Log Data
   const currentDay = dayLogs[selectedDate] || {
@@ -113,11 +127,23 @@ export default function CaloriesTab({
     meals: { breakfast: [], lunch: [], dinner: [], snack: [] }
   };
 
-  const saveDayData = async (updater) => {
-    const updatedDay = typeof updater === 'function' ? updater(currentDay) : updater;
-    const nextLogs = { ...dayLogs, [selectedDate]: updatedDay };
+  const saveDayData = async (updater, confirming = false) => {
+    if (!logsLoaded) return;
+    const previous = logsRef.current[selectedDate] || currentDay;
+    const updatedDay = typeof updater === 'function' ? updater(previous) : updater;
+    const nextDay = {
+      ...updatedDay,
+      firstTrackedOn: previous.firstTrackedOn || (isDayActive(previous) ? 'legacy' : isDayActive(updatedDay) ? todayKey() : undefined),
+      trackingComplete: confirming ? !!updatedDay.trackingComplete : false,
+      maintenanceKcal: confirming && updatedDay.trackingComplete ? Number(person.maintenanceKcal) || null : updatedDay.maintenanceKcal,
+    };
+    const nextLogs = { ...logsRef.current, [selectedDate]: nextDay };
+    logsRef.current = nextLogs;
     setDayLogs(nextLogs);
-    await storageSet(storageKey, nextLogs, true);
+    // Serialize writes so quick successive edits cannot overtake one another.
+    saveQueue.current = saveQueue.current.catch(() => {}).then(() => storageSet(storageKey, nextLogs, true));
+    await saveQueue.current;
+    setGamesRefresh(value => value + 1);
   };
 
   // Calculations
@@ -317,6 +343,8 @@ export default function CaloriesTab({
     );
   }
 
+  if (!logsLoaded) return <p role="status" className="p-4 text-sm text-stone-500">Kalorientage werden geladen …</p>;
+
   // Date Navigation helpers
   const changeDate = (deltaDays) => {
     const [y, m, d] = selectedDate.split('-').map(Number);
@@ -386,6 +414,9 @@ export default function CaloriesTab({
           </button>
         </div>
       </div>
+
+      <GamesHub key={activePersonIndex} personIndex={activePersonIndex} settings={settings}
+        onUpdateSettings={onUpdateSettings} refreshKey={gamesRefresh} />
 
       {/* Main Calorie Overview (Matching Screenshot 1) */}
       <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
@@ -628,6 +659,13 @@ export default function CaloriesTab({
                     <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
                       <div>
                         <div className="font-medium text-stone-900 text-sm">{item.name}</div>
+                        <button type="button" aria-pressed={!!item.isVegetable}
+                          className="text-[11px] text-emerald-700 underline mt-1"
+                          onClick={() => saveDayData(prev => ({ ...prev, meals: { ...prev.meals,
+                            [cat.key]: prev.meals[cat.key].map(entry => entry.id === item.id ? { ...entry, isVegetable: !entry.isVegetable } : entry)
+                          } }))}>
+                          {item.isVegetable ? 'Gemüseportion markiert' : 'Als Gemüseportion markieren'}
+                        </button>
                         <div className="text-stone-500 font-mono text-[11px] mt-0.5">
                           {item.protein ? `${item.protein}g E · ` : ''}
                           {item.carbs ? `${item.carbs}g K · ` : ''}
@@ -654,6 +692,16 @@ export default function CaloriesTab({
             </div>
           );
         })}
+      </div>
+
+      <div className="bg-white rounded-xl border border-emerald-200 p-4">
+        <label className="flex items-start gap-2 text-sm font-semibold">
+          <input type="checkbox" className="mt-1" checked={!!currentDay.trackingComplete}
+            disabled={selectedDate > todayKey() || !hasNormalMeal(currentDay)}
+            onChange={event => saveDayData(prev => ({ ...prev, trackingComplete: event.target.checked }), true)} />
+          Alle Mahlzeiten für diesen Tag vollständig erfasst
+        </label>
+        <p className="text-xs text-stone-500 mt-2">Für Challenges erforderlich. Leere Tage zählen nicht. Änderungen an Einträgen heben die Bestätigung auf. Ein Tag wird frühestens am Folgetag gewertet.</p>
       </div>
 
       {/* MODAL: Mahlzeit erfassen (Freifeld, KI-Foto, Barcode) */}
@@ -770,6 +818,7 @@ function MealEntryModal({
   const [portionGrams, setPortionGrams] = useState('');
   const [selectedFoodRef, setSelectedFoodRef] = useState(null);
   const [isAiEstimate, setIsAiEstimate] = useState(false);
+  const [isVegetable, setIsVegetable] = useState(false);
 
   // Suggestions for Freifeld
   const [searchQuery, setSearchQuery] = useState('');
@@ -1222,6 +1271,7 @@ function MealEntryModal({
       portionGrams: portionGrams ? String(portionGrams) : null,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isAiEstimate: isAiEstimate || false,
+      isVegetable,
     }, mealKey);
   };
 
@@ -1664,6 +1714,11 @@ function MealEntryModal({
             </div>
           )}
         </div>
+
+        <label className="flex items-start gap-2 px-5 py-3 text-xs text-emerald-900 border-t border-stone-100">
+          <input type="checkbox" checked={isVegetable} onChange={event => setIsVegetable(event.target.checked)} />
+          Dieser Eintrag ist eine Gemüseportion (für die Gemüse-Challenge). Bei gemischten Gerichten den Gemüseanteil separat erfassen.
+        </label>
 
         {/* Footer Actions */}
         <div className="px-5 py-4 border-t border-stone-200 bg-stone-50 flex items-center justify-end gap-2">

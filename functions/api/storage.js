@@ -2,6 +2,9 @@
 // Speichert und liest gemeinsam genutzte Daten aus Cloudflare KV (TISCHPLAN_STORAGE).
 // Prüft Schlüsselformate, Payloads-Größen und blockiert unberechtigte Cross-Origin-Zugriffe.
 
+import { gameDay } from '../../src/modules/gamification.js';
+import { isDayActive } from '../../src/modules/streak.js';
+
 const ALLOWED_KEY_PREFIXES = [
   'recipes',
   'settings',
@@ -121,6 +124,21 @@ export async function onRequestPost(context) {
       updatedAt: now,
       version: (typeof expectedVersion === 'number' ? expectedVersion + 1 : 1)
     };
+
+    // Stamp the first food entry on the server. A client-provided timestamp must
+    // not turn a retroactive entry into a five-point same-day award.
+    if (/^calorie_logs_[01]$/.test(key) && value && typeof value === 'object' && !Array.isArray(value)) {
+      const previousRaw = await kv.get(key);
+      const previous = previousRaw ? JSON.parse(previousRaw) : {};
+      for (const [day, log] of Object.entries(value)) {
+        if (!log || typeof log !== 'object') continue;
+        const old = previous[day];
+        if (old?.firstTrackedOn) log.firstTrackedOn = old.firstTrackedOn;
+        else if (isDayActive(old)) log.firstTrackedOn = 'legacy';
+        else if (isDayActive(log)) log.firstTrackedOn = gameDay(new Date(now));
+        else delete log.firstTrackedOn;
+      }
+    }
 
     await kv.put(key, JSON.stringify(value), { metadata });
     return new Response(JSON.stringify({ success: true, updatedAt: now, version: metadata.version }), {

@@ -1,5 +1,12 @@
 # Deployment & API-Keys
 
+## Spielplatz und Punkte ab Version 1.10.3
+
+Zusätzlich zum bestehenden KV-Namespace benötigt die Punktewertung eine D1-Bindung
+`TISCHPLAN_GAME_DB`. Einrichtung, SQL-Migration, lokale Tests und Spielregeln:
+[GAMIFICATION.md](GAMIFICATION.md). Ohne D1 funktioniert nur das Catch-Training;
+gewertete Runden und Challenges bleiben deaktiviert.
+
 ## Cloudflare Pages – Environment Variables
 
 Gehe zu: Cloudflare Dashboard → Pages → Tischplan → Settings → Environment Variables
