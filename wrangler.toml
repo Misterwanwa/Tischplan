@@ -4,6 +4,13 @@
 name = "tischplan"
 pages_build_output_dir = "dist"
 
+# Existing shared KV store (recipes, settings, calorie logs, …).
+# NOTE: A wrangler.toml replaces dashboard bindings, so every binding the
+# app needs must be declared here.
+[[kv_namespaces]]
+binding = "TISCHPLAN_STORAGE"
+id = "b22538176c4b4afd9bb5130906e6d464"
+
 # Separate D1 database for the gamification area (daily game rounds, challenges,
 # streak awards). Migration: migrations/games/0001_gamification.sql
 [[d1_databases]]
