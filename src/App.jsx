@@ -4243,20 +4243,44 @@ function ShoppingTab() {
       const storedItems = await storageGet('shopping_items_v2', true, []);
       let storedCustom = await storageGet('shopping_custom_db', true, []);
 
-      // Ensure every item has a unique ID
+      // Ensure every item has a unique ID and migrate legacy product names
       const seenIds = new Set();
       const sanitizedItems = (storedItems || []).map(i => {
-        if (!i.id || seenIds.has(i.id)) {
-          const newId = uid();
-          seenIds.add(newId);
-          return { ...i, id: newId };
+        let item = { ...i };
+        if (!item.id || seenIds.has(item.id)) {
+          item.id = uid();
         }
-        seenIds.add(i.id);
-        return i;
+        seenIds.add(item.id);
+
+        if (item.name === 'TK-Dönerfleisch / Gyros') {
+          item.name = 'Dönerfleisch / Gyros / Kebap';
+        } else if (item.name === 'TK-Pizza Salami' || item.name === 'TK-Pizza-Salami') {
+          item.name = 'TK-Pizza';
+          if (!item.detail) item.detail = 'Salami';
+        } else if (item.name === 'TK-Asia-Pfannengemüse') {
+          item.name = 'TK-Gemüsemix';
+          if (!item.detail) item.detail = 'Asia';
+        } else if (item.name === 'TK-Frühlingsrollen') {
+          item.name = 'Frühlingsrollen';
+        } else if (item.name === 'Rinderhackfleisch') {
+          item.name = 'Rindfleisch';
+          if (!item.detail) item.detail = 'Rinderhackfleisch';
+        }
+        return item;
       });
 
+      // Filter out removed products from custom DB if any were saved there
+      const sanitizedCustom = (storedCustom || [])
+        .filter(p => p.name !== 'TK-Pizza Salami' && p.name !== 'TK-Pizza-Salami' && p.name !== 'TK-Asia-Pfannengemüse')
+        .map(p => {
+          if (p.name === 'TK-Dönerfleisch / Gyros') return { ...p, name: 'Dönerfleisch / Gyros / Kebap' };
+          if (p.name === 'TK-Frühlingsrollen') return { ...p, name: 'Frühlingsrollen' };
+          if (p.name === 'Rinderhackfleisch') return { ...p, name: 'Rindfleisch' };
+          return p;
+        });
+
       setItems(sanitizedItems);
-      setCustomDb(storedCustom || []);
+      setCustomDb(sanitizedCustom);
     })();
   }, []);
 
@@ -5623,12 +5647,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.3</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.4</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn)
         </div>
       </div>
 
