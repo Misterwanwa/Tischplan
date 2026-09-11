@@ -497,7 +497,7 @@ export const BUILTIN_PRODUCTS = [
   { id: "tk_donerfleisch", name: "Dönerfleisch / Gyros / Kebap", category: "Fertig & Tiefkühlprodukte", icon: "Flame", suggestedDetails: ["Hähnchen 500g","Pfannengericht"] },
   { id: "tk_falafel", name: "TK-Falafel", category: "Fertig & Tiefkühlprodukte", icon: "Package", suggestedDetails: ["300g Beutel"] },
   { id: "tk_veggie_schnitzel", name: "TK-Vegetarisches Schnitzel", category: "Fertig & Tiefkühlprodukte", icon: "Package", suggestedDetails: ["Rügenwalder 2er"] },
-  { id: "tk_veggie_burger", name: "Vegane Burger", category: "Fertig & Tiefkühlprodukte", icon: "Sandwich", suggestedDetails: ["2er Pack 226g"] },
+  { id: "tk_veggie_burger", name: "Hamburger", category: "Fertig & Tiefkühlprodukte", icon: "Sandwich", suggestedDetails: ["Vegane Burger","2er Pack 226g","Rindfleisch","Cheeseburger","Chickenburger","Bio","Pflanzlich","TK 4er Pack","Beyond Meat","Mini-Burger"] },
   { id: "tk_knoblauchbrot", name: "Kräuterbaguette", category: "Fertig & Tiefkühlprodukte", icon: "Wheat", suggestedDetails: ["Meggle 2er Pack"] },
   { id: "tk_flammkuchen", name: "TK-Flammkuchen", category: "Fertig & Tiefkühlprodukte", icon: "Pizza", suggestedDetails: ["260g"] },
   { id: "tk_gyoza", name: "TK-Gyoza / Dumplings", category: "Fertig & Tiefkühlprodukte", icon: "Package", suggestedDetails: ["Geflügel 400g","Veggie"] },

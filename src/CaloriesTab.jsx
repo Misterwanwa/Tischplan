@@ -701,7 +701,7 @@ function CaloriesProfile({
             onChange={event => saveDayData(prev => ({ ...prev, trackingComplete: event.target.checked }), true)} />
           Alle Mahlzeiten für diesen Tag vollständig erfasst
         </label>
-        <p className="text-xs text-stone-500 mt-2">Für Challenges erforderlich. Leere Tage zählen nicht. Änderungen an Einträgen heben die Bestätigung auf. Ein Tag wird frühestens am Folgetag gewertet.</p>
+        <p className="text-xs text-stone-500 mt-2">Nach 24 Stunden wird der Tag automatisch vollständig erfasst</p>
       </div>
 
       {/* MODAL: Mahlzeit erfassen (Freifeld, KI-Foto, Barcode) */}
@@ -869,18 +869,20 @@ function MealEntryModal({
     (async () => {
       const today = new Date();
       const pad = n => String(n).padStart(2, '0');
-      const todayDk = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+      const threeDaysAgo = new Date(today);
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      const minDk = `${threeDaysAgo.getFullYear()}-${pad(threeDaysAgo.getMonth() + 1)}-${pad(threeDaysAgo.getDate())}`;
 
       const recipeMap = new Map((recipes || []).map(r => [r.id, r]));
       const plannedList = [];
       const seenRecipeIds = new Set();
 
-      // Dates in mealplanIndex >= todayDk
-      const futureDates = Object.keys(mealplanIndex || {})
-        .filter(dk => dk >= todayDk)
+      // Dates in mealplanIndex >= minDk (last 3 days + today + future)
+      const relevantDates = Object.keys(mealplanIndex || {})
+        .filter(dk => dk >= minDk)
         .sort();
 
-      for (const dk of futureDates) {
+      for (const dk of relevantDates) {
         let plan = null;
         try {
           if (typeof getDayPlan === 'function') {
@@ -1390,7 +1392,7 @@ function MealEntryModal({
 
                 {/* Suggestions Dropdown */}
                 {suggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-stone-200 shadow-xl z-30 divide-y divide-stone-100 max-h-56 overflow-y-auto">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-stone-200 shadow-xl z-30 divide-y divide-stone-100 max-h-80 overflow-y-auto">
                     <div className="px-2.5 py-1.5 bg-stone-50 border-b border-stone-100 flex items-center justify-between text-[10px] font-mono text-stone-500 uppercase tracking-wide">
                       <span>Vorschläge ({suggestions.length})</span>
                       <button
@@ -1717,7 +1719,7 @@ function MealEntryModal({
 
         <label className="flex items-start gap-2 px-5 py-3 text-xs text-emerald-900 border-t border-stone-100">
           <input type="checkbox" checked={isVegetable} onChange={event => setIsVegetable(event.target.checked)} />
-          Dieser Eintrag ist eine Gemüseportion (für die Gemüse-Challenge). Bei gemischten Gerichten den Gemüseanteil separat erfassen.
+          Dieser Eintrag ist eine Gemüseportion
         </label>
 
         {/* Footer Actions */}
@@ -1749,9 +1751,6 @@ function BurnedCaloriesModal({ currentBurned, onClose, onSave }) {
     <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl p-5 space-y-4">
         <h3 className="font-bold text-stone-900 text-base">Verbrannte Kalorien anpassen</h3>
-        <p className="text-xs text-stone-500">
-          Trage hier Kalorien ein, die du heute durch Sport oder Aktivität verbrannt hast.
-        </p>
 
         <div>
           <label className={labelCls}>Aktivitätskalorien (kcal)</label>

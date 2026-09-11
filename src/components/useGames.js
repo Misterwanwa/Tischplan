@@ -48,14 +48,14 @@ export default function useGames(personIndex, refreshKey) {
     return () => { clearInterval(timer); window.removeEventListener('focus', update); };
   }, [today, personIndex]);
 
-  const startGame = async (ranked, characters) => {
+  const startGame = async (ranked, character) => {
     if (actionBusy.current) return;
     actionBusy.current = true; setBusy(true); setError(''); setResult(null);
     try {
       const session = ranked ? await gamesRequest(personIndex, { action: 'start' })
         : { seed: crypto.getRandomValues(new Uint32Array(1))[0] };
       if (!mounted.current) return;
-      const next = { ...session, ranked, character: characters[session.seed % 2] };
+      const next = { ...session, ranked, character };
       activeGame.current = next; setGame(next);
     } catch (e) {
       setError(e.message);

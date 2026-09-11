@@ -5499,7 +5499,7 @@ function SettingsTab() {
                 }} 
                 className="rounded border-stone-300 text-stone-900 focus:ring-stone-900" 
               />
-              <span className="text-sm font-semibold text-stone-800">Kalorien- &amp; Streak-Erinnerungen (Duolingo-Stil 🔥)</span>
+              <span className="text-sm font-semibold text-stone-800">Kalorien- &amp; Streak-Erinnerungen</span>
             </label>
             <p className="text-xs text-stone-500 leading-normal">
               Erinnert regelmäßig an Mahlzeiten (09:00, 13:00, 19:00) und warnt abends um 20:30 Uhr vor dem Verlust deines Streaks!
@@ -5595,18 +5595,12 @@ function SettingsTab() {
           />
           <span className="text-xs font-mono font-medium text-stone-700">Keine Rezept-URLs an externe Screenshot-Dienste senden</span>
         </label>
-        <p className="text-xs text-stone-500 mt-1">
-          Standardmäßig wird ein externer Dienst genutzt, um Webseiten-Vorschauen von Rezeptlinks anzuzeigen. Wenn aktiviert, werden keine URLs übertragen.
-        </p>
       </div>
 
       <div className={cardCls}>
         <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
           <Sparkles size={15} className="text-amber-500" /> Jahresrückblick &amp; Statistiken
         </div>
-        <p className="text-xs text-stone-500 mb-3 leading-relaxed">
-          Interne Erfassung von Kochvorgängen und Einkaufsaktionen. Keine Weitergabe an Dritte oder Tracking-Server.
-        </p>
         <div className="space-y-2">
           <div className="flex gap-2">
             <input
@@ -5647,12 +5641,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.4</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.5</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn)
         </div>
       </div>
 

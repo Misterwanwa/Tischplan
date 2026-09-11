@@ -37,6 +37,16 @@ export default function CatchGame({ seed, character, ranked, onFinish }) {
   const board = useRef(null);
   const modal = useRef(null);
   const [view, setView] = useState(() => ({ ...gameRef.current }));
+  const lastX = useRef(200);
+  const [direction, setDirection] = useState('idle');
+  const [imageError, setImageError] = useState(false);
+
+  const charObj = typeof character === 'object' && character !== null ? character : { idle: character, fallback: character };
+  const currentSprite = imageError ? (charObj.fallback || '/characters/1.png')
+    : direction === 'left' ? (charObj.left || charObj.idle || charObj.fallback)
+    : direction === 'right' ? (charObj.right || charObj.idle || charObj.fallback)
+    : (charObj.idle || charObj.fallback);
+  const flipHorizontal = direction === 'left' && !charObj.left;
 
   const finish = (abandoned = false) => {
     if (done.current) return;
@@ -69,6 +79,10 @@ export default function CatchGame({ seed, character, ranked, onFinish }) {
         const target = Math.round(targetX.current);
         inputs.current.push(target);
         stepCatchGame(state, target);
+        if (state.x < lastX.current - 1) setDirection('left');
+        else if (state.x > lastX.current + 1) setDirection('right');
+        else setDirection('idle');
+        lastX.current = state.x;
       }
       setView({ ...state, items: state.items.map(item => ({ ...item })) });
       if (state.over) finishRef.current();
@@ -127,9 +141,10 @@ export default function CatchGame({ seed, character, ranked, onFinish }) {
               <ItemIcon kind={definition.kind} />
             </div>;
           })}
-          <img src={character} alt="Deine zufällig zugeteilte Spielerfigur" draggable={false}
-            className="absolute object-contain pointer-events-none"
-            style={{ left: `${view.x / BOARD_WIDTH * 100}%`, top: '81%', width: '16%', height: '16%', transform: 'translateX(-50%)' }} />
+          <img src={currentSprite} alt="Deine Spielerfigur" draggable={false}
+            onError={() => setImageError(true)}
+            className="absolute object-contain pointer-events-none transition-transform duration-75"
+            style={{ left: `${view.x / BOARD_WIDTH * 100}%`, top: '81%', width: '16%', height: '16%', transform: `translateX(-50%) ${flipHorizontal ? 'scaleX(-1)' : ''}` }} />
           <div className="absolute rounded-full bg-emerald-900/60 h-1" style={{ left: `${view.x / 4}%`, top: '94%', width: '17%', transform: 'translateX(-50%)' }} />
         </div>
         <p className="p-3 text-center text-xs text-stone-600">Ziehen, Maus oder ← / → · App-Wechsel beendet die Runde mit 0 Punkten.</p>
