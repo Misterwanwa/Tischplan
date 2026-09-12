@@ -744,7 +744,7 @@ export const BUILTIN_PRODUCTS = [
   { id: "weingummi", name: "Weingummi", category: "Süssigkeiten", icon: "Cookie", suggestedDetails: [] },
   { id: "gebaeck_waffeln", name: "Waffeln", category: "Brot & Gebäck", icon: "Wheat", suggestedDetails: ["Belgische Waffeln","Herzwaffeln","Zum Aufbacken","Frisch"] },
   { id: "krustenbraten", name: "Krustenbraten", category: "Fleisch", icon: "Flame", suggestedDetails: [] },
-  { id: "reinigungstuecher", name: "Reinigungstücher", category: "Haushalt", icon: "Shield", suggestedDetails: [] },
+  { id: "reinigungstuecher", name: "Reinigungstücher", category: "Haushalt", icon: "Shield", suggestedDetails: ["Feucht","Allzwecktücher","Bad & WC","Glas","Desinfizierend"] },
   { id: "schwamm", name: "Schwamm", category: "Haushalt", icon: "Box", suggestedDetails: ["Topfschwamm","Tuchschwamm","Küchenschwamm"] },
   { id: "milchsnack", name: "Milchsnack", category: "Milchprodukte", icon: "Milk", suggestedDetails: [] },
   { id: "pralinen", name: "Pralinen", category: "Süssigkeiten", icon: "Cookie", suggestedDetails: [] },
