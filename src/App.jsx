@@ -5641,12 +5641,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.9</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.10</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn)
         </div>
       </div>
 
