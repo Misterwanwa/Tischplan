@@ -21,7 +21,7 @@ const ALLOWED_KEY_PREFIXES = [
   'app_stats_v1',
 ];
 
-const MAX_PAYLOAD_BYTES = 1024 * 1024; // 1 MB
+const MAX_PAYLOAD_BYTES = 25 * 1024 * 1024; // 25 MB (Cloudflare KV Limit)
 
 function isValidKey(key) {
   if (typeof key !== 'string' || key.length === 0 || key.length > 128) return false;
@@ -105,7 +105,7 @@ export async function onRequestPost(context) {
   try {
     const rawBody = await context.request.text();
     if (rawBody.length > MAX_PAYLOAD_BYTES) {
-      return new Response(JSON.stringify({ error: 'Payload exceeds 1MB limit' }), {
+      return new Response(JSON.stringify({ error: 'Payload exceeds 25MB limit' }), {
         status: 413,
         headers: { 'Content-Type': 'application/json' }
       });

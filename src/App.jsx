@@ -489,7 +489,11 @@ async function storageGet(key, shared, fallback) {
         if (res.ok) {
           const data = await res.json();
           if (data && 'value' in data && data.value !== null) {
-            localStorage.setItem(`shared_${key}`, JSON.stringify(data.value));
+            try {
+              localStorage.setItem(`shared_${key}`, JSON.stringify(data.value));
+            } catch (lsErr) {
+              console.warn(`localStorage cache write failed for shared_${key}:`, lsErr);
+            }
             return data.value;
           }
         }
@@ -510,7 +514,11 @@ async function storageSet(key, value, shared) {
       return;
     }
     if (shared) {
-      localStorage.setItem(`shared_${key}`, JSON.stringify(value));
+      try {
+        localStorage.setItem(`shared_${key}`, JSON.stringify(value));
+      } catch (lsError) {
+        console.warn(`localStorage quota exceeded for shared_${key}, continuing with cloud sync:`, lsError);
+      }
       setSyncStatus(SYNC_STATES.SAVING);
       try {
         const res = await fetch('/api/storage', {
@@ -522,7 +530,12 @@ async function storageSet(key, value, shared) {
           setSyncStatus(SYNC_STATES.SYNCED);
           return;
         } else {
-          setSyncStatus(SYNC_STATES.ERROR, `HTTP ${res.status}`);
+          let errMsg = `HTTP ${res.status}`;
+          try {
+            const errData = await res.json();
+            if (errData && errData.error) errMsg = `${errMsg} (${errData.error})`;
+          } catch (_) {}
+          setSyncStatus(SYNC_STATES.ERROR, errMsg);
           return;
         }
       } catch (apiError) {
@@ -531,7 +544,11 @@ async function storageSet(key, value, shared) {
       }
       return;
     }
-    localStorage.setItem(key, JSON.stringify(value));
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (lsError) {
+      console.warn(`localStorage quota exceeded for ${key}:`, lsError);
+    }
   }
   catch (e) {
     console.error('storage set failed', key, e);
@@ -5641,12 +5658,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.10</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.11</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn) · v1.10.11 (Kaiserschmarrn)
         </div>
       </div>
 
@@ -5904,7 +5921,14 @@ export default function App() {
         recipesNext = recipesNext.map(rec => rec.bookVolume ? rec : { ...rec, bookVolume: vol.id });
         persistSettings = true; persistRecipes = true;
       }
-      const fixedRecipes = recipesNext.map(rec => ('rating' in rec ? rec : { ...rec, rating: null, placeholder: !!rec.placeholder }));
+      const fixedRecipes = recipesNext.map(rec => {
+        let updated = rec;
+        let changed = false;
+        if (!updated.id) { updated = { ...updated, id: uid() }; changed = true; }
+        if (!('rating' in updated)) { updated = { ...updated, rating: null }; changed = true; }
+        if (!('placeholder' in updated)) { updated = { ...updated, placeholder: false }; changed = true; }
+        return changed ? updated : rec;
+      });
       if (fixedRecipes.some((rec, i) => rec !== recipesNext[i])) { recipesNext = fixedRecipes; persistRecipes = true; }
 
       if (settingsNext.people && settingsNext.people.length > 0) {

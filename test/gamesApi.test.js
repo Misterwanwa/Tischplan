@@ -143,3 +143,33 @@ test('API: cross-origin calls, invalid profiles, unknown actions and missing bin
   const missing = await onRequestGet({ env: {}, request: new Request('https://tischplan.example/api/games?profile=0') });
   assert.equal(missing.status, 503);
 });
+
+test('Storage: accepts recipe payloads larger than 1MB and rejects payloads over 25MB', async t => {
+  const h = harness(t);
+  const largePhoto = 'a'.repeat(1.5 * 1024 * 1024); // 1.5 MB photo string
+  const recipes = [{ id: 'rec_1', title: 'Großes Rezept', rating: 5, photo: largePhoto }];
+  
+  const resOk = await saveStorage({
+    env: h.env,
+    request: new Request('https://tischplan.example/api/storage', {
+      method: 'POST',
+      headers: { origin: 'https://tischplan.example' },
+      body: JSON.stringify({ key: 'recipes', value: recipes }),
+    })
+  });
+  assert.equal(resOk.status, 200);
+  assert.equal(h.values.get('recipes')[0].rating, 5);
+
+  const tooLargePhoto = 'b'.repeat(26 * 1024 * 1024); // 26 MB
+  const resTooLarge = await saveStorage({
+    env: h.env,
+    request: new Request('https://tischplan.example/api/storage', {
+      method: 'POST',
+      headers: { origin: 'https://tischplan.example' },
+      body: JSON.stringify({ key: 'recipes', value: [{ photo: tooLargePhoto }] }),
+    })
+  });
+  assert.equal(resTooLarge.status, 413);
+});
+
+
