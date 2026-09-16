@@ -6,3 +6,4 @@ dist
 .dev.vars
 *.log
 .wrangler
+.functions-test

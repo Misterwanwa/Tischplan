@@ -38,7 +38,353 @@ export const SUPERMARKET_ORDER = [
 
 export const DEFAULT_PRESET_DETAILS = ['1', '2', '3', '4', '500g', '1kg', 'Freitag'];
 
-export function ProductPictogram({ icon, category, className = "w-7 h-7 stroke-[1.75]" }) {
+/* ---------------------------------- Bring!-Style 1:1 Chalk Doodle SVG Registry ---------------------------------- */
+
+export function ChalkLetterBadge({ letter = '?', className = "w-7 h-7" }) {
+  const char = String(letter).charAt(0).toUpperCase();
+
+  // Hand-drawn chalk hollow paths matching the Bring! screenshots
+  const chalkPaths = {
+    // Screenshot 2: "H" for Hafermilch
+    'H': "M 11 8 L 18 8 L 18 19 L 28 19 L 28 8 L 35 8 L 35 40 L 28 40 L 28 26 L 18 26 L 18 40 L 11 40 Z",
+    // Screenshot 2: "F" for Fotos
+    'F': "M 12 8 L 34 8 L 34 15 L 19 15 L 19 21 L 31 21 L 31 27 L 19 27 L 19 40 L 12 40 Z",
+    // Screenshot 3: "L" for Luftentfeuchter
+    'L': "M 12 8 L 19 8 L 19 33 L 34 33 L 34 40 L 12 40 Z",
+    // Screenshot 3: "U" for Urmeersalz
+    'U': "M 11 8 L 18 8 L 18 28 C 18 34 22 34 24 34 C 26 34 30 34 30 28 L 30 8 L 37 8 L 37 28 C 37 40 28 41 24 41 C 19 41 11 40 11 28 Z",
+    // Screenshot 3: "R" for rosenkohl
+    'R': "M 11 8 L 26 8 C 32 8 35 11 35 18 C 35 23 32 25 27 26 L 35 40 L 28 40 L 21 27 L 18 27 L 18 40 L 11 40 Z M 18 14 L 18 21 L 24 21 C 28 21 29 19 29 17.5 C 29 16 28 14 24 14 Z",
+    // Clean chalk block outlines for other frequent letters
+    'A': "M 24 7 L 36 40 L 29 40 L 26 31 L 18 31 L 15 40 L 8 40 Z M 20 25 L 24 14 L 28 25 Z",
+    'B': "M 12 8 L 26 8 C 32 8 34 11 34 16 C 34 20 31 22 27 23 C 32 24 35 27 35 32 C 35 38 31 40 25 40 L 12 40 Z M 19 14 L 19 21 L 25 21 C 28 21 28 14 25 14 Z M 19 27 L 19 34 L 26 34 C 29 34 29 27 26 27 Z",
+    'C': "M 34 14 C 32 9 27 7 22 7 C 14 7 9 14 9 24 C 9 34 14 41 23 41 C 29 41 33 38 35 33 L 28 31 C 27 34 25 35 22 35 C 18 35 15 31 15 24 C 15 17 18 13 23 13 C 26 13 28 15 30 18 Z",
+    'D': "M 12 8 L 24 8 C 33 8 36 15 36 24 C 36 33 33 40 24 40 L 12 40 Z M 19 14 L 19 34 L 24 34 C 30 34 30 14 24 14 Z",
+    'E': "M 12 8 L 34 8 L 34 14 L 19 14 L 19 21 L 30 21 L 30 27 L 19 27 L 19 34 L 34 34 L 34 40 L 12 40 Z",
+    'G': "M 34 14 C 32 9 27 7 22 7 C 14 7 9 14 9 24 C 9 34 14 41 23 41 C 30 41 35 36 35 28 L 22 28 L 22 22 L 35 22 L 35 40 L 30 40 L 29 36 C 27 39 24 41 20 41 C 13 41 9 34 9 24 Z",
+    'I': "M 14 8 L 30 8 L 30 14 L 25 14 L 25 34 L 30 34 L 30 40 L 14 40 L 14 34 L 19 34 L 19 14 L 14 14 Z",
+    'J': "M 22 8 L 34 8 L 34 29 C 34 37 28 41 20 41 C 12 41 9 36 9 30 L 16 30 C 16 34 18 35 21 35 C 25 35 27 33 27 28 L 27 14 L 22 14 Z",
+    'K': "M 12 8 L 19 8 L 19 22 L 28 8 L 36 8 L 24 24 L 36 40 L 28 40 L 19 27 L 19 40 L 12 40 Z",
+    'M': "M 10 8 L 18 8 L 24 24 L 30 8 L 38 8 L 38 40 L 31 40 L 31 20 L 26 33 L 22 33 L 17 20 L 17 40 L 10 40 Z",
+    'N': "M 12 8 L 19 8 L 29 27 L 29 8 L 35 8 L 35 40 L 28 40 L 18 21 L 18 40 L 12 40 Z",
+    'O': "M 24 7 C 15 7 9 14 9 24 C 9 34 15 41 24 41 C 33 41 39 34 39 24 C 39 14 33 7 24 7 Z M 24 13 C 29 13 32 18 32 24 C 32 30 29 35 24 35 C 19 35 16 30 16 24 C 16 18 19 13 24 13 Z",
+    'P': "M 12 8 L 25 8 C 32 8 35 12 35 19 C 35 26 32 30 25 30 L 18 30 L 18 40 L 12 40 Z M 18 14 L 18 24 L 24 24 C 28 24 29 22 29 19 C 29 16 28 14 24 14 Z",
+    'S': "M 32 14 L 26 15 C 26 13 24 12 21 12 C 18 12 16 13 16 15 C 16 18 19 19 24 20 C 31 22 35 25 35 30 C 35 37 29 41 22 41 C 14 41 10 36 9 31 L 16 29 C 16 33 19 35 23 35 C 26 35 28 34 28 31 C 28 28 25 27 20 26 C 14 24 10 21 10 16 C 10 10 15 7 22 7 C 29 7 32 10 32 14 Z",
+    'T': "M 10 8 L 36 8 L 36 14 L 26 14 L 26 40 L 19 40 L 19 14 L 10 14 Z",
+    'V': "M 8 8 L 15 8 L 24 34 L 32 8 L 39 8 L 28 40 L 20 40 Z",
+    'W': "M 8 8 L 15 8 L 19 28 L 23 12 L 27 12 L 31 28 L 35 8 L 41 8 L 34 40 L 28 40 L 25 25 L 22 40 L 16 40 Z",
+    'Z': "M 11 8 L 35 8 L 35 14 L 19 34 L 35 34 L 35 40 L 10 40 L 10 34 L 26 14 L 11 14 Z",
+  };
+
+  const pathD = chalkPaths[char];
+
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      fill="none"
+      className={`${className} overflow-visible`}
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-label={`Letter ${char}`}
+    >
+      {pathD ? (
+        <path d={pathD} fill="currentColor" fillOpacity="0.06" />
+      ) : (
+        <text
+          x="50%"
+          y="54%"
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="900"
+          fontSize="30"
+        >
+          {char}
+        </text>
+      )}
+    </svg>
+  );
+}
+
+export const PRODUCT_PICTO_REGISTRY = {
+  // Screenshot 1 & 2: Avocado split with round seed
+  'avocado': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 24 6 C 17 6 12 13 12 24 C 12 34 17 42 24 42 C 31 42 36 34 36 24 C 36 13 31 6 24 6 Z" />
+      <path d="M 24 10 C 19 10 15 16 15 25 C 15 33 19 39 24 39 C 29 39 33 33 33 25 C 33 16 29 10 24 10 Z" />
+      <circle cx="24" cy="27" r="6" fill="currentColor" fillOpacity="0.2" />
+    </svg>
+  ),
+
+  // Screenshot 1: Bananas (bunch of three)
+  'banane': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 32 8 L 36 12" />
+      <path d="M 34 10 Q 38 24 18 36 Q 30 38 36 20 Q 37 13 34 10 Z" />
+      <path d="M 31 11 Q 33 28 13 38 Q 27 40 34 23" />
+      <path d="M 28 9 Q 29 23 10 32 Q 21 34 29 18" />
+    </svg>
+  ),
+  'bananen': (props) => PRODUCT_PICTO_REGISTRY.banane(props),
+
+  // Screenshot 1: Apples (apple with stem and leaf)
+  'apfel': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 24 14 C 20 8 11 8 11 20 C 11 34 20 42 24 42 C 28 42 37 34 37 20 C 37 8 28 8 24 14 Z" />
+      <path d="M 24 14 C 24 9 27 6 30 5" />
+      <path d="M 27 7 C 32 7 34 10 33 12 C 30 12 28 10 27 7 Z" />
+    </svg>
+  ),
+  'aepfel': (props) => PRODUCT_PICTO_REGISTRY.apfel(props),
+
+  // Screenshot 1: Aubergine / Eggplant
+  'aubergine': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 37 9 C 39 12 36 16 33 18 C 30 20 28 26 26 31 C 23 37 18 41 12 39 C 7 37 7 29 11 24 C 15 20 22 17 26 14 C 28 12 32 9 37 9 Z" />
+      <path d="M 35 11 L 32 15 L 29 12 L 31 17 L 27 16" />
+      <path d="M 37 9 C 39 7 42 6 44 6" />
+    </svg>
+  ),
+
+  // Screenshot 1 & 2: Cherry Tomatoes on vine
+  'cherrytomaten': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 10 10 Q 24 24 38 38" />
+      <circle cx="16" cy="19" r="5" />
+      <circle cx="23" cy="14" r="5" />
+      <circle cx="23" cy="27" r="5.5" />
+      <circle cx="31" cy="22" r="5" />
+      <circle cx="33" cy="34" r="5" />
+    </svg>
+  ),
+  'tomaten': (props) => PRODUCT_PICTO_REGISTRY.cherrytomaten(props),
+
+  // Screenshot 3: Milk carton (Milch)
+  'milch': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 16 17 L 32 17 L 32 41 L 16 41 Z" />
+      <path d="M 16 17 L 20 10 L 28 10 L 32 17" />
+      <path d="M 20 10 L 20 7 L 28 7 L 28 10" />
+      <path d="M 21 26 C 21 23 27 23 27 26 C 27 30 21 34 21 34 L 27 34" />
+    </svg>
+  ),
+
+  // Screenshot 3: Olives on branch (Oliven)
+  'oliven': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 10 12 Q 22 20 38 28" />
+      <path d="M 14 16 Q 10 26 18 30 Q 23 26 18 18" />
+      <ellipse cx="23" cy="33" rx="5" ry="7" transform="rotate(-20 23 33)" />
+      <ellipse cx="33" cy="30" rx="5" ry="7" transform="rotate(30 33 30)" />
+      <path d="M 20 14 C 24 10 32 12 34 16" />
+    </svg>
+  ),
+
+  // Screenshot 2: Salat / Lettuce head
+  'salat': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="24" cy="25" r="16" />
+      <path d="M 12 20 C 16 15 22 14 26 16 C 30 18 34 24 32 29" />
+      <path d="M 17 32 C 22 36 29 35 33 30" />
+      <path d="M 20 22 C 23 20 26 21 27 24 C 27 27 24 28 22 27" />
+    </svg>
+  ),
+
+  // Screenshot 2: Petersilie / Herbs
+  'petersilie': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 24 41 L 24 22" />
+      <path d="M 24 22 C 22 16 14 15 12 21 C 11 25 15 27 18 25 L 24 25" />
+      <path d="M 24 22 C 26 16 34 15 36 21 C 37 25 33 27 30 25 L 24 25" />
+      <path d="M 24 22 C 20 16 21 9 24 7 C 27 9 28 16 24 22 Z" />
+    </svg>
+  ),
+  'basilikum': (props) => PRODUCT_PICTO_REGISTRY.petersilie(props),
+
+  // Screenshot 2: Pfefferminze / Mint
+  'pfefferminze': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 24 24 C 18 18 10 18 9 24 C 10 30 18 30 24 24 Z" />
+      <path d="M 24 24 C 30 18 38 18 39 24 C 38 30 30 30 24 24 Z" />
+      <path d="M 24 24 C 18 30 18 38 24 39 C 30 38 30 30 24 24 Z" />
+      <path d="M 24 24 C 18 18 18 10 24 9 C 30 10 30 18 24 24 Z" />
+    </svg>
+  ),
+
+  // Screenshot 3: Weisswein / Rotwein (Bottle & Glass)
+  'weisswein': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 17 8 L 22 8 L 22 15 Q 26 18 26 24 L 26 40 L 13 40 L 13 24 Q 13 18 17 15 Z" />
+      <path d="M 16 8 L 16 6 L 23 6 L 23 8" />
+      <path d="M 31 23 Q 31 31 35 31 Q 39 31 39 23 Z" />
+      <path d="M 35 31 L 35 39 M 32 39 L 38 39" />
+    </svg>
+  ),
+  'rotwein': (props) => PRODUCT_PICTO_REGISTRY.weisswein(props),
+  'wein': (props) => PRODUCT_PICTO_REGISTRY.weisswein(props),
+
+  // Screenshot 1 & 3: Artischocken / Artichokes
+  'artischocken': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 24 38 C 14 38 13 26 18 16 C 21 11 27 11 30 16 C 35 26 34 38 24 38 Z" />
+      <path d="M 24 38 L 24 43" />
+      <path d="M 18 26 C 21 21 27 21 30 26" />
+      <path d="M 21 32 C 23 29 25 29 27 32" />
+      <path d="M 24 16 L 24 21" />
+    </svg>
+  ),
+  'artischocke': (props) => PRODUCT_PICTO_REGISTRY.artischocken(props),
+
+  // Screenshot 2: Butter block
+  'butter': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 8 35 L 40 35" />
+      <path d="M 13 35 L 13 21 L 28 17 L 36 22 L 36 35 Z" />
+      <path d="M 13 21 L 23 25 L 36 22" />
+      <path d="M 23 25 L 23 35" />
+    </svg>
+  ),
+
+  // Bread loaf (Brot)
+  'brot': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 9 28 C 9 17 16 13 24 13 C 32 13 39 17 39 28 C 39 34 35 36 24 36 C 13 36 9 34 9 28 Z" />
+      <path d="M 17 21 L 20 26" />
+      <path d="M 23 19 L 26 26" />
+      <path d="M 29 21 L 32 26" />
+    </svg>
+  ),
+
+  // Eggs (Eier)
+  'eier': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 21 38 C 14 38 11 31 11 24 C 11 16 15 10 21 10 C 27 10 31 16 31 24 C 31 31 28 38 21 38 Z" />
+      <path d="M 30 38 C 35 38 38 32 38 26 C 38 19 35 15 31 15" />
+    </svg>
+  ),
+  'ei': (props) => PRODUCT_PICTO_REGISTRY.eier(props),
+
+  // Cheese wedge (Käse)
+  'kaese': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 9 33 L 39 33 L 39 22 L 14 14 Z" />
+      <path d="M 9 33 L 9 24 L 14 14" />
+      <circle cx="21" cy="27" r="2.5" />
+      <circle cx="31" cy="26" r="3" />
+      <circle cx="26" cy="19" r="2" />
+    </svg>
+  ),
+
+  // Coffee cup (Kaffee)
+  'kaffee': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 11 18 L 31 18 L 29 36 L 13 36 Z" />
+      <path d="M 31 22 Q 38 22 38 27 Q 38 32 30 32" />
+      <path d="M 9 39 L 33 39" />
+      <path d="M 17 14 Q 16 10 19 8" />
+      <path d="M 23 14 Q 22 10 25 8" />
+    </svg>
+  ),
+
+  // Carrot (Karotten / Möhren)
+  'karotten': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 28 14 C 33 19 31 25 15 41 C 12 36 12 27 22 15 Z" />
+      <path d="M 28 14 L 35 8 M 30 11 L 38 12 M 25 13 L 31 6" />
+      <path d="M 21 23 L 26 25 M 17 30 L 22 31" />
+    </svg>
+  ),
+  'karotte': (props) => PRODUCT_PICTO_REGISTRY.karotten(props),
+
+  // Potato (Kartoffeln)
+  'kartoffeln': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 12 25 C 10 16 18 11 27 12 C 37 13 40 21 38 30 C 36 38 27 40 18 38 C 11 36 13 31 12 25 Z" />
+      <path d="M 18 20 C 19 21 21 21 22 20" />
+      <path d="M 27 28 C 28 29 30 29 31 28" />
+      <path d="M 22 32 C 23 33 25 33 26 32" />
+    </svg>
+  ),
+  'kartoffel': (props) => PRODUCT_PICTO_REGISTRY.kartoffeln(props),
+
+  // Onion (Zwiebel)
+  'zwiebeln': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 24 6 C 24 10 12 18 12 28 C 12 37 18 41 24 41 C 30 41 36 37 36 28 C 36 18 24 10 24 6 Z" />
+      <path d="M 20 41 L 19 44 M 24 41 L 24 45 M 28 41 L 29 44" />
+      <path d="M 24 15 C 20 20 18 28 18 38" />
+      <path d="M 24 15 C 28 20 30 28 30 38" />
+    </svg>
+  ),
+  'zwiebel': (props) => PRODUCT_PICTO_REGISTRY.zwiebeln(props),
+
+  // Fish (Fisch)
+  'fisch': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 38 24 C 33 15 18 15 8 24 C 18 33 33 33 38 24 Z" />
+      <path d="M 38 24 L 43 17 L 43 31 Z" />
+      <circle cx="15" cy="23" r="1.5" fill="currentColor" />
+      <path d="M 21 19 Q 24 24 21 29" />
+    </svg>
+  ),
+  'lachs': (props) => PRODUCT_PICTO_REGISTRY.fisch(props),
+
+  // Beer (Bier)
+  'bier': (props) => (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M 14 18 L 30 18 L 28 40 L 16 40 Z" />
+      <path d="M 30 22 Q 36 22 36 28 Q 36 34 29 34" />
+      <path d="M 13 18 C 13 14 17 12 22 14 C 25 11 31 13 31 18" />
+      <path d="M 20 23 L 20 34 M 24 23 L 24 34" strokeDasharray="2 3" />
+    </svg>
+  ),
+};
+
+export function ProductPictogram({
+  id,
+  name,
+  icon,
+  category,
+  image,
+  className = "w-7 h-7 stroke-[1.75]",
+  fallbackToLetter = true
+}) {
+  // 1. Explicit Custom Image (Upload, Data-URL, or custom link)
+  if (image) {
+    return (
+      <img
+        src={image}
+        alt={name || id || 'Produkt'}
+        className={`${className} object-contain`}
+        loading="lazy"
+      />
+    );
+  }
+
+  // 2. Normalization for 1:1 lookups
+  const normId = (id || '').toLowerCase().trim();
+  const normName = (name || '').toLowerCase().trim();
+
+  // 3. Exact 1:1 Bring!-Style Chalk SVG from Registry
+  const PictoComponent = PRODUCT_PICTO_REGISTRY[normId] ||
+    (normName && PRODUCT_PICTO_REGISTRY[normName]);
+  if (PictoComponent) {
+    return <PictoComponent className={className} />;
+  }
+
+  // 4. Fallback to Bring! Signature Chalk Letter (A-Z, just like Bring! does for unmapped items)
+  if (fallbackToLetter && (normName || normId)) {
+    const firstChar = (normName || normId).charAt(0).toUpperCase();
+    return <ChalkLetterBadge letter={firstChar} className={className} />;
+  }
+
+  // 5. Traditional Lucide Icon / Category Fallback
   const iconMap = {
     Apple, Carrot, Fish, Milk, Egg, Wheat, Wine, Flame, Package, Droplets,
     Heart, Shield, Tag, Coffee, Cookie, Cake, Sun, Moon, Layers, Sparkles, Utensils,

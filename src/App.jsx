@@ -3616,6 +3616,7 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
   const [showSaveDb, setShowSaveDb] = useState(false);
   const [customCat, setCustomCat] = useState(product ? product.category : 'Grundzutaten');
   const [customIcon, setCustomIcon] = useState(product ? product.icon : 'Package');
+  const [customImage, setCustomImage] = useState(product?.image || item?.image || '');
 
   const presetOptions = useMemo(() => {
     const set = new Set(DEFAULT_PRESET_DETAILS);
@@ -3654,13 +3655,13 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
 
   const handleSave = () => {
     const summary = formatDetailsSummary(detailsList);
-    onSaveDetail(item.id, summary, detailsList);
+    onSaveDetail(item.id, summary, detailsList, customImage);
     onClose();
   };
 
   const handleSaveDbSubmit = () => {
     if (onSaveToDatabase) {
-      onSaveToDatabase(item, customCat, customIcon);
+      onSaveToDatabase(item, customCat, customIcon, customImage);
     }
     handleSave();
   };
@@ -3670,8 +3671,15 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
       <div className="bg-white text-stone-800 rounded-xl max-w-sm w-full p-5 shadow-xl space-y-4 border border-stone-200 animate-scale-up" onClick={e => e.stopPropagation()}>
         {/* Header with tile preview */}
         <div className="flex items-center gap-3 border-b border-stone-200 pb-3">
-          <div className="w-12 h-12 rounded-xl bg-rose-100 border border-rose-200 flex items-center justify-center flex-shrink-0 shadow-sm">
-            <ProductPictogram icon={product?.icon || item.icon} category={product?.category || item.category} className="w-7 h-7 text-rose-700 stroke-[2]" />
+          <div className="w-12 h-12 rounded-xl bg-rose-100 border border-rose-200 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
+            <ProductPictogram
+              id={product?.id || item.productId || item.id}
+              name={item.name}
+              image={customImage || product?.image || item.image}
+              icon={customIcon || product?.icon || item.icon}
+              category={customCat || product?.category || item.category}
+              className="w-7 h-7 text-rose-700 stroke-[2]"
+            />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-base text-stone-900 truncate">{item.name}</h3>
@@ -3834,6 +3842,47 @@ function ProductDetailModal({ item, product, onClose, onSaveDetail, onRemoveItem
                   </button>
                 ))}
               </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-mono text-stone-400 uppercase block mb-1">1:1 Piktogramm (SVG / Bild)</label>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  placeholder="URL oder /icons/products/name.svg"
+                  value={customImage}
+                  onChange={e => setCustomImage(e.target.value)}
+                  className="flex-1 px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 text-stone-800 text-xs font-mono"
+                />
+                <label className="px-2.5 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700 text-xs font-mono cursor-pointer flex items-center gap-1 flex-shrink-0">
+                  <Upload size={13} /> Datei
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = ev => setCustomImage(ev.target?.result || '');
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
+                {customImage && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomImage('')}
+                    className="p-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded border border-rose-200"
+                    title="Piktogramm zurücksetzen"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] text-stone-400 mt-1">
+                Leer lassen für automatischen Bring!-Kreidebuchstaben oder Piktogramm aus der Datenbank.
+              </p>
             </div>
           </div>
         )}
@@ -4194,6 +4243,8 @@ function ShoppingTile({ item, product, isActive, onShortClick, onLongPress }) {
 
   const iconName = product?.icon || item.icon;
   const categoryName = product?.category || item.category;
+  const imageSrc = product?.image || item.image;
+  const productId = product?.id || item.productId || item.id;
 
   return (
     <div
@@ -4215,8 +4266,11 @@ function ShoppingTile({ item, product, isActive, onShortClick, onLongPress }) {
       </button>
 
       {/* Pictogram */}
-      <div className="my-auto pt-1">
+      <div className="my-auto pt-1 flex items-center justify-center">
         <ProductPictogram
+          id={productId}
+          name={item.name}
+          image={imageSrc}
           icon={iconName}
           category={categoryName}
           className={`w-8 h-8 stroke-[1.75] ${isActive ? 'text-rose-600' : 'text-stone-600'}`}
@@ -4394,10 +4448,13 @@ function ShoppingTab() {
   };
 
   // Update Item Details
-  const handleSaveDetail = (itemId, newDetail, newDetailsArray = null) => {
+  const handleSaveDetail = (itemId, newDetail, newDetailsArray = null, customImage = undefined) => {
     const next = items.map(i => {
       if (i.id !== itemId) return i;
       const updated = { ...i };
+      if (customImage !== undefined) {
+        updated.image = customImage;
+      }
       if (Array.isArray(newDetailsArray)) {
         updated.details = newDetailsArray;
         updated.detail = formatDetailsSummary(newDetailsArray);
@@ -4419,13 +4476,14 @@ function ShoppingTab() {
   };
 
   // Save custom product to permanent DB
-  const handleSaveToDatabase = async (item, category, icon) => {
+  const handleSaveToDatabase = async (item, category, icon, image = null) => {
     const customId = item.productId || ('custom_' + uid());
     const newProd = {
       id: customId,
       name: item.name,
       category,
       icon,
+      image,
       suggestedDetails: DEFAULT_PRESET_DETAILS,
     };
 
@@ -4438,6 +4496,7 @@ function ShoppingTab() {
       productId: customId,
       category,
       icon,
+      image,
     } : i);
     await updateShoppingItems(nextItems);
     showToast(`${item.name} in Produktdatenbank gespeichert!`);
@@ -4695,7 +4754,7 @@ function ShoppingTab() {
                   className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <ProductPictogram icon={p.icon} category={p.category} className="w-5 h-5 text-rose-600" />
+                    <ProductPictogram id={p.id} name={p.name} image={p.image} icon={p.icon} category={p.category} className="w-5 h-5 text-rose-600" />
                     <div>
                       <span className="text-sm font-semibold text-stone-800">{p.name}</span>
                       <span className="text-xs text-stone-400 block font-mono">{p.category}</span>
@@ -5658,12 +5717,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.11</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.12</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn) · v1.10.11 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn) · v1.10.11 (Kaiserschmarrn) · v1.10.12 (Kaiserschmarrn)
         </div>
       </div>
 
