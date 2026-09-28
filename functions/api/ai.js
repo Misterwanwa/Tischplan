@@ -90,15 +90,18 @@ export async function onRequestPost(context) {
       const candidateModels = [
         context.env.GEMINI_MODEL,
         'gemini-2.5-flash',
+        'gemini-3.8-flash',
+        'gemini-2.5-flash-lite',
         'gemini-2.0-flash',
-        'gemini-1.5-flash',
       ].filter(Boolean);
 
       let res = null;
       let lastErrText = '';
       let lastStatus = 500;
+      let triedModels = [];
 
       for (const model of candidateModels) {
+        triedModels.push(model);
         try {
           res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -111,8 +114,10 @@ export async function onRequestPost(context) {
           if (res.ok) break;
           lastStatus = res.status;
           lastErrText = await res.text();
-          // If model is not found (404), try the next candidate model
-          if (res.status !== 404) break;
+          // If model is not found (404), continue trying next model
+          if (res.status === 404) continue;
+          // If not 404 (e.g. 400 Bad Request, 429 Rate Limit, 403 Forbidden), break
+          break;
         } catch (fetchErr) {
           lastErrText = fetchErr.message;
         }
@@ -126,7 +131,7 @@ export async function onRequestPost(context) {
         } catch (_) {}
 
         return new Response(JSON.stringify({
-          error: `Gemini API Fehler (${lastStatus}): ${parsedErrMsg}`,
+          error: `Gemini API Fehler (${lastStatus}) [Modelle: ${triedModels.join(', ')}]: ${parsedErrMsg}`,
           status: lastStatus
         }), {
           status: lastStatus === 429 ? 429 : (lastStatus >= 500 ? 502 : 400),
