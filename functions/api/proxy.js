@@ -69,7 +69,7 @@ export async function onRequestGet(context) {
   if (origin) {
     try {
       const originUrl = new URL(origin);
-      if (originUrl.host !== appHost && !originUrl.host.endsWith('.pages.dev')) {
+      if (originUrl.host !== appHost && !originUrl.host.endsWith('.pages.dev') && originUrl.hostname !== 'localhost' && originUrl.hostname !== '127.0.0.1') {
         return new Response(JSON.stringify({ error: 'Cross-origin proxy request rejected' }), {
           status: 403,
           headers: { 'Content-Type': 'application/json' }
@@ -107,7 +107,7 @@ export async function onRequestGet(context) {
           redirect: 'manual',
           signal: controller.signal,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Tischplan/1.10.0',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
           }
@@ -158,12 +158,15 @@ export async function onRequestGet(context) {
     }
 
     // Sanitize HTML: Disallow scripts from running inside app context
-    // Strips all <script> elements and ensures relative URLs point back through proxy
+    // Strips all <script> elements EXCEPT application/ld+json (used for recipe schema metadata)
     const finalTargetUrl = new URL(currentTarget);
     const rewriter = new HTMLRewriter()
-      // Remove all scripts to avoid XSS in app context
       .on('script', {
         element(el) {
+          const type = (el.getAttribute('type') || '').toLowerCase().trim();
+          if (type === 'application/ld+json') {
+            return; // Retain JSON-LD for recipe schema extraction
+          }
           el.remove();
         }
       })

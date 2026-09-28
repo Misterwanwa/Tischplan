@@ -7,7 +7,7 @@ import {
   Apple, Carrot, Fish, Milk, Egg, Wheat, Wine, Flame, Package, Droplets, Heart,
   Shield, Tag, ArrowUpDown, ChevronDown, ChevronUp, MoreVertical, PlusCircle,
   CheckCircle2, Clock, Grid, ListFilter, RotateCcw, HelpCircle, Layers,
-  MessageSquare, Shuffle,
+  MessageSquare, Shuffle, Globe, RotateCw,
 } from 'lucide-react';
 import {
   SHOPPING_CATEGORIES,
@@ -433,18 +433,27 @@ async function searchRecipeOnline(query) {
   return callAI(prompt, false);
 }
 async function extractRecipeFromUrl(url) {
-  const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
-  const html = await fetch(proxyUrl).then(r => r.text());
-  
-  const scraped = extractRecipeFromHtml(html, url);
-  if (scraped && scraped.ingredients.length >= 3 && scraped.steps.length >= 2) {
-    return scraped;
+  let html = '';
+  try {
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl);
+    if (res.ok) {
+      html = await res.text();
+      const scraped = extractRecipeFromHtml(html, url);
+      if (scraped && scraped.ingredients && scraped.ingredients.length >= 3 && scraped.steps && scraped.steps.length >= 2) {
+        return scraped;
+      }
+    }
+  } catch (e) {
+    console.warn('Proxy-Abruf in extractRecipeFromUrl fehlgeschlagen:', e);
   }
-  
-  return callAI(
-    `Extrahiere das Rezept aus dieser URL: ${url}\n\nHTML-Snippet (erste 8000 Zeichen):\n${html.slice(0, 8000)}\n\nAntworte NUR mit JSON im Format: ${RECIPE_JSON_SCHEMA}`,
-    true
-  );
+
+  const hasUsefulHtml = html && html.length > 200 && !html.includes('{"error"');
+  const prompt = hasUsefulHtml
+    ? `Extrahiere das vollständige Rezept aus dieser URL (${url}).\n\nHTML-Auszug:\n${html.slice(0, 8000)}\n\nAntworte NUR mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`
+    : `Suche und extrahiere das Rezept von dieser URL: ${url}\nFalls der direkte Abruf blockiert ist, suche nach dem entsprechenden Rezept dieser Website und extrahiere alle Zutaten, Zubereitungsschritte und geschätzten Nährwerte.\n\nAntworte NUR mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
+
+  return callAI(prompt, true);
 }
 async function searchRecipeOnSite(domain, query) {
   const prompt = `Suche auf der Website ${domain} (site:${domain}) nach einem passenden Rezept: ${query}. Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
@@ -1846,7 +1855,10 @@ function CalendarTab() {
   const [mode, setMode] = useState(settings.defaultCalendarView || 'week');
 
   const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
   const touchEndX = useRef(null);
+  const touchEndY = useRef(null);
+  const touchStartTime = useRef(0);
 
   const navigateCalendar = (direction) => {
     const [y, m, d] = selectedDay.split('-').map(Number);
@@ -1863,25 +1875,48 @@ function CalendarTab() {
 
   const handleTouchStart = (e) => {
     touchStartX.current = e.targetTouches[0].clientX;
+    touchStartY.current = e.targetTouches[0].clientY;
     touchEndX.current = null;
+    touchEndY.current = null;
+    touchStartTime.current = Date.now();
   };
 
   const handleTouchMove = (e) => {
     touchEndX.current = e.targetTouches[0].clientX;
+    touchEndY.current = e.targetTouches[0].clientY;
   };
 
   const handleTouchEnd = () => {
-    if (touchStartX.current === null || touchEndX.current === null) return;
+    if (
+      touchStartX.current === null || touchEndX.current === null ||
+      touchStartY.current === null || touchEndY.current === null
+    ) {
+      touchStartX.current = null;
+      touchStartY.current = null;
+      touchEndX.current = null;
+      touchEndY.current = null;
+      return;
+    }
     const diffX = touchStartX.current - touchEndX.current;
-    const minDistance = 50;
+    const diffY = touchStartY.current - touchEndY.current;
+    const elapsed = Date.now() - touchStartTime.current;
 
-    if (diffX > minDistance) {
-      navigateCalendar(1);
-    } else if (diffX < -minDistance) {
-      navigateCalendar(-1);
+    // Nur bei klarer horizontaler Wischgeste die Woche/den Tag wechseln:
+    // 1. Min. 80px horizontaler Weg
+    // 2. Horizontale Bewegung muss mindestens doppelt so groß wie die vertikale sein
+    // 3. Maximale vertikale Drift von 60px (verhindert Auslösen beim vertikalen Scrollen)
+    // 4. Schnelle Geste unter 600ms
+    if (Math.abs(diffX) >= 80 && Math.abs(diffX) > Math.abs(diffY) * 2 && Math.abs(diffY) < 60 && elapsed < 600) {
+      if (diffX > 0) {
+        navigateCalendar(1);
+      } else {
+        navigateCalendar(-1);
+      }
     }
     touchStartX.current = null;
+    touchStartY.current = null;
     touchEndX.current = null;
+    touchEndY.current = null;
   };
 
   useEffect(() => {
@@ -1924,7 +1959,6 @@ function SourcePicker({ onPick }) {
     { key: 'firefox', label: 'Aus Firefox-Favoriten', icon: BookOpen, desc: 'Gespeicherte Favoriten durchsuchen' },
     { key: 'cookbook', label: 'Aus Kochbuch', icon: Camera, desc: 'Titel, Seite & Foto erfassen' },
     { key: 'ai', label: 'KI, Browser & Import', icon: Sparkles, desc: 'Rezept per KI erstellen, im Browser suchen oder per Link importieren' },
-    { key: 'other', label: 'Weiteres', icon: Plus, desc: 'Aktivitäten wie Essen gehen, Urlaub, etc.' },
   ];
   return (
     <div className="space-y-2">
@@ -2183,134 +2217,286 @@ function AIDirectSearch({ onNext }) {
 }
 
 function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
+  const { showToast } = useApp();
   const iframeRef = useRef(null);
-  const [currentUrl, setCurrentUrl] = useState(initialUrl);
-  const [iframeUrl] = useState(() => `/api/proxy?url=${encodeURIComponent(initialUrl)}`);
+  const [urlInput, setUrlInput] = useState(initialUrl && initialUrl !== 'https://www.google.de' ? initialUrl : '');
+  const [activeUrl, setActiveUrl] = useState(initialUrl && initialUrl !== 'https://www.google.de' ? initialUrl : '');
+  const [viewMode, setViewMode] = useState('reader'); // 'reader' | 'web'
   const [busy, setBusy] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
   const [extracted, setExtracted] = useState(null);
+  const [searchResults, setSearchResults] = useState([]);
 
-  const handleIframeLoad = () => {
-    if (!iframeRef.current || !iframeRef.current.contentWindow) return;
-    try {
-      const loc = iframeRef.current.contentWindow.location;
-      const searchParams = new URLSearchParams(loc.search);
-      const urlParam = searchParams.get('url');
-      if (urlParam) {
-        setCurrentUrl(urlParam);
-      } else {
-        setCurrentUrl(loc.href);
-      }
-    } catch (e) {
-      console.warn("Iframe location read blocked or failed", e);
+  const QUICK_PORTALS = [
+    { name: 'Chefkoch', url: 'https://www.chefkoch.de', icon: '🍳', desc: 'Größte Rezeptsammlung' },
+    { name: 'EatSmarter', url: 'https://eatsmarter.de', icon: '🥗', desc: 'Gesunde Rezepte & Nährwerte' },
+    { name: 'Lecker.de', url: 'https://www.lecker.de', icon: '🍰', desc: 'Kreative Rezepte & Backideen' },
+    { name: 'Essen & Trinken', url: 'https://www.essen-und-trinken.de', icon: '🥘', desc: 'Gourmet- & Alltagsküche' },
+    { name: 'Kitchen Stories', url: 'https://www.kitchenstories.com/de', icon: '🍝', desc: 'Schritt-für-Schritt Rezepte' },
+    { name: 'DasKochrezept', url: 'https://www.daskochrezept.de', icon: '🥑', desc: 'Klassiker & schnelle Gerichte' },
+  ];
+
+  const navigateTo = async (inputStr) => {
+    let clean = (inputStr || '').trim();
+    if (!clean) return;
+
+    const hasProtocol = /^https?:\/\//i.test(clean);
+    const hasDomain = /^[a-z0-9-]+(\.[a-z0-9-]+)+/i.test(clean) && !clean.includes(' ');
+
+    if (!hasProtocol && !hasDomain) {
+      await runSearch(clean);
+      return;
     }
-  };
 
-  const handleBack = () => {
-    if (iframeRef.current && iframeRef.current.contentWindow) {
-      try {
-        iframeRef.current.contentWindow.history.back();
-      } catch (e) {
-        console.warn("Iframe history back failed", e);
-      }
+    if (!hasProtocol) {
+      clean = 'https://' + clean;
     }
-  };
 
-  const handleSave = async () => {
-    setBusy(true);
+    setUrlInput(clean);
+    setActiveUrl(clean);
     setError(null);
-    console.group(`[handleSave] ${currentUrl}`);
-    console.log('Starte Rezept-Extraktion...');
-    
-    try {
-      const result = await extractRecipeFromUrl(currentUrl);
-      if (result && ((result.ingredients && result.ingredients.length >= 1) || (result.steps && result.steps.length >= 1))) {
-        console.log('Extraktion erfolgreich:', result.title, '|', result.ingredients?.length, 'Zutaten');
-        const screenshot = `https://image.thum.io/get/width/600/crop/800/${currentUrl}`;
-        result.photo = screenshot;
-        setExtracted(result);
-        return;
-      }
-      throw new Error("Kein Rezept-Format erkannt");
-    } catch (e) {
-      console.warn('[handleSave] Extraktion fehlgeschlagen, erstelle Screenshot-Rezept:', e);
-      const screenshot = `https://image.thum.io/get/width/600/crop/800/${currentUrl}`;
-      let pageTitle = 'Importiertes Rezept';
-      try {
-        if (iframeRef.current && iframeRef.current.contentWindow && iframeRef.current.contentWindow.document) {
-          const docTitle = iframeRef.current.contentWindow.document.title;
-          if (docTitle) pageTitle = docTitle.trim();
-        }
-      } catch (err) {}
-      if (pageTitle === 'Importiertes Rezept' && currentUrl) {
-        try {
-          const parsedUrl = new URL(currentUrl);
-          pageTitle = parsedUrl.hostname.replace(/^www\./, '');
-        } catch (err) {}
-      }
+    setSearchResults([]);
+    setExtracted(null);
 
-      setExtracted({
-        title: pageTitle,
-        servings: 4,
-        ingredients: [],
-        steps: [],
-        nutrition: null,
-        photo: screenshot,
-        sourceUrl: currentUrl
-      });
+    setBusy(true);
+    try {
+      const res = await extractRecipeFromUrl(clean);
+      if (res && ((res.ingredients && res.ingredients.length > 0) || (res.steps && res.steps.length > 0))) {
+        setExtracted(res);
+        setViewMode('reader');
+      } else {
+        setViewMode('web');
+      }
+    } catch (e) {
+      console.warn('Rezept-Extraktion beim Navigieren fehlgeschlagen:', e);
+      setViewMode('web');
     } finally {
       setBusy(false);
-      console.groupEnd();
     }
   };
 
+  const runSearch = async (term) => {
+    if (!term || !term.trim()) return;
+    setSearching(true);
+    setError(null);
+    setExtracted(null);
+    setActiveUrl('');
+    try {
+      const prompt = `Führe eine gezielte Rezeptsuche für "${term.trim()}" durch.
+Finde 4 bis 6 konkrete, leckere Rezepte auf beliebten deutschsprachigen Rezept-Portalen (z. B. Chefkoch, EatSmarter, Lecker, Essen & Trinken).
+Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
+{
+  "results": [
+    {
+      "title": "Titel des Rezepts",
+      "url": "Vollständige URL zum Rezept (https://...)",
+      "domain": "z. B. chefkoch.de",
+      "snippet": "1-2 Sätze kurze Beschreibung des Rezepts",
+      "servings": 4
+    }
+  ]
+}`;
+      const res = await callAI(prompt, true);
+      if (res && Array.isArray(res.results) && res.results.length > 0) {
+        setSearchResults(res.results);
+      } else {
+        setError(`Keine Rezepte für „${term}“ gefunden.`);
+      }
+    } catch (err) {
+      console.error('Rezept-Suche fehlgeschlagen:', err);
+      setError('Websuche fehlgeschlagen. Du kannst eine Webadresse direkt oben eingeben.');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleManualExtract = async () => {
+    if (!activeUrl) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await extractRecipeFromUrl(activeUrl);
+      if (res) {
+        setExtracted(res);
+        setViewMode('reader');
+        showToast('Rezept erfolgreich analysiert!');
+      } else {
+        throw new Error('Kein Rezept erkannt');
+      }
+    } catch (e) {
+      setError('Konnte Rezept nicht automatisch analysieren.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSaveToApp = () => {
+    if (!extracted) return;
+    onSaveRecipe({
+      title: extracted.title || 'Importiertes Rezept',
+      servingsText: extracted.servings ? String(extracted.servings) : '4',
+      ingredientsText: (extracted.ingredients || []).join('\n'),
+      stepsText: (extracted.steps || []).join('\n'),
+      nutrition: extracted.nutrition || null,
+      photo: extracted.photo || null,
+      source: { type: 'ai', url: activeUrl || urlInput, label: 'In-App-Browser' }
+    });
+  };
+
+  useEffect(() => {
+    if (initialUrl && initialUrl !== 'https://www.google.de') {
+      navigateTo(initialUrl);
+    }
+  }, [initialUrl]);
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex flex-col z-50 animate-fade-in">
-      <div className="bg-stone-900 text-white p-3 flex items-center gap-3 flex-shrink-0">
-        <button onClick={handleBack} className="p-1.5 hover:bg-stone-800 rounded-lg text-stone-300 hover:text-white" title="Zurück">
+    <div className="fixed inset-0 bg-stone-900/70 backdrop-blur-sm flex flex-col z-50 animate-fade-in">
+      {/* Top Browser Bar */}
+      <div className="bg-stone-900 text-white p-2.5 sm:p-3 flex items-center gap-2 flex-shrink-0 border-b border-stone-800">
+        <button
+          onClick={() => {
+            if (extracted && activeUrl) {
+              setExtracted(null);
+            } else if (activeUrl || searchResults.length > 0) {
+              setActiveUrl('');
+              setSearchResults([]);
+              setUrlInput('');
+            } else {
+              onClose();
+            }
+          }}
+          className="p-1.5 hover:bg-stone-800 rounded-lg text-stone-300 hover:text-white transition-colors"
+          title="Zurück"
+        >
           <ChevronLeft size={20} />
         </button>
-        <div className="flex-1 bg-stone-800 rounded-lg px-3 py-1.5 text-xs font-mono truncate text-stone-300 select-all">
-          {currentUrl}
-        </div>
-        {!extracted && (
-          <button onClick={handleSave} disabled={busy} className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1.5 text-xs font-semibold px-3 disabled:opacity-50" title="Rezept speichern">
-            {busy ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-            <span>Speichern</span>
+
+        {/* Address / Search Bar */}
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            navigateTo(urlInput);
+          }}
+          className="flex-1 flex items-center bg-stone-800 rounded-xl px-2.5 py-1.5 border border-stone-700/60 focus-within:border-stone-500"
+        >
+          <Search size={14} className="text-stone-400 shrink-0 mr-2" />
+          <input
+            type="text"
+            value={urlInput}
+            onChange={e => setUrlInput(e.target.value)}
+            placeholder="Rezept suchen (z. B. Gulasch) oder Website..."
+            className="w-full bg-transparent text-xs text-white placeholder-stone-400 focus:outline-none font-sans"
+          />
+          {urlInput && (
+            <button
+              type="button"
+              onClick={() => { setUrlInput(''); setActiveUrl(''); setSearchResults([]); setExtracted(null); }}
+              className="text-stone-400 hover:text-stone-200 p-0.5"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </form>
+
+        {/* Action Controls */}
+        {activeUrl && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setViewMode(viewMode === 'reader' ? 'web' : 'reader')}
+              className={`p-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition-colors ${
+                viewMode === 'reader' ? 'bg-amber-600/30 text-amber-300 border border-amber-500/40' : 'bg-stone-800 text-stone-300 hover:bg-stone-700'
+              }`}
+              title={viewMode === 'reader' ? 'Zur Webansicht wechseln' : 'Zur Rezept-Vorschau wechseln'}
+            >
+              {viewMode === 'reader' ? <Globe size={15} /> : <BookOpen size={15} />}
+              <span className="hidden sm:inline">{viewMode === 'reader' ? 'Web' : 'Reader'}</span>
+            </button>
+
+            {!extracted && (
+              <button
+                onClick={handleManualExtract}
+                disabled={busy}
+                className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1 text-xs font-semibold px-2.5 transition-colors disabled:opacity-50"
+                title="Rezept analysieren"
+              >
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                <span className="hidden sm:inline">Analysieren</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {extracted && (
+          <button
+            onClick={handleSaveToApp}
+            className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1 text-xs font-semibold px-3 transition-colors shadow-sm"
+            title="Rezept speichern"
+          >
+            <Check size={15} />
+            <span>Übernehmen</span>
           </button>
         )}
-        <button onClick={onClose} className="p-1.5 hover:bg-stone-800 rounded-lg text-stone-300 hover:text-white" title="Schließen">
+
+        <button
+          onClick={onClose}
+          className="p-1.5 hover:bg-stone-800 rounded-lg text-stone-400 hover:text-white transition-colors"
+          title="Schließen"
+        >
           <X size={20} />
         </button>
       </div>
 
-      <div className="flex-1 bg-white relative overflow-hidden flex flex-col">
+      {/* Viewport */}
+      <div className="flex-1 bg-stone-100 relative overflow-hidden flex flex-col">
         {busy && (
-          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white z-10 p-6 text-center">
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-xs flex flex-col items-center justify-center text-white z-20 p-6 text-center">
+            <Loader2 size={36} className="animate-spin mb-3 text-amber-400" />
+            <div className="font-mono text-sm font-semibold tracking-wide uppercase">Rezept wird analysiert...</div>
+            <p className="text-xs text-stone-300 mt-1">Zutaten und Schritte werden extrahiert</p>
+          </div>
+        )}
+
+        {searching && (
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-xs flex flex-col items-center justify-center text-white z-20 p-6 text-center">
             <Loader2 size={36} className="animate-spin mb-3 text-emerald-400" />
-            <div className="font-mono text-sm font-semibold tracking-wide uppercase">Laden...</div>
+            <div className="font-mono text-sm font-semibold tracking-wide uppercase">Rezeptsuche im Web...</div>
+            <p className="text-xs text-stone-300 mt-1">Die besten Rezepte werden gesucht</p>
           </div>
         )}
 
         {error && (
-          <div className="bg-rose-50 border-b border-rose-200 text-rose-800 p-3 text-xs flex justify-between items-center">
-            <span>{error}</span>
-            <button onClick={() => setError(null)} className="font-bold underline">Ausblenden</button>
+          <div className="bg-rose-50 border-b border-rose-200 text-rose-800 px-4 py-2.5 text-xs flex justify-between items-center z-10 shrink-0">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={14} className="text-rose-600 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button onClick={() => setError(null)} className="font-bold underline ml-2">Ausblenden</button>
           </div>
         )}
 
-        {extracted ? (
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 max-w-xl mx-auto w-full">
-            <div className="text-center pb-2 border-b border-stone-200">
-              <span className="font-mono text-xs uppercase tracking-widest text-emerald-600 font-bold">Gespeichertes Rezept</span>
-              <h2 className="text-xl font-bold mt-1 text-stone-900">{extracted.title || 'Rezept'}</h2>
-              <p className="text-sm text-stone-500 mt-1">{extracted.servings || 4} Portionen</p>
+        {/* VIEW 1: EXTRACTED RECIPE (Reader View) */}
+        {extracted && viewMode === 'reader' && (
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 max-w-xl mx-auto w-full bg-white shadow-sm my-2 rounded-2xl">
+            <div className="text-center pb-3 border-b border-stone-200">
+              <span className="font-mono text-[11px] uppercase tracking-widest text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                Gefundenes Rezept
+              </span>
+              <h2 className="text-xl font-bold mt-2 text-stone-900">{extracted.title || 'Rezept'}</h2>
+              <div className="flex items-center justify-center gap-3 text-xs text-stone-500 mt-1">
+                <span>{extracted.servings || 4} Portionen</span>
+                {activeUrl && (
+                  <a href={activeUrl} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-stone-700 flex items-center gap-1 font-mono text-[11px]">
+                    <ExternalLink size={11} /> Quelle
+                  </a>
+                )}
+              </div>
             </div>
 
             {extracted.nutrition && (
               <div className="grid grid-cols-4 gap-2 text-center">
-                {['kcal', 'protein', 'carbs', 'fat'].map(k => (
-                  <div key={k} className="bg-stone-50 rounded-lg py-2 border border-stone-200">
+                {NUTRIENT_KEYS.map(k => (
+                  <div key={k} className="bg-stone-50 rounded-xl py-2 border border-stone-200">
                     <div className="text-sm font-bold font-mono text-stone-850">{extracted.nutrition[k] || 0}</div>
                     <div className="text-[10px] uppercase text-stone-400 font-mono tracking-wider">{NUTRIENT_LABELS[k]}</div>
                   </div>
@@ -2320,10 +2506,13 @@ function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
 
             {extracted.ingredients && extracted.ingredients.length > 0 && (
               <div>
-                <h3 className="font-mono uppercase tracking-wide text-xs text-stone-400 mb-1.5 font-bold">Zutaten</h3>
-                <ul className="text-sm text-stone-700 space-y-1">
+                <h3 className="font-mono uppercase tracking-wide text-xs text-stone-400 mb-2 font-bold">Zutaten</h3>
+                <ul className="text-sm text-stone-700 space-y-1.5 bg-stone-50 p-3 rounded-xl border border-stone-200">
                   {extracted.ingredients.map((ing, i) => (
-                    <li key={i} className="py-1 border-b border-stone-100 last:border-0">• {ing}</li>
+                    <li key={i} className="py-0.5 border-b border-stone-150 last:border-0 flex items-start gap-2">
+                      <span className="text-emerald-600 font-bold">•</span>
+                      <span>{ing}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -2331,8 +2520,8 @@ function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
 
             {extracted.steps && extracted.steps.length > 0 && (
               <div>
-                <h3 className="font-mono uppercase tracking-wide text-xs text-stone-400 mb-1.5 font-bold">Zubereitung</h3>
-                <ol className="text-sm text-stone-700 space-y-2 list-decimal list-inside">
+                <h3 className="font-mono uppercase tracking-wide text-xs text-stone-400 mb-2 font-bold">Zubereitung</h3>
+                <ol className="text-sm text-stone-700 space-y-2 list-decimal list-inside bg-stone-50 p-3 rounded-xl border border-stone-200">
                   {extracted.steps.map((step, i) => (
                     <li key={i} className="pl-1 align-top leading-relaxed">{step}</li>
                   ))}
@@ -2341,35 +2530,141 @@ function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
             )}
 
             <div className="pt-4 border-t border-stone-200 flex gap-2">
-              <button onClick={() => setExtracted(null)} className="w-1/3 py-2.5 rounded-lg border border-stone-300 text-stone-600 text-sm font-medium hover:bg-stone-50">
-                Zurück
+              <button
+                type="button"
+                onClick={() => setViewMode('web')}
+                className="w-1/3 py-2.5 rounded-xl border border-stone-300 text-stone-600 text-xs font-medium hover:bg-stone-50 flex items-center justify-center gap-1"
+              >
+                <Globe size={13} /> Webseite
               </button>
               <button
-                onClick={() => {
-                  onSaveRecipe({
-                    title: extracted.title || 'Rezept',
-                    servingsText: extracted.servings ? String(extracted.servings) : '4',
-                    ingredientsText: (extracted.ingredients || []).join('\n'),
-                    stepsText: (extracted.steps || []).join('\n'),
-                    nutrition: extracted.nutrition || null,
-                    photo: extracted.photo || null,
-                    source: { type: 'ai', url: currentUrl, label: 'In-App-Browser' }
-                  });
-                }}
-                className="flex-1 py-2.5 bg-stone-900 text-white rounded-lg font-semibold text-sm hover:bg-stone-850 active:scale-[0.99] flex items-center justify-center gap-2"
+                type="button"
+                onClick={handleSaveToApp}
+                className="flex-1 py-2.5 bg-stone-900 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-wide hover:bg-stone-850 active:scale-[0.99] flex items-center justify-center gap-2 shadow"
               >
-                <Check size={16} /> Rezept übernehmen &amp; Speichern
+                <Check size={15} /> Rezept übernehmen &amp; Speichern
               </button>
             </div>
           </div>
-        ) : (
-          <iframe
-            ref={iframeRef}
-            src={iframeUrl}
-            onLoad={handleIframeLoad}
-            className="w-full h-full border-0"
-            sandbox="allow-same-origin allow-forms allow-scripts"
-          />
+        )}
+
+        {/* VIEW 2: WEB VIEW (Iframe via Proxy) */}
+        {activeUrl && viewMode === 'web' && (
+          <div className="flex-1 w-full h-full relative">
+            <iframe
+              ref={iframeRef}
+              src={`/api/proxy?url=${encodeURIComponent(activeUrl)}`}
+              className="w-full h-full border-0 bg-white"
+              sandbox="allow-same-origin allow-forms allow-scripts"
+            />
+            {/* Floating button to extract recipe */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+              <button
+                type="button"
+                onClick={handleManualExtract}
+                disabled={busy}
+                className="px-4 py-2.5 bg-stone-900/90 hover:bg-stone-900 text-white rounded-full font-mono text-xs font-bold uppercase tracking-wider shadow-xl backdrop-blur-sm flex items-center gap-2 border border-stone-700 active:scale-95 transition-all"
+              >
+                <Sparkles size={14} className="text-amber-400" />
+                <span>Rezept aus dieser Seite speichern</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 3: SEARCH RESULTS */}
+        {!activeUrl && searchResults.length > 0 && (
+          <div className="flex-1 overflow-y-auto p-4 max-w-xl mx-auto w-full space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-mono uppercase font-bold text-stone-500">
+                Gefundene Rezepte ({searchResults.length}):
+              </h3>
+              <button
+                onClick={() => setSearchResults([])}
+                className="text-xs font-mono text-stone-400 hover:text-stone-700"
+              >
+                Zurück zu Portalen
+              </button>
+            </div>
+            <div className="space-y-2">
+              {searchResults.map((res, i) => (
+                <div
+                  key={i}
+                  onClick={() => navigateTo(res.url)}
+                  className="bg-white p-3.5 rounded-xl border border-stone-200 hover:border-stone-400 hover:shadow-sm cursor-pointer transition-all space-y-1.5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-bold text-sm text-stone-900 hover:text-emerald-700">{res.title}</h4>
+                    {res.domain && (
+                      <span className="shrink-0 text-[10px] font-mono font-medium text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
+                        {res.domain}
+                      </span>
+                    )}
+                  </div>
+                  {res.snippet && (
+                    <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">{res.snippet}</p>
+                  )}
+                  <div className="flex items-center justify-between pt-1 text-[11px] text-emerald-700 font-medium">
+                    <span>Rezept ansehen &amp; extrahieren →</span>
+                    {res.servings && <span className="font-mono text-stone-400">{res.servings} Portionen</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 4: BROWSER HOME / PORTALS */}
+        {!activeUrl && searchResults.length === 0 && (
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-xl mx-auto w-full space-y-5">
+            <div className="text-center space-y-1.5 pt-2">
+              <div className="w-12 h-12 bg-stone-900 text-amber-400 rounded-2xl flex items-center justify-center mx-auto shadow-md">
+                <Globe size={24} />
+              </div>
+              <h3 className="font-bold text-base text-stone-900">Rezept-Browser</h3>
+              <p className="text-xs text-stone-500 max-w-sm mx-auto">
+                Wähle ein Rezeptportal oder gib oben ein beliebiges Gericht oder eine URL ein.
+              </p>
+            </div>
+
+            {/* Quick Portals Grid */}
+            <div className="space-y-2">
+              <label className={labelCls}>Beliebte Rezeptseiten</label>
+              <div className="grid grid-cols-2 gap-2.5">
+                {QUICK_PORTALS.map(portal => (
+                  <button
+                    key={portal.name}
+                    type="button"
+                    onClick={() => navigateTo(portal.url)}
+                    className="p-3 bg-white rounded-xl border border-stone-200 hover:border-stone-400 hover:bg-stone-50/80 text-left transition-all flex items-center gap-3 shadow-xs"
+                  >
+                    <span className="text-2xl">{portal.icon}</span>
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-stone-900 truncate">{portal.name}</div>
+                      <div className="text-[10px] text-stone-400 truncate">{portal.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Suggestions */}
+            <div className="space-y-2">
+              <label className={labelCls}>Oder direkt suchen</label>
+              <div className="flex flex-wrap gap-1.5">
+                {["Kaiserschmarrn", "Spaghetti Bolognese", "Chili con Carne", "Apfelkuchen", "Linsensuppe", "Pizza Margherita"].map(dish => (
+                  <button
+                    key={dish}
+                    type="button"
+                    onClick={() => { setUrlInput(dish); runSearch(dish); }}
+                    className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-xs font-medium text-stone-700 hover:bg-stone-100 hover:border-stone-300 transition-colors"
+                  >
+                    🔍 {dish}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -2379,17 +2674,26 @@ function InAppBrowser({ initialUrl, onClose, onSaveRecipe }) {
 function GoogleLinkSearch({ onNext }) {
   const [browserUrl, setBrowserUrl] = useState(null);
 
-  const startSearch = () => {
-    setBrowserUrl('https://www.google.de');
-  };
-
   return (
     <div className="space-y-3">
-      <button onClick={startSearch} className={primaryBtnCls}>
-        <Search size={14} /> Suchen
-      </button>
+      <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 space-y-3">
+        <div className="flex items-center gap-2 text-stone-900 font-semibold text-sm">
+          <Globe size={18} className="text-emerald-600" />
+          <span>In-App Rezept-Browser</span>
+        </div>
+        <p className="text-xs text-stone-600 leading-relaxed">
+          Stöbere direkt auf Chefkoch, EatSmarter, Lecker oder lass die KI beliebige Rezepte aus dem Web heraussuchen und mit einem Klick importieren.
+        </p>
+        <button
+          type="button"
+          onClick={() => setBrowserUrl('')}
+          className={primaryBtnCls}
+        >
+          <Search size={14} /> In-App-Browser öffnen
+        </button>
+      </div>
 
-      {browserUrl && (
+      {browserUrl !== null && (
         <InAppBrowser
           initialUrl={browserUrl}
           onClose={() => setBrowserUrl(null)}
@@ -2482,7 +2786,7 @@ function URLPasteSearch({ onNext }) {
           <button
             onClick={() => {
               onNext({
-                title: extracted.title || 'Rezept',
+                title: extracted.title || 'Importiertes Rezept',
                 servingsText: extracted.servings ? String(extracted.servings) : '4',
                 ingredientsText: (extracted.ingredients || []).join('\n'),
                 stepsText: (extracted.steps || []).join('\n'),
@@ -2512,18 +2816,29 @@ function URLPasteSearch({ onNext }) {
         className={inputCls}
         onKeyDown={e => e.key === 'Enter' && handleImport()}
       />
-      <button 
-        onClick={handleImport} 
-        disabled={busy || !urlInput.trim()} 
-        className={primaryBtnCls}
-      >
-        {busy ? (
-          <Loader2 size={15} className="animate-spin" />
-        ) : (
-          <><Download size={15} /> Rezept importieren</>
-        )}
-      </button>
-      {browserUrl && (
+      <div className="flex gap-2">
+        <button 
+          onClick={handleImport} 
+          disabled={busy || !urlInput.trim()} 
+          className={primaryBtnCls}
+        >
+          {busy ? (
+            <><Loader2 size={15} className="animate-spin" /> Analysiere Rezept...</>
+          ) : (
+            <><Download size={15} /> Rezept importieren</>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setBrowserUrl(urlInput.trim() || '')}
+          className="px-3 py-2.5 rounded-lg border border-stone-300 text-stone-700 hover:bg-stone-50 text-xs font-semibold font-mono uppercase shrink-0 flex items-center gap-1.5"
+          title="Im In-App-Browser öffnen"
+        >
+          <Globe size={15} /> Browser
+        </button>
+      </div>
+
+      {browserUrl !== null && (
         <InAppBrowser
           initialUrl={browserUrl}
           onClose={() => setBrowserUrl(null)}
@@ -2565,19 +2880,23 @@ function RecipeForm({ initial, onBack, backLabel, onSave }) {
   const [photo, setPhoto] = useState((initial && initial.photo) || null);
   const [busyPhoto, setBusyPhoto] = useState(false);
   const [busyNutrition, setBusyNutrition] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const source = (initial && initial.source) || { type: 'manual', label: 'Manuell' };
+  const currentRecipeId = initial?.id || null;
 
   const duplicateNotice = useMemo(() => {
+    if (isSubmitting) return null;
     const trimmed = (title || '').trim().toLowerCase();
     if (!trimmed || trimmed.length < 3) return null;
-    const match = (recipes || []).find(r => (r.title || '').trim().toLowerCase() === trimmed);
+    const match = (recipes || []).find(r => r.id !== currentRecipeId && (r.title || '').trim().toLowerCase() === trimmed);
     if (match) return `Hinweis: Es existiert bereits ein Rezept namens „${match.title}“.`;
     if (source && source.url) {
-      const urlMatch = (recipes || []).find(r => r.source?.url && r.source.url.replace(/\/+$/, '') === source.url.replace(/\/+$/, ''));
+      const cleanUrl = source.url.replace(/\/+$/, '');
+      const urlMatch = (recipes || []).find(r => r.id !== currentRecipeId && r.source?.url && r.source.url.replace(/\/+$/, '') === cleanUrl);
       if (urlMatch) return `Hinweis: Diese Quell-URL ist bereits für „${urlMatch.title}“ gespeichert.`;
     }
     return null;
-  }, [title, recipes, source]);
+  }, [title, recipes, source, isSubmitting, currentRecipeId]);
 
   const handlePhoto = async (file) => {
     setBusyPhoto(true);
@@ -2597,7 +2916,9 @@ function RecipeForm({ initial, onBack, backLabel, onSave }) {
 
   const save = () => {
     if (!title.trim()) { showToast('Bitte einen Titel eingeben', 'error'); return; }
+    setIsSubmitting(true);
     const recipe = {
+      ...(currentRecipeId ? { id: currentRecipeId } : {}),
       title: title.trim(),
       servings: parseFloat(servingsText) || 1,
       ingredients: parseIngredientsText(ingredientsText),
@@ -2686,69 +3007,6 @@ function RecipeForm({ initial, onBack, backLabel, onSave }) {
   );
 }
 
-function OtherPickerPanel({ onBack, onSelect }) {
-  const [customText, setCustomText] = useState('');
-  const [busy, setBusy] = useState(false);
-  const options = ["Essen gehen", "Party", "bei Freunden", "Urlaub", "Bestellen", "Tiefkühl", "SinfOrMa"];
-
-  const handleSelectOption = async (text) => {
-    if (busy || !text || !text.trim()) return;
-    setBusy(true);
-    try {
-      await onSelect(text.trim());
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <button type="button" onClick={onBack} className="text-sm text-stone-400 flex items-center gap-1 mb-2"><ChevronLeft size={14} /> Zurück</button>
-
-      {/* Freitext-Eingabe für Weiteres */}
-      <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-2">
-        <label className={labelCls}>Eigenen Eintrag hinzufügen</label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={customText}
-            onChange={e => setCustomText(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSelectOption(customText)}
-            placeholder="z. B. Grillabend, Fasten, Kantine..."
-            className={inputCls}
-            disabled={busy}
-          />
-          <button
-            type="button"
-            disabled={busy || !customText.trim()}
-            onClick={() => handleSelectOption(customText)}
-            className="px-3 py-2 rounded-lg bg-stone-900 text-white font-mono uppercase text-xs font-semibold disabled:opacity-40 flex-shrink-0 flex items-center gap-1"
-          >
-            <Plus size={14} /> Hinzufügen
-          </button>
-        </div>
-      </div>
-
-      <div>
-        <label className={labelCls + " block mb-1.5"}>Schnellauswahl</label>
-        <div className="grid grid-cols-1 gap-2">
-          {options.map(opt => (
-            <button
-              key={opt}
-              type="button"
-              disabled={busy}
-              onClick={() => handleSelectOption(opt)}
-              className="w-full text-left p-3 rounded-lg border border-stone-250 hover:border-stone-400 hover:bg-stone-50 text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function AddRecipeModal({ onClose, onSaved }) {
   const { addRecipe, showToast } = useApp();
   const [step, setStep] = useState('source');
@@ -2768,34 +3026,6 @@ function AddRecipeModal({ onClose, onSaved }) {
           {step === 'firefox' && <FirefoxImportPanel onBack={() => setStep('source')} onNext={goForm} />}
           {step === 'cookbook' && <CookbookPanel onBack={() => setStep('source')} onNext={goForm} />}
           {step === 'ai' && <AISearchPanel onBack={() => setStep('source')} onNext={goForm} />}
-          {step === 'other' && (
-            <OtherPickerPanel
-              onBack={() => setStep('source')}
-              onSelect={async (title) => {
-                if (saving) return;
-                setSaving(true);
-                try {
-                  const recipe = {
-                    title: title.trim(),
-                    servings: 1,
-                    ingredients: [],
-                    steps: [],
-                    nutrition: null,
-                    source: { type: 'other', label: 'Weiteres' },
-                  };
-                  const saved = await addRecipe(recipe);
-                  showToast(`${title} hinzugefügt`);
-                  if (onSaved) await onSaved(saved);
-                  onClose();
-                } catch (err) {
-                  console.error('Failed to add other meal:', err);
-                  showToast('Fehler beim Hinzufügen', 'error');
-                } finally {
-                  setSaving(false);
-                }
-              }}
-            />
-          )}
           {step === 'form' && <RecipeForm initial={draft} onBack={() => setStep('source')} onSave={async (recipe) => {
             if (saving) return;
             setSaving(true);
@@ -3206,6 +3436,7 @@ function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
           <div className="flex-1 overflow-y-auto p-4 min-h-0">
             <RecipeForm
               initial={{
+                id: recipe.id,
                 title: recipe.title, servingsText: String(recipe.servings),
                 ingredientsText: ingredientsToText(recipe.ingredients), stepsText: recipe.steps.join('\n'),
                 nutrition: recipe.nutrition || { kcal: '', protein: '', carbs: '', fat: '' },
@@ -5717,12 +5948,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.12</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.13</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn) · v1.10.11 (Kaiserschmarrn) · v1.10.12 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn) · v1.10.11 (Kaiserschmarrn) · v1.10.12 (Kaiserschmarrn) · v1.10.13 (Kaiserschmarrn)
         </div>
       </div>
 

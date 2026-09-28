@@ -592,7 +592,7 @@ function CaloriesProfile({
           }}
           className="w-full py-3.5 px-4 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl shadow-lg flex items-center justify-center gap-2 font-mono uppercase tracking-wide text-xs font-bold transition-all active:scale-[0.99]"
         >
-          <Plus size={18} /> Mahlzeit erfassen (Freifeld, KI-Foto, Barcode)
+          <Plus size={18} /> Mahlzeit erfassen (Freifeld, KI-Erfassung, KI-Foto, Barcode)
         </button>
       </div>
 
@@ -704,11 +704,12 @@ function CaloriesProfile({
         <p className="text-xs text-stone-500 mt-2">Nach 24 Stunden wird der Tag automatisch vollständig erfasst</p>
       </div>
 
-      {/* MODAL: Mahlzeit erfassen (Freifeld, KI-Foto, Barcode) */}
+      {/* MODAL: Mahlzeit erfassen (Freifeld, KI-Erfassung, KI-Foto, Barcode) */}
       {modalMode && modalMode !== 'burned' && (
         <MealEntryModal
           initialMode={modalMode}
           activeMealKey={activeMealKey}
+          selectedDate={selectedDate}
           onClose={() => setModalMode(null)}
           onSave={(item, mealKey) => {
             saveDayData(prev => ({
@@ -720,6 +721,20 @@ function CaloriesProfile({
             }));
             setModalMode(null);
             showToast(`"${item.name}" erfasst!`);
+          }}
+          onSaveBatch={(batch) => {
+            saveDayData(prev => {
+              const updatedMeals = { ...(prev.meals || {}) };
+              for (const [mKey, items] of Object.entries(batch)) {
+                if (Array.isArray(items) && items.length > 0) {
+                  updatedMeals[mKey] = [...(updatedMeals[mKey] || []), ...items];
+                }
+              }
+              return { ...prev, meals: updatedMeals };
+            });
+            setModalMode(null);
+            const count = Object.values(batch).flat().length;
+            showToast(`${count} Mahlzeit${count === 1 ? '' : 'en'} per KI erfasst!`);
           }}
           callAI={callAI}
           recipes={recipes}
@@ -793,12 +808,14 @@ function CalorieCircularGauge({ eaten, target }) {
   );
 }
 
-/* ---------------------------------- Meal Entry Modal (Freifeld, KI-Foto, Barcode) ---------------------------------- */
+/* ---------------------------------- Meal Entry Modal (Freifeld, KI-Erfassung, KI-Foto, Barcode) ---------------------------------- */
 function MealEntryModal({
   initialMode,
   activeMealKey,
+  selectedDate,
   onClose,
   onSave,
+  onSaveBatch,
   callAI,
   recipes = [],
   mealplanIndex = {},
@@ -806,7 +823,7 @@ function MealEntryModal({
   getDayPlan,
   storageGet,
 }) {
-  const [tab, setTab] = useState(initialMode || 'free'); // 'free' | 'ai' | 'barcode'
+  const [tab, setTab] = useState(initialMode || 'free'); // 'free' | 'ai_day' | 'ai' | 'barcode'
   const [mealKey, setMealKey] = useState(activeMealKey || 'lunch');
 
   // Form Fields
@@ -826,6 +843,151 @@ function MealEntryModal({
   const [plannedRecipes, setPlannedRecipes] = useState([]);
   const [shoppingItems, setShoppingItems] = useState([]);
   const suggestionsContainerRef = useRef(null);
+
+  // State for KI-Erfassung (Tagesplan-Rezepte)
+  const [dayRecipes, setDayRecipes] = useState([]);
+  const [dayRecipesLoading, setDayRecipesLoading] = useState(false);
+  const [extraInstructions, setExtraInstructions] = useState('');
+  const [aiDayLoading, setAiDayLoading] = useState(false);
+  const [aiDayError, setAiDayError] = useState('');
+  const [aiDayResult, setAiDayResult] = useState(null);
+
+  // Load planned recipes for the specific selected day
+  useEffect(() => {
+    let isMounted = true;
+    const targetDate = selectedDate || todayKey();
+    setDayRecipesLoading(true);
+    (async () => {
+      try {
+        let plan = null;
+        if (typeof getDayPlan === 'function') {
+          plan = await getDayPlan(targetDate);
+        } else if (typeof storageGet === 'function') {
+          plan = await storageGet(`mealplan:${targetDate}`, true, null);
+        }
+        if (!isMounted) return;
+        const recipeMap = new Map((recipes || []).map(r => [r.id, r]));
+        const items = [];
+        if (plan) {
+          const MEAL_LABELS = { breakfast: 'Frühstück', lunch: 'Mittagessen', dinner: 'Abendessen' };
+          const COURSE_LABELS = { snack: 'Snack', main: 'Hauptspeise', dessert: 'Nachspeise' };
+          for (const mt of ['breakfast', 'lunch', 'dinner']) {
+            if (!plan[mt]) continue;
+            for (const co of ['snack', 'main', 'dessert']) {
+              const slot = plan[mt][co];
+              if (slot && slot.recipeId) {
+                const rec = recipeMap.get(slot.recipeId);
+                const title = rec?.title || slot.customTitle || 'Unbekanntes Gericht';
+                const mealCat = co === 'snack' ? 'snack' : mt;
+                items.push({
+                  recipeId: slot.recipeId,
+                  slotKey: `${mt}_${co}`,
+                  mealCategory: mealCat,
+                  mealLabel: MEAL_LABELS[mt] || mt,
+                  courseLabel: COURSE_LABELS[co] || co,
+                  title,
+                  recipe: rec || null,
+                  ingredients: rec?.ingredients || [],
+                  servings: rec?.servings || 1,
+                  nutrition: rec?.nutrition || null,
+                  multiplier: slot.multiplier || 1,
+                });
+              }
+            }
+          }
+        }
+        setDayRecipes(items);
+      } catch (err) {
+        console.error('Fehler beim Laden der Tagesrezepte:', err);
+      } finally {
+        if (isMounted) setDayRecipesLoading(false);
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [selectedDate, recipes]);
+
+  const handleAiDaySubmit = async () => {
+    if (dayRecipes.length === 0) {
+      setAiDayError('Für diesen Tag sind im Speiseplan keine Rezepte hinterlegt.');
+      return;
+    }
+    setAiDayLoading(true);
+    setAiDayError('');
+    setAiDayResult(null);
+
+    try {
+      const dishesSummary = dayRecipes.map((dr, idx) => {
+        const ingStr = (dr.ingredients || []).map(i => `${i.amount || ''} ${i.unit || ''} ${i.name || ''}`.trim()).filter(Boolean).join(', ');
+        const nutStr = dr.nutrition ? `Hinterlegte Nährwerte pro Portion: ${dr.nutrition.kcal || 0} kcal, ${dr.nutrition.protein || 0}g Eiweiß, ${dr.nutrition.carbs || 0}g KH, ${dr.nutrition.fat || 0}g Fett` : 'Keine Nährwerte hinterlegt';
+        return `Gericht ${idx + 1}:
+- Geplante Mahlzeit: ${dr.mealCategory} (${dr.mealLabel} - ${dr.courseLabel})
+- Name: "${dr.title}"
+- Original-Portionen des Rezepts: ${dr.servings}
+- Zutaten des Rezepts: ${ingStr || 'Keine Zutatenliste verfügbar'}
+- ${nutStr}`;
+      }).join('\n\n');
+
+      const extraText = extraInstructions.trim() 
+        ? `\nZusätzliche Benutzer-Anweisungen:\n"${extraInstructions.trim()}"\n`
+        : '';
+
+      const prompt = `Du bist ein präziser Ernährungsberater und Kalorien-Tracker.
+Hier sind die geplanten Mahlzeiten und Rezepte für den Tag (${selectedDate || todayKey()}):
+
+${dishesSummary}
+${extraText}
+WICHTIGE ANWEISUNG:
+Nimm an, dass die Person jeweils GENAU EINE PORTION von jedem dieser Gerichte isst (unabhängig davon, wie viele Portionen das Rezept im Ganzen hat oder ob es mehrfach gekocht wurde).
+Das heißt, wenn etwa ein Frühstück, Mittag und Abendessen mit Snack dort steht, nimm für das Frühstück eine Portion an, für Mittag eine Portion, für das Abendessen und den Snack jeweils eine Portion.
+Berechne oder schätze für jede Mahlzeit die Kalorien (kcal) und Makronährstoffe (Eiweiß/protein, Kohlenhydrate/carbs, Fett/fat in Gramm) für genau 1 verzehrte Portion. Berücksichtige dabei alle zusätzlichen Benutzer-Anweisungen, falls vorhanden.
+
+Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt im folgenden Format:
+{
+  "meals": [
+    {
+      "mealKey": "breakfast" oder "lunch" oder "dinner" oder "snack",
+      "name": "Name des Gerichts",
+      "portionGrams": "1 Portion",
+      "kcal": 450,
+      "protein": 25,
+      "carbs": 40,
+      "fat": 15,
+      "isVegetable": false
+    }
+  ]
+}`;
+
+      const res = await callAI(prompt, false);
+      if (!res || !Array.isArray(res.meals) || res.meals.length === 0) {
+        throw new Error('Die KI hat keine Mahlzeiten zurückgegeben.');
+      }
+
+      const batch = {};
+      for (const m of res.meals) {
+        const mk = ['breakfast', 'lunch', 'dinner', 'snack'].includes(m.mealKey) ? m.mealKey : 'lunch';
+        if (!batch[mk]) batch[mk] = [];
+        batch[mk].push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          name: m.name || 'Mahlzeit',
+          portionGrams: m.portionGrams || '1 Portion',
+          kcal: Math.round(Number(m.kcal) || 0),
+          protein: Math.max(0, Math.round((Number(m.protein) || 0) * 10) / 10),
+          carbs: Math.max(0, Math.round((Number(m.carbs) || 0) * 10) / 10),
+          fat: Math.max(0, Math.round((Number(m.fat) || 0) * 10) / 10),
+          isVegetable: Boolean(m.isVegetable),
+          isAiEstimate: true,
+          addedAt: new Date().toISOString(),
+        });
+      }
+
+      setAiDayResult(batch);
+    } catch (err) {
+      console.error('KI-Tageserfassung fehlgeschlagen:', err);
+      setAiDayError(err.message || 'Fehler bei der KI-Erfassung. Bitte erneut versuchen.');
+    } finally {
+      setAiDayLoading(false);
+    }
+  };
 
   // Click outside and Escape key listener to dismiss suggestions
   useEffect(() => {
@@ -1292,59 +1454,196 @@ function MealEntryModal({
           </button>
         </div>
 
-        {/* 3 Tabs: Freifeld, KI-Foto, Barcode */}
-        <div className="grid grid-cols-3 border-b border-stone-200 bg-stone-50 text-xs font-mono">
+        {/* 4 Tabs: Freifeld, KI-Erfassung, KI-Foto, Barcode */}
+        <div className="grid grid-cols-4 border-b border-stone-200 bg-stone-50 text-[11px] sm:text-xs font-mono">
           <button
             onClick={() => { stopScanner(); setTab('free'); }}
-            className={`py-3 flex items-center justify-center gap-1.5 font-semibold transition-colors ${
+            className={`py-3 flex items-center justify-center gap-1 font-semibold transition-colors ${
               tab === 'free' ? 'bg-white text-stone-900 border-b-2 border-stone-900' : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            <Edit3 size={15} /> Freifeld
+            <Edit3 size={14} /> Freifeld
+          </button>
+          <button
+            onClick={() => { stopScanner(); setTab('ai_day'); }}
+            className={`py-3 flex items-center justify-center gap-1 font-semibold transition-colors ${
+              tab === 'ai_day' ? 'bg-white text-amber-700 border-b-2 border-amber-600' : 'text-stone-500 hover:text-stone-900'
+            }`}
+          >
+            <Sparkles size={14} className="text-amber-500" /> KI-Erfassung
           </button>
           <button
             onClick={() => { stopScanner(); setTab('ai'); }}
-            className={`py-3 flex items-center justify-center gap-1.5 font-semibold transition-colors ${
+            className={`py-3 flex items-center justify-center gap-1 font-semibold transition-colors ${
               tab === 'ai' ? 'bg-white text-emerald-700 border-b-2 border-emerald-600' : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            <Camera size={15} /> KI-Foto
+            <Camera size={14} /> KI-Foto
           </button>
           <button
             onClick={() => setTab('barcode')}
-            className={`py-3 flex items-center justify-center gap-1.5 font-semibold transition-colors ${
+            className={`py-3 flex items-center justify-center gap-1 font-semibold transition-colors ${
               tab === 'barcode' ? 'bg-white text-stone-900 border-b-2 border-stone-900' : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            <BarcodeIcon size={15} /> Barcode
+            <BarcodeIcon size={14} /> Barcode
           </button>
         </div>
 
         {/* Modal Body */}
         <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-          {/* Meal Category Selector */}
-          <div>
-            <label className={labelCls}>Mahlzeit</label>
-            <div className="grid grid-cols-4 gap-2 mt-1">
-              {[
-                { k: 'breakfast', l: 'Frühstück' },
-                { k: 'lunch', l: 'Mittag' },
-                { k: 'dinner', l: 'Abend' },
-                { k: 'snack', l: 'Snack' },
-              ].map(m => (
-                <button
-                  key={m.k}
-                  type="button"
-                  onClick={() => setMealKey(m.k)}
-                  className={`py-2 px-1 text-center rounded-lg text-xs font-medium border transition-all ${
-                    mealKey === m.k ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-200'
-                  }`}
-                >
-                  {m.l}
-                </button>
-              ))}
+          {/* Meal Category Selector (only for Freifeld, KI-Foto, Barcode) */}
+          {tab !== 'ai_day' && (
+            <div>
+              <label className={labelCls}>Mahlzeit</label>
+              <div className="grid grid-cols-4 gap-2 mt-1">
+                {[
+                  { k: 'breakfast', l: 'Frühstück' },
+                  { k: 'lunch', l: 'Mittag' },
+                  { k: 'dinner', l: 'Abend' },
+                  { k: 'snack', l: 'Snack' },
+                ].map(m => (
+                  <button
+                    key={m.k}
+                    type="button"
+                    onClick={() => setMealKey(m.k)}
+                    className={`py-2 px-1 text-center rounded-lg text-xs font-medium border transition-all ${
+                      mealKey === m.k ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-200'
+                    }`}
+                  >
+                    {m.l}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* TAB: KI-ERFASSUNG (Tagesrezepte mit 1 Portion analysieren) */}
+          {tab === 'ai_day' && (
+            <div className="space-y-4">
+              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5 text-xs text-amber-900 space-y-1.5">
+                <div className="font-semibold flex items-center gap-1.5 text-amber-800">
+                  <Sparkles size={14} className="text-amber-600 shrink-0" />
+                  <span>Automatische Erfassung der Tagesrezepte</span>
+                </div>
+                <p className="text-amber-700/90 leading-relaxed">
+                  Übernimmt alle für <strong>{selectedDate || 'heute'}</strong> im Speiseplan hinterlegten Rezepte, nimmt für jedes Gericht genau <strong>1 Portion</strong> an und trägt Kalorien sowie Nährwerte automatisch ein.
+                </p>
+              </div>
+
+              {/* Gefundene Rezepte des Tages */}
+              <div>
+                <label className={labelCls}>Geplante Rezepte ({selectedDate || 'Heute'})</label>
+                {dayRecipesLoading ? (
+                  <div className="py-6 text-center text-stone-400 text-xs flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin text-stone-600" />
+                    <span>Lade Rezepte des Tagesplans...</span>
+                  </div>
+                ) : dayRecipes.length === 0 ? (
+                  <div className="p-4 mt-1 bg-stone-50 border border-stone-200 rounded-xl text-center text-xs text-stone-500">
+                    Keine Rezepte für diesen Tag im Speiseplan gefunden.
+                  </div>
+                ) : (
+                  <div className="space-y-2 mt-1.5">
+                    {dayRecipes.map((dr, i) => (
+                      <div key={i} className="flex items-center justify-between p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs">
+                        <div className="min-w-0 pr-2">
+                          <span className="font-semibold text-stone-900 block truncate">{dr.title}</span>
+                          <span className="text-[11px] text-stone-500 font-mono">
+                            {dr.mealLabel} ({dr.courseLabel}) · 1 Portion
+                          </span>
+                        </div>
+                        {dr.nutrition ? (
+                          <span className="shrink-0 text-[11px] font-mono font-medium text-stone-700 bg-white px-2 py-0.5 rounded border border-stone-200">
+                            {dr.nutrition.kcal} kcal
+                          </span>
+                        ) : (
+                          <span className="shrink-0 text-[10px] font-mono text-stone-400 bg-white px-1.5 py-0.5 rounded border border-dashed border-stone-300">
+                            wird berechnet
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Extra-Anweisungen Textfeld */}
+              <div>
+                <label className={labelCls}>Zusätzliche Anweisungen an die KI (optional)</label>
+                <textarea
+                  value={extraInstructions}
+                  onChange={e => setExtraInstructions(e.target.value)}
+                  rows={2}
+                  placeholder="z. B. „Nur die halbe Portion Mittag gegessen“ oder „Zum Frühstück noch 1 Glas Orangensaft“..."
+                  className={inputCls + " mt-1 text-xs"}
+                />
+              </div>
+
+              {aiDayError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                  <AlertCircle size={15} className="shrink-0 text-rose-500" />
+                  <span>{aiDayError}</span>
+                </div>
+              )}
+
+              {/* Calculated Result Preview if available */}
+              {aiDayResult && (
+                <div className="space-y-2 border-t border-stone-200 pt-3">
+                  <div className="text-xs font-semibold text-stone-800 font-mono uppercase tracking-wide">
+                    Berechnete Mahlzeiten ({Object.values(aiDayResult).flat().length}):
+                  </div>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {Object.entries(aiDayResult).map(([mKey, items]) => (
+                      items.map((it, idx) => (
+                        <div key={`${mKey}_${idx}`} className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs flex justify-between items-center">
+                          <div>
+                            <span className="font-semibold text-emerald-950 block">{it.name}</span>
+                            <span className="text-[10px] text-emerald-700 font-mono">
+                              {mKey === 'breakfast' ? 'Frühstück' : mKey === 'lunch' ? 'Mittag' : mKey === 'dinner' ? 'Abend' : 'Snack'} · {it.portionGrams}
+                            </span>
+                          </div>
+                          <div className="text-right font-mono text-[11px] text-emerald-900">
+                            <div className="font-bold">{it.kcal} kcal</div>
+                            <div className="text-[10px] text-emerald-700">P:{it.protein}g K:{it.carbs}g F:{it.fat}g</div>
+                          </div>
+                        </div>
+                      ))
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onSaveBatch(aiDayResult)}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold font-mono text-xs uppercase tracking-wide shadow transition-all flex items-center justify-center gap-1.5 active:scale-[0.99] mt-2"
+                  >
+                    <Check size={16} /> Alle Mahlzeiten in den Tag eintragen
+                  </button>
+                </div>
+              )}
+
+              {/* Action Trigger Button */}
+              {!aiDayResult && (
+                <button
+                  type="button"
+                  disabled={aiDayLoading || dayRecipes.length === 0}
+                  onClick={handleAiDaySubmit}
+                  className="w-full py-3.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl font-mono text-xs font-bold uppercase tracking-wider disabled:opacity-40 transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+                >
+                  {aiDayLoading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin text-amber-400" />
+                      <span>KI berechnet Nährwerte...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={16} className="text-amber-400" />
+                      <span>Tagesrezepte per KI erfassen</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
 
           {/* TAB 1: FREIFELD */}
           {tab === 'free' && (
@@ -1717,27 +2016,40 @@ function MealEntryModal({
           )}
         </div>
 
-        <label className="flex items-start gap-2 px-5 py-3 text-xs text-emerald-900 border-t border-stone-100">
-          <input type="checkbox" checked={isVegetable} onChange={event => setIsVegetable(event.target.checked)} />
-          Dieser Eintrag ist eine Gemüseportion
-        </label>
+        {tab !== 'ai_day' ? (
+          <>
+            <label className="flex items-start gap-2 px-5 py-3 text-xs text-emerald-900 border-t border-stone-100">
+              <input type="checkbox" checked={isVegetable} onChange={event => setIsVegetable(event.target.checked)} />
+              Dieser Eintrag ist eine Gemüseportion
+            </label>
 
-        {/* Footer Actions */}
-        <div className="px-5 py-4 border-t border-stone-200 bg-stone-50 flex items-center justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-stone-600 hover:text-stone-900 text-xs font-mono uppercase font-semibold"
-          >
-            Abbrechen
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!name.trim() || Number(kcal) < 0}
-            className="px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-mono uppercase tracking-wide font-bold shadow disabled:opacity-40"
-          >
-            Mahlzeit eintragen
-          </button>
-        </div>
+            {/* Footer Actions */}
+            <div className="px-5 py-4 border-t border-stone-200 bg-stone-50 flex items-center justify-end gap-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-stone-600 hover:text-stone-900 text-xs font-mono uppercase font-semibold"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!name.trim() || Number(kcal) < 0}
+                className="px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-mono uppercase tracking-wide font-bold shadow disabled:opacity-40"
+              >
+                Mahlzeit eintragen
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="px-5 py-3 border-t border-stone-200 bg-stone-50 flex items-center justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-stone-600 hover:text-stone-900 text-xs font-mono uppercase font-semibold"
+            >
+              Schließen
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
