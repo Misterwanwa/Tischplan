@@ -178,6 +178,36 @@ async function resizeImage(file, maxDim = 1600, quality = 0.88) {
   });
 }
 
+function extractCleanRecipeTextFromDoc(doc) {
+  if (!doc || !doc.body) return '';
+  try {
+    const clone = doc.body.cloneNode(true);
+    const removeSelectors = [
+      'script', 'style', 'noscript', 'nav', 'header', 'footer', 'aside', 'svg',
+      'iframe', 'form', 'button', '[role="navigation"]', '[role="banner"]',
+      '[role="complementary"]', '.ad', '.advertisement', '.cookie-banner',
+      '.consent-banner', '.newsletter-signup', '.comments', '#comments'
+    ];
+    for (const sel of removeSelectors) {
+      clone.querySelectorAll(sel).forEach(el => el.remove());
+    }
+
+    const mainTarget = clone.querySelector(
+      'article, [itemtype*="Recipe"], .recipe, .rezept, .wprm-recipe-container, main, #main, #content'
+    ) || clone;
+
+    const raw = mainTarget.innerText || mainTarget.textContent || '';
+    return raw
+      .replace(/\r\n/g, '\n')
+      .replace(/\t/g, ' ')
+      .replace(/[ \u00a0]+/g, ' ')
+      .replace(/\n\s*\n\s*\n+/g, '\n\n')
+      .trim();
+  } catch (_) {
+    return '';
+  }
+}
+
 function extractRecipeFromHtml(html, url) {
   try {
     const parser = new DOMParser();
@@ -191,7 +221,7 @@ function extractRecipeFromHtml(html, url) {
 
     const cleanText = (t) => t ? t.replace(/\s+/g, ' ').trim() : '';
 
-    // --- STAGE 1: JSON-LD ---
+    // --- STAGE 1: JSON-LD Schema.org ---
     const jsonLdScripts = doc.querySelectorAll('script[type="application/ld+json"]');
     for (const script of jsonLdScripts) {
       try {
@@ -205,11 +235,18 @@ function extractRecipeFromHtml(html, url) {
               if (found) return found;
             }
           } else if (typeof obj === 'object') {
-            if (obj['@type'] === 'Recipe' || (Array.isArray(obj['@type']) && obj['@type'].includes('Recipe'))) {
+            const type = obj['@type'];
+            const isRecipe = type === 'Recipe' || 
+              (Array.isArray(type) && type.includes('Recipe')) ||
+              (typeof type === 'string' && type.toLowerCase().includes('recipe'));
+            if (isRecipe) {
               return obj;
             }
             if (obj['@graph']) {
               return findRecipe(obj['@graph']);
+            }
+            if (obj.mainEntity) {
+              return findRecipe(obj.mainEntity);
             }
           }
           return null;
@@ -222,11 +259,12 @@ function extractRecipeFromHtml(html, url) {
           if (recipeObj.recipeYield) {
             const yieldStr = Array.isArray(recipeObj.recipeYield) ? recipeObj.recipeYield[0] : String(recipeObj.recipeYield);
             const num = parseInt(yieldStr.match(/\d+/)?.[0] || '4');
-            servings = num;
+            servings = num || 4;
           }
 
           if (recipeObj.recipeIngredient) {
-            ingredients = recipeObj.recipeIngredient.map(cleanText).filter(Boolean);
+            const rawIngs = Array.isArray(recipeObj.recipeIngredient) ? recipeObj.recipeIngredient : [recipeObj.recipeIngredient];
+            ingredients = rawIngs.map(cleanText).filter(Boolean);
           }
 
           if (recipeObj.recipeInstructions) {
@@ -235,6 +273,7 @@ function extractRecipeFromHtml(html, url) {
                 return instructions.map(inst => {
                   if (typeof inst === 'string') return cleanText(inst);
                   if (inst.text) return cleanText(inst.text);
+                  if (inst.name && !inst.text) return cleanText(inst.name);
                   if (inst.itemListElement) return parseInstructions(inst.itemListElement);
                   return '';
                 }).flat().filter(Boolean);
@@ -242,6 +281,7 @@ function extractRecipeFromHtml(html, url) {
                 return [cleanText(instructions)];
               } else if (typeof instructions === 'object') {
                 if (instructions.text) return [cleanText(instructions.text)];
+                if (instructions.name) return [cleanText(instructions.name)];
                 if (instructions.itemListElement) return parseInstructions(instructions.itemListElement);
               }
               return [];
@@ -259,8 +299,8 @@ function extractRecipeFromHtml(html, url) {
             };
           }
 
-          if (ingredients.length >= 3) {
-            return { title, servings, ingredients, steps, nutrition, sourceUrl: url };
+          if (ingredients.length >= 1 || steps.length >= 1) {
+            return { title: title || doc.title || 'Rezept', servings, ingredients, steps, nutrition, sourceUrl: url };
           }
         }
       } catch (e) {
@@ -268,7 +308,7 @@ function extractRecipeFromHtml(html, url) {
       }
     }
 
-    // --- STAGE 2: OpenGraph + Microdata ---
+    // --- STAGE 2: OpenGraph + Microdata + Known Recipe Selectors ---
     const ogTitle = doc.querySelector('meta[property="og:title"]');
     if (ogTitle) title = cleanText(ogTitle.getAttribute('content'));
     if (!title) {
@@ -276,18 +316,22 @@ function extractRecipeFromHtml(html, url) {
       if (h1) title = cleanText(h1.textContent);
     }
 
-    const itemPropIngs = doc.querySelectorAll('[itemprop="recipeIngredient"]');
-    if (itemPropIngs.length > 0) {
-      ingredients = Array.from(itemPropIngs).map(el => cleanText(el.textContent)).filter(Boolean);
+    const ingElements = doc.querySelectorAll(
+      '[itemprop="recipeIngredient"], [itemprop="ingredients"], .wprm-recipe-ingredient, .recipe-ingredient, .recipe-ingredients li, ul.ingredients li, table.ingredients tr, table.ds-table tr'
+    );
+    if (ingElements.length > 0) {
+      ingredients = Array.from(ingElements).map(el => cleanText(el.textContent)).filter(Boolean);
     }
 
-    const itemPropSteps = doc.querySelectorAll('[itemprop="recipeInstructions"]');
-    if (itemPropSteps.length > 0) {
-      steps = Array.from(itemPropSteps).map(el => cleanText(el.textContent)).filter(Boolean);
+    const stepElements = doc.querySelectorAll(
+      '[itemprop="recipeInstructions"], .wprm-recipe-instruction, .recipe-instruction, .recipe-instructions li, ol.instructions li, .instructions-item'
+    );
+    if (stepElements.length > 0) {
+      steps = Array.from(stepElements).map(el => cleanText(el.textContent)).filter(Boolean);
     }
 
-    if (ingredients.length >= 3 && steps.length >= 2) {
-      return { title, servings, ingredients, steps, nutrition, sourceUrl: url };
+    if (ingredients.length >= 1 || steps.length >= 1) {
+      return { title: title || doc.title || 'Rezept', servings, ingredients, steps, nutrition, sourceUrl: url };
     }
 
     // --- STAGE 3: Heuristic Scraping ---
@@ -325,28 +369,32 @@ function extractRecipeFromHtml(html, url) {
       return longestList;
     };
 
-    if (ingredients.length < 3) {
+    if (ingredients.length === 0) {
       ingredients = findListsNearKeywords(keywordsIng);
     }
-    if (steps.length < 2) {
+    if (steps.length === 0) {
       steps = findListsNearKeywords(keywordsStep);
     }
 
-    return {
-      title: title || doc.title || 'Rezept',
-      servings,
-      ingredients,
-      steps,
-      nutrition,
-      sourceUrl: url
-    };
+    if (ingredients.length > 0 || steps.length > 0) {
+      return {
+        title: title || doc.title || 'Rezept',
+        servings,
+        ingredients,
+        steps,
+        nutrition,
+        sourceUrl: url
+      };
+    }
+
+    return null;
   } catch (e) {
     console.error('Error in extractRecipeFromHtml:', e);
     return null;
   }
 }
 
-async function callAI(prompt, useSearch = false, provider = 'gemini', image = null) {
+async function callAI(prompt, useSearch = false, provider = 'gemini', image = null, maxTokens = null) {
   let activeProvider = provider;
   try {
     const savedSettings = localStorage.getItem('shared_settings') || localStorage.getItem('settings');
@@ -377,7 +425,7 @@ async function callAI(prompt, useSearch = false, provider = 'gemini', image = nu
         prompt,
         useSearch,
         image,
-        maxTokens: image ? 200 : 4096,
+        maxTokens: maxTokens || (image ? 2048 : 4096),
       }),
     });
     
@@ -440,7 +488,7 @@ async function extractRecipeFromUrl(url) {
     if (res.ok) {
       html = await res.text();
       const scraped = extractRecipeFromHtml(html, url);
-      if (scraped && scraped.ingredients && scraped.ingredients.length >= 3 && scraped.steps && scraped.steps.length >= 2) {
+      if (scraped && ((scraped.ingredients && scraped.ingredients.length >= 1) || (scraped.steps && scraped.steps.length >= 1))) {
         return scraped;
       }
     }
@@ -448,12 +496,61 @@ async function extractRecipeFromUrl(url) {
     console.warn('Proxy-Abruf in extractRecipeFromUrl fehlgeschlagen:', e);
   }
 
+  // Fallback 1: Falls HTML vorliegt, aber kein Schema griff:
+  // Den bereinigten Originaltext der Seite mit strenger Zero-Hallucination-Extraktion parsen.
   const hasUsefulHtml = html && html.length > 200 && !html.includes('{"error"');
-  const prompt = hasUsefulHtml
-    ? `Extrahiere das vollständige Rezept aus dieser URL (${url}).\n\nHTML-Auszug:\n${html.slice(0, 8000)}\n\nAntworte NUR mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`
-    : `Suche und extrahiere das Rezept von dieser URL: ${url}\nFalls der direkte Abruf blockiert ist, suche nach dem entsprechenden Rezept dieser Website und extrahiere alle Zutaten, Zubereitungsschritte und geschätzten Nährwerte.\n\nAntworte NUR mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
+  if (hasUsefulHtml) {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const cleanText = extractCleanRecipeTextFromDoc(doc);
+      if (cleanText && cleanText.length > 80) {
+        const prompt = `Du bist ein präziser Daten-Extraktor für Kochrezepte. Extrahiere das Rezept AUSSCHLIESSLICH aus dem folgenden Originaltext der Webseite (${url}).
+STRIKTE REGELN:
+1. Erfinde KEINE Zutaten oder Schritte. Verwende ausschließlich die im Text genannten Zutaten und Arbeitsschritte.
+2. Wenn keine Zutaten im Text stehen, setze "ingredients": [].
+3. Wenn keine Zubereitungsschritte im Text stehen, setze "steps": [].
+4. Nimm keinesfalls Rezepte aus deinem Allgemeinwissen oder von anderen Webseiten an!
 
-  return callAI(prompt, true);
+Originaltext der Webseite:
+${cleanText.slice(0, 18000)}
+
+Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion falls angegeben.`;
+
+        const aiResult = await callAI(prompt, false); // WICHTIG: useSearch = false!
+        if (aiResult && ((aiResult.ingredients && aiResult.ingredients.length > 0) || (aiResult.steps && aiResult.steps.length > 0))) {
+          aiResult.sourceUrl = url;
+          return aiResult;
+        }
+      }
+    } catch (parseErr) {
+      console.warn('Fehler bei Text-basierter Extraktion:', parseErr);
+    }
+  }
+
+  // WICHTIG: Wenn der direkte Abruf blockiert ist oder kein Rezepttext vorliegt:
+  // NIEMALS frei im Web nach ähnlichen Gerichten suchen (useSearch: true)!
+  // Stattdessen null zurückgeben, damit die UI den In-App-Browser oder Screenshot-OCR anbietet.
+  return null;
+}
+
+async function ocrRecipeFromImage(base64Data, mimeType = 'image/jpeg') {
+  const prompt = `Du bist ein präzises OCR-System für Kochrezepte.
+Lies den Text auf diesem Screenshot / Foto exakt und wortwörtlich ab.
+STRIKTE REGELN:
+1. Erfasse den Titel des Rezepts.
+2. Schreibe alle sichtbaren Zutaten exakt ab (inklusive Mengenangaben wie g, ml, EL, TL, Stück, Bruchzahlen wie 1/2 etc.).
+3. Schreibe alle sichtbaren Zubereitungsschritte der Reihe nach ab.
+4. Erfinde KEINE Zutaten oder Schritte, die nicht im Bild zu sehen sind.
+5. Schätze die Nährwerte (kcal, protein, carbs, fat) pro Portion grob ab, falls nicht im Bild angegeben.
+
+Antworte AUSSCHLIESSLICH als JSON im Format: ${RECIPE_JSON_SCHEMA}.`;
+
+  const imageObj = {
+    mimeType: mimeType || 'image/jpeg',
+    data: base64Data
+  };
+  return callAI(prompt, false, 'gemini', imageObj, 2048);
 }
 async function searchRecipeOnSite(domain, query) {
   const prompt = `Suche auf der Website ${domain} (site:${domain}) nach einem passenden Rezept: ${query}. Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
@@ -2311,25 +2408,125 @@ Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
     }
   };
 
+  const ocrInputRef = useRef(null);
+
   const handleManualExtract = async () => {
     if (!activeUrl) return;
     setBusy(true);
     setError(null);
     try {
+      // 1. Zuerst direkt aus dem geladenen Iframe auslesen (Same-Origin über den Proxy)
+      let iframeDoc = null;
+      try {
+        iframeDoc = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document;
+      } catch (err) {
+        console.warn('Iframe-DOM-Zugriff nicht möglich:', err);
+      }
+
+      if (iframeDoc && iframeDoc.body) {
+        const html = iframeDoc.documentElement?.outerHTML || iframeDoc.body.innerHTML;
+        const scraped = extractRecipeFromHtml(html, activeUrl);
+        if (scraped && ((scraped.ingredients && scraped.ingredients.length > 0) || (scraped.steps && scraped.steps.length > 0))) {
+          setExtracted(scraped);
+          setViewMode('reader');
+          showToast('Original-Rezept aus geladener Seite extrahiert!');
+          return;
+        }
+
+        const cleanText = extractCleanRecipeTextFromDoc(iframeDoc);
+        if (cleanText && cleanText.length > 80) {
+          const prompt = `Du bist ein präziser Daten-Extraktor für Kochrezepte. Extrahiere das Rezept AUSSCHLIESSLICH aus dem folgenden Originaltext der geladenen Seite (${activeUrl}).
+STRIKTE REGELN:
+1. Erfinde KEINE Zutaten oder Schritte. Verwende ausschließlich die im Text genannten Zutaten und Arbeitsschritte.
+2. Wenn keine Zutaten im Text stehen, setze "ingredients": [].
+3. Wenn keine Zubereitungsschritte im Text stehen, setze "steps": [].
+4. Nimm keinesfalls Rezepte aus deinem Allgemeinwissen an!
+
+Text der Seite:
+${cleanText.slice(0, 18000)}
+
+Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion falls angegeben.`;
+
+          const aiResult = await callAI(prompt, false);
+          if (aiResult && ((aiResult.ingredients && aiResult.ingredients.length > 0) || (aiResult.steps && aiResult.steps.length > 0))) {
+            aiResult.sourceUrl = activeUrl;
+            setExtracted(aiResult);
+            setViewMode('reader');
+            showToast('Rezept aus Originaltext der Seite extrahiert!');
+            return;
+          }
+        }
+      }
+
+      // 2. Fallback auf Backend-Extraktion
       const res = await extractRecipeFromUrl(activeUrl);
-      if (res) {
+      if (res && ((res.ingredients && res.ingredients.length > 0) || (res.steps && res.steps.length > 0))) {
         setExtracted(res);
         setViewMode('reader');
         showToast('Rezept erfolgreich analysiert!');
       } else {
-        throw new Error('Kein Rezept erkannt');
+        throw new Error('Kein Rezept auf der Seite erkannt. Tipp: Du kannst einen Screenshot per OCR hochladen oder per Strg+V einfügen.');
       }
     } catch (e) {
-      setError('Konnte Rezept nicht automatisch analysieren.');
+      setError(e.message || 'Konnte Rezept nicht automatisch analysieren.');
     } finally {
       setBusy(false);
     }
   };
+
+  const handleImageOcr = async (file) => {
+    if (!file) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise((resolve, reject) => {
+        reader.onload = () => {
+          const res = reader.result;
+          const base64 = res.includes(',') ? res.split(',')[1] : res;
+          resolve({ base64, mimeType: file.type || 'image/jpeg' });
+        };
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(file);
+      const { base64, mimeType } = await base64Promise;
+
+      showToast('Analysiere Screenshot per OCR...', 'info');
+      const res = await ocrRecipeFromImage(base64, mimeType);
+      if (res && ((res.ingredients && res.ingredients.length > 0) || (res.steps && res.steps.length > 0))) {
+        res.sourceUrl = activeUrl || '';
+        setExtracted(res);
+        setViewMode('reader');
+        showToast('Rezept per OCR erfolgreich erkannt!');
+      } else {
+        throw new Error('Im Bild konnte kein Rezepttext erkannt werden.');
+      }
+    } catch (err) {
+      console.error('OCR-Fehler:', err);
+      setError(err.message || 'OCR-Texterkennung fehlgeschlagen.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            handleImageOcr(file);
+            return;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [activeUrl]);
 
   const handleSaveToApp = () => {
     if (!extracted) return;
@@ -2713,6 +2910,7 @@ function URLPasteSearch({ onNext }) {
   const [busy, setBusy] = useState(false);
   const [extracted, setExtracted] = useState(null);
   const [browserUrl, setBrowserUrl] = useState(null);
+  const ocrInputRef = useRef(null);
 
   const handleImport = async () => {
     if (!urlInput.trim()) {
@@ -2728,20 +2926,73 @@ function URLPasteSearch({ onNext }) {
         setExtracted(result);
         return;
       }
-      throw new Error('Automatische Extraktion fehlgeschlagen');
+      throw new Error('Direkter Textabruf blockiert oder kein Rezept gefunden');
     } catch (e) {
       console.warn('Rezept-Extraktion fehlgeschlagen, öffne In-App-Browser:', e);
+      showToast('Direktabruf blockiert. Seite wird im In-App-Browser geöffnet...', 'info');
       setBrowserUrl(urlInput.trim());
     } finally {
       setBusy(false);
     }
   };
 
+  const handleImageOcr = async (file) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise((resolve, reject) => {
+        reader.onload = () => {
+          const res = reader.result;
+          const base64 = res.includes(',') ? res.split(',')[1] : res;
+          resolve({ base64, mimeType: file.type || 'image/jpeg' });
+        };
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(file);
+      const { base64, mimeType } = await base64Promise;
+
+      showToast('Analysiere Screenshot per OCR...', 'info');
+      const result = await ocrRecipeFromImage(base64, mimeType);
+      if (result && ((result.ingredients && result.ingredients.length >= 1) || (result.steps && result.steps.length >= 1))) {
+        result.source = { type: 'ocr', label: 'Screenshot / OCR' };
+        setExtracted(result);
+        showToast('Rezept per OCR erfolgreich erkannt!');
+      } else {
+        throw new Error('Kein Rezept auf dem Bild erkannt');
+      }
+    } catch (e) {
+      console.error('OCR-Fehler:', e);
+      showToast('OCR-Erkennung fehlgeschlagen: ' + (e.message || ''), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            handleImageOcr(file);
+            return;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
+
   if (extracted) {
     return (
       <div className="space-y-4">
         <div className="text-center pb-2 border-b border-stone-200">
-          <span className="font-mono text-xs uppercase tracking-widest text-emerald-600 font-bold">Extrahiertes Rezept</span>
+          <span className="font-mono text-xs uppercase tracking-widest text-emerald-600 font-bold">Extrahiertes Originalrezept</span>
           <h2 className="text-xl font-bold mt-1 text-stone-900">{extracted.title || 'Rezept'}</h2>
           <p className="text-sm text-stone-500 mt-1">{extracted.servings || 4} Portionen</p>
         </div>
@@ -2792,7 +3043,7 @@ function URLPasteSearch({ onNext }) {
                 stepsText: (extracted.steps || []).join('\n'),
                 nutrition: extracted.nutrition || null,
                 photo: extracted.photo || null,
-                source: { type: 'ai', url: urlInput.trim(), label: 'Webseiten-Import' }
+                source: extracted.source || { type: 'ai', url: urlInput.trim(), label: 'Webseiten-Import' }
               });
             }}
             className="flex-1 py-2.5 bg-stone-900 text-white rounded-lg font-semibold text-sm hover:bg-stone-850 active:scale-[0.99] flex items-center justify-center gap-2"
@@ -2836,6 +3087,29 @@ function URLPasteSearch({ onNext }) {
         >
           <Globe size={15} /> Browser
         </button>
+      </div>
+
+      <div className="pt-2 border-t border-stone-200">
+        <div className="flex items-center justify-between text-xs text-stone-500 mb-1.5">
+          <span>Oder Screenshot / Foto per OCR erkennen:</span>
+          <span className="font-mono text-[10px] text-stone-400">Strg+V unterstützt</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => ocrInputRef.current?.click()}
+          disabled={busy}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-dashed border-stone-300 hover:border-stone-400 text-stone-700 bg-stone-50 hover:bg-stone-100 text-xs font-mono uppercase tracking-wide transition-colors"
+        >
+          <Camera size={14} className="text-stone-500" />
+          <span>Screenshot / Foto hochladen</span>
+        </button>
+        <input
+          ref={ocrInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={e => e.target.files[0] && handleImageOcr(e.target.files[0])}
+        />
       </div>
 
       {browserUrl !== null && (
@@ -5948,12 +6222,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.15</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.16</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn) · v1.10.11 (Kaiserschmarrn) · v1.10.12 (Kaiserschmarrn) · v1.10.13 (Kaiserschmarrn) · v1.10.14 (Kaiserschmarrn) · v1.10.15 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn) · v1.10.11 (Kaiserschmarrn) · v1.10.12 (Kaiserschmarrn) · v1.10.13 (Kaiserschmarrn) · v1.10.14 (Kaiserschmarrn) · v1.10.15 (Kaiserschmarrn) · v1.10.16 (Kaiserschmarrn)
         </div>
       </div>
 
