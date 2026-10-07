@@ -67,7 +67,6 @@ export async function onRequestPost(context) {
       const generationConfig = {
         responseMimeType: 'application/json',
         maxOutputTokens: safeMaxTokens,
-        temperature: 0.2,
       };
 
       if (schema) {
