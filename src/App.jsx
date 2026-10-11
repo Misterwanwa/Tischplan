@@ -7,7 +7,7 @@ import {
   Apple, Carrot, Fish, Milk, Egg, Wheat, Wine, Flame, Package, Droplets, Heart,
   Shield, Tag, ArrowUpDown, ChevronDown, ChevronUp, MoreVertical, PlusCircle,
   CheckCircle2, Clock, Grid, ListFilter, RotateCcw, HelpCircle, Layers,
-  MessageSquare, Shuffle, Globe, RotateCw,
+  MessageSquare, Shuffle, Globe, RotateCw, BookmarkPlus,
 } from 'lucide-react';
 import {
   SHOPPING_CATEGORIES,
@@ -178,6 +178,46 @@ async function resizeImage(file, maxDim = 1600, quality = 0.88) {
   });
 }
 
+function getDomainFromUrl(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    return u.hostname.replace(/^www\./i, '');
+  } catch (_) {
+    return 'Web-Import';
+  }
+}
+
+function titleFromUrl(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    const pathname = u.pathname;
+    const segments = pathname.split('/').filter(Boolean);
+    if (segments.length === 0) return u.hostname.replace(/^www\./i, '');
+    const last = segments[segments.length - 1];
+    let slug = last.replace(/\.(html?|php|asp|aspx)$/i, '');
+    slug = slug.replace(/^\d+[-_]?/, '');
+    slug = slug.replace(/[-_]\d+$/, '');
+    slug = slug.replace(/[-_]+/g, ' ').trim();
+    if (slug.length >= 3) {
+      return slug.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+    return u.hostname.replace(/^www\./i, '');
+  } catch (_) {
+    return 'Online-Rezept';
+  }
+}
+
+function cleanRecipeTitle(raw, urlStr = '') {
+  if (!raw) return titleFromUrl(urlStr);
+  let t = (raw || '').replace(/\s+/g, ' ').trim();
+  t = t.replace(/\s*[\-\|•]\s*(Chefkoch|LECKER|EatSmarter|EATSmarter|Essen & Trinken|Kitchen Stories|DasKochrezept|Rezept|von .*|BR Fernsehen|ZDF).*$/i, '');
+  t = t.trim();
+  if (!t || t.toLowerCase() === 'rezept' || t.toLowerCase().includes('404')) {
+    return titleFromUrl(urlStr);
+  }
+  return t;
+}
+
 function extractCleanRecipeTextFromDoc(doc) {
   if (!doc || !doc.body) return '';
   try {
@@ -194,9 +234,11 @@ function extractCleanRecipeTextFromDoc(doc) {
 
     const mainTarget = clone.querySelector(
       'article, [itemtype*="Recipe"], .recipe, .rezept, .wprm-recipe-container, main, #main, #content'
-    ) || clone;
+    );
+    const raw = (mainTarget && (mainTarget.innerText || mainTarget.textContent)?.length > 80)
+      ? (mainTarget.innerText || mainTarget.textContent)
+      : (clone.innerText || clone.textContent || '');
 
-    const raw = mainTarget.innerText || mainTarget.textContent || '';
     return raw
       .replace(/\r\n/g, '\n')
       .replace(/\t/g, ' ')
@@ -218,6 +260,7 @@ function extractRecipeFromHtml(html, url) {
     let ingredients = [];
     let steps = [];
     let nutrition = null;
+    let photo = null;
 
     const cleanText = (t) => t ? t.replace(/\s+/g, ' ').trim() : '';
 
@@ -248,13 +291,16 @@ function extractRecipeFromHtml(html, url) {
             if (obj.mainEntity) {
               return findRecipe(obj.mainEntity);
             }
+            if (obj.hasPart) {
+              return findRecipe(obj.hasPart);
+            }
           }
           return null;
         };
 
         const recipeObj = findRecipe(json);
         if (recipeObj) {
-          title = cleanText(recipeObj.name || recipeObj.headline);
+          title = cleanRecipeTitle(recipeObj.name || recipeObj.headline, url);
           
           if (recipeObj.recipeYield) {
             const yieldStr = Array.isArray(recipeObj.recipeYield) ? recipeObj.recipeYield[0] : String(recipeObj.recipeYield);
@@ -262,9 +308,10 @@ function extractRecipeFromHtml(html, url) {
             servings = num || 4;
           }
 
-          if (recipeObj.recipeIngredient) {
-            const rawIngs = Array.isArray(recipeObj.recipeIngredient) ? recipeObj.recipeIngredient : [recipeObj.recipeIngredient];
-            ingredients = rawIngs.map(cleanText).filter(Boolean);
+          const rawIngs = recipeObj.recipeIngredient || recipeObj.ingredients || recipeObj.recipeIngredients;
+          if (rawIngs) {
+            const arr = Array.isArray(rawIngs) ? rawIngs : [rawIngs];
+            ingredients = arr.map(cleanText).filter(Boolean);
           }
 
           if (recipeObj.recipeInstructions) {
@@ -278,7 +325,7 @@ function extractRecipeFromHtml(html, url) {
                   return '';
                 }).flat().filter(Boolean);
               } else if (typeof instructions === 'string') {
-                return [cleanText(instructions)];
+                return instructions.split(/\r?\n+/).map(cleanText).filter(Boolean);
               } else if (typeof instructions === 'object') {
                 if (instructions.text) return [cleanText(instructions.text)];
                 if (instructions.name) return [cleanText(instructions.name)];
@@ -287,6 +334,15 @@ function extractRecipeFromHtml(html, url) {
               return [];
             };
             steps = parseInstructions(recipeObj.recipeInstructions);
+          }
+
+          if (recipeObj.image) {
+            if (typeof recipeObj.image === 'string') photo = recipeObj.image;
+            else if (Array.isArray(recipeObj.image) && recipeObj.image.length > 0) {
+              photo = typeof recipeObj.image[0] === 'string' ? recipeObj.image[0] : recipeObj.image[0]?.url;
+            } else if (typeof recipeObj.image === 'object' && recipeObj.image.url) {
+              photo = recipeObj.image.url;
+            }
           }
 
           if (recipeObj.nutrition) {
@@ -300,7 +356,15 @@ function extractRecipeFromHtml(html, url) {
           }
 
           if (ingredients.length >= 1 || steps.length >= 1) {
-            return { title: title || doc.title || 'Rezept', servings, ingredients, steps, nutrition, sourceUrl: url };
+            return {
+              title: title || cleanRecipeTitle(doc.title, url),
+              servings,
+              ingredients,
+              steps,
+              nutrition,
+              photo: photo || null,
+              sourceUrl: url
+            };
           }
         }
       } catch (e) {
@@ -310,28 +374,36 @@ function extractRecipeFromHtml(html, url) {
 
     // --- STAGE 2: OpenGraph + Microdata + Known Recipe Selectors ---
     const ogTitle = doc.querySelector('meta[property="og:title"]');
-    if (ogTitle) title = cleanText(ogTitle.getAttribute('content'));
+    if (ogTitle) title = cleanRecipeTitle(ogTitle.getAttribute('content'), url);
     if (!title) {
       const h1 = doc.querySelector('h1');
-      if (h1) title = cleanText(h1.textContent);
+      if (h1) title = cleanRecipeTitle(h1.textContent, url);
+    }
+    if (!title) {
+      title = cleanRecipeTitle(doc.title, url);
+    }
+
+    const ogImage = doc.querySelector('meta[property="og:image"]');
+    if (ogImage && ogImage.getAttribute('content')) {
+      photo = ogImage.getAttribute('content');
     }
 
     const ingElements = doc.querySelectorAll(
-      '[itemprop="recipeIngredient"], [itemprop="ingredients"], .wprm-recipe-ingredient, .recipe-ingredient, .recipe-ingredients li, ul.ingredients li, table.ingredients tr, table.ds-table tr'
+      '[itemprop="recipeIngredient"], [itemprop="ingredients"], .wprm-recipe-ingredient, .recipe-ingredient, .recipe-ingredients li, ul.ingredients li, table.ingredients tr, table.ds-table tr, .tasty-recipes-ingredients li, .mv-create-ingredients li'
     );
     if (ingElements.length > 0) {
       ingredients = Array.from(ingElements).map(el => cleanText(el.textContent)).filter(Boolean);
     }
 
     const stepElements = doc.querySelectorAll(
-      '[itemprop="recipeInstructions"], .wprm-recipe-instruction, .recipe-instruction, .recipe-instructions li, ol.instructions li, .instructions-item'
+      '[itemprop="recipeInstructions"], .wprm-recipe-instruction, .recipe-instruction, .recipe-instructions li, ol.instructions li, .instructions-item, .tasty-recipes-instructions li, .mv-create-instructions li, .instructions p'
     );
     if (stepElements.length > 0) {
       steps = Array.from(stepElements).map(el => cleanText(el.textContent)).filter(Boolean);
     }
 
     if (ingredients.length >= 1 || steps.length >= 1) {
-      return { title: title || doc.title || 'Rezept', servings, ingredients, steps, nutrition, sourceUrl: url };
+      return { title: title || titleFromUrl(url), servings, ingredients, steps, nutrition, photo: photo || null, sourceUrl: url };
     }
 
     // --- STAGE 3: Heuristic Scraping ---
@@ -369,169 +441,149 @@ function extractRecipeFromHtml(html, url) {
       return longestList;
     };
 
-    if (ingredients.length === 0) {
-      ingredients = findListsNearKeywords(keywordsIng);
-    }
-    if (steps.length === 0) {
-      steps = findListsNearKeywords(keywordsStep);
-    }
+    if (ingredients.length === 0) ingredients = findListsNearKeywords(keywordsIng);
+    if (steps.length === 0) steps = findListsNearKeywords(keywordsStep);
 
     if (ingredients.length > 0 || steps.length > 0) {
       return {
-        title: title || doc.title || 'Rezept',
+        title: title || titleFromUrl(url),
         servings,
         ingredients,
         steps,
         nutrition,
+        photo: photo || null,
         sourceUrl: url
       };
     }
 
-    return null;
+    // Falls ein Titel vorliegt, aber keine strukturierten Zutaten/Schritte:
+    return {
+      title: title || titleFromUrl(url),
+      servings: 4,
+      ingredients: [],
+      steps: [],
+      nutrition: null,
+      photo: photo || null,
+      sourceUrl: url,
+      isLinkRecipe: true
+    };
   } catch (e) {
     console.error('Error in extractRecipeFromHtml:', e);
     return null;
   }
 }
 
-async function callAI(prompt, useSearch = false, provider = 'gemini', image = null, maxTokens = null) {
-  let activeProvider = provider;
-  try {
-    const savedSettings = localStorage.getItem('shared_settings') || localStorage.getItem('settings');
-    if (savedSettings) {
-      const parsed = JSON.parse(savedSettings);
-      if (parsed.value) {
-        const valObj = typeof parsed.value === 'string' ? JSON.parse(parsed.value) : parsed.value;
-        if (valObj && valObj.aiProvider) activeProvider = valObj.aiProvider;
-      } else if (parsed && parsed.aiProvider) {
-        activeProvider = parsed.aiProvider;
-      }
-    }
-  } catch (err) {}
+async function fetchHtmlWithFallback(url) {
+  const cleanUrl = (url || '').trim();
+  const endpoints = [
+    `/api/proxy?url=${encodeURIComponent(cleanUrl)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(cleanUrl)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(cleanUrl)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(cleanUrl)}`
+  ];
 
-  const LOG_GROUP = `[AI-Call] ${new Date().toISOString()}`;
-  console.group(LOG_GROUP);
-  console.log('Provider:', activeProvider);
-  console.log('Prompt (erste 200 Zeichen):', prompt.slice(0, 200));
-  console.log('Web Search aktiv:', useSearch);
-  if (image) console.log('Bildanalyse aktiv');
-  
-  try {
-    const res = await fetch('/api/ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        provider: activeProvider,
-        prompt,
-        useSearch,
-        image,
-        maxTokens: maxTokens || (image ? 2048 : 4096),
-      }),
-    });
-    
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => 'Kein Error-Body');
-      console.error('HTTP-Fehler:', res.status, res.statusText, errBody);
-      let errMsg = `AI-Worker HTTP ${res.status}`;
-      try {
-        const parsedErr = JSON.parse(errBody);
-        if (parsedErr.error) errMsg += `: ${parsedErr.error}`;
-      } catch (_) {
-        errMsg += `: ${errBody.slice(0, 200)}`;
+  for (const ep of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch(ep, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+        }
+      });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const text = await res.text();
+        if (text && text.length > 250 && !text.startsWith('{"error"') && !text.includes('502 Bad Gateway') && !text.includes('403 Forbidden')) {
+          return text;
+        }
       }
-      throw new Error(errMsg);
-    }
-    
-    const { text, error } = await res.json();
-    
-    if (error) {
-      console.error('Worker-Fehler:', error);
-      throw new Error(error);
-    }
-    
-    console.log('Antwort (erste 300 Zeichen):', text?.slice(0, 300));
-    
-    const first = text.indexOf('{');
-    const last = text.lastIndexOf('}');
-    if (first === -1 || last === -1) {
-      console.error('Kein JSON in Antwort gefunden. Vollständiger Text:', text);
-      throw new Error('Keine JSON-Antwort erhalten');
-    }
-    
-    const parsed = JSON.parse(text.slice(first, last + 1));
-    console.log('Geparste Felder:', Object.keys(parsed));
-    console.groupEnd();
-    return parsed;
-    
-  } catch (e) {
-    console.error('callAI fehlgeschlagen:', e.name, e.message);
-    console.groupEnd();
-    throw e;
+    } catch (_) {}
   }
+  return '';
 }
 
-const RECIPE_JSON_SCHEMA = '{"title": "...", "servings": Zahl, "ingredients": ["Menge Einheit Zutat", ...], "steps": ["Schritt 1", "Schritt 2", ...], "sourceUrl": "...", "nutrition": {"kcal": Zahl, "protein": Zahl, "carbs": Zahl, "fat": Zahl}}';
-
-async function estimateNutrition(ingredientsText, servings) {
-  const prompt = `Schätze die Nährwerte PRO PORTION für ein Rezept mit ${servings} Portionen. Zutaten:\n${ingredientsText}\n\nAntworte NUR mit JSON, ohne weiteren Text, im Format: {"kcal": Zahl, "protein": Zahl, "carbs": Zahl, "fat": Zahl}`;
-  return callAI(prompt, false);
-}
-async function searchRecipeOnline(query) {
-  const prompt = `Erstelle ein vollständiges, leckeres Rezept für "${query}". Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz und knapp (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
-  return callAI(prompt, false);
-}
 async function extractRecipeFromUrl(url) {
+  const cleanUrl = (url || '').trim();
+  if (!cleanUrl) return null;
+
   let html = '';
   try {
-    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
-    const res = await fetch(proxyUrl);
-    if (res.ok) {
-      html = await res.text();
-      const scraped = extractRecipeFromHtml(html, url);
-      if (scraped && ((scraped.ingredients && scraped.ingredients.length >= 1) || (scraped.steps && scraped.steps.length >= 1))) {
-        return scraped;
-      }
-    }
+    html = await fetchHtmlWithFallback(cleanUrl);
   } catch (e) {
-    console.warn('Proxy-Abruf in extractRecipeFromUrl fehlgeschlagen:', e);
+    console.warn('Proxy-Abruf fehlgeschlagen:', e);
   }
 
-  // Fallback 1: Falls HTML vorliegt, aber kein Schema griff:
-  // Den bereinigten Originaltext der Seite mit strenger Zero-Hallucination-Extraktion parsen.
-  const hasUsefulHtml = html && html.length > 200 && !html.includes('{"error"');
-  if (hasUsefulHtml) {
+  if (html && html.length > 200) {
+    const scraped = extractRecipeFromHtml(html, cleanUrl);
+    if (scraped && (scraped.ingredients?.length >= 1 || scraped.steps?.length >= 1)) {
+      return scraped;
+    }
+
+    // Fallback 1: Text-basierte KI-Extraktion aus dem bereinigten HTML-Text
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       const cleanText = extractCleanRecipeTextFromDoc(doc);
       if (cleanText && cleanText.length > 80) {
-        const prompt = `Du bist ein präziser Daten-Extraktor für Kochrezepte. Extrahiere das Rezept AUSSCHLIESSLICH aus dem folgenden Originaltext der Webseite (${url}).
+        const prompt = `Du bist ein präziser Daten-Extraktor für Kochrezepte. Extrahiere das Rezept AUSSCHLIESSLICH aus dem folgenden Originaltext der Webseite (${cleanUrl}).
 STRIKTE REGELN:
 1. Erfinde KEINE Zutaten oder Schritte. Verwende ausschließlich die im Text genannten Zutaten und Arbeitsschritte.
 2. Wenn keine Zutaten im Text stehen, setze "ingredients": [].
 3. Wenn keine Zubereitungsschritte im Text stehen, setze "steps": [].
-4. Nimm keinesfalls Rezepte aus deinem Allgemeinwissen oder von anderen Webseiten an!
+4. Nimm keinesfalls Rezepte aus deinem Allgemeinwissen an!
 
 Originaltext der Webseite:
 ${cleanText.slice(0, 18000)}
 
 Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz (max. 8 Schritte). "nutrition" = Schätzung pro Portion falls angegeben.`;
 
-        const aiResult = await callAI(prompt, false); // WICHTIG: useSearch = false!
-        if (aiResult && ((aiResult.ingredients && aiResult.ingredients.length > 0) || (aiResult.steps && aiResult.steps.length > 0))) {
-          aiResult.sourceUrl = url;
+        const aiResult = await callAI(prompt, false);
+        if (aiResult && (aiResult.ingredients?.length > 0 || aiResult.steps?.length > 0)) {
+          aiResult.sourceUrl = cleanUrl;
+          if (scraped?.photo && !aiResult.photo) aiResult.photo = scraped.photo;
           return aiResult;
         }
       }
     } catch (parseErr) {
       console.warn('Fehler bei Text-basierter Extraktion:', parseErr);
     }
+
+    // Falls HTML vorlag und ein sinnvoller Titel ermittelt wurde:
+    if (scraped) {
+      return scraped;
+    }
   }
 
-  // WICHTIG: Wenn der direkte Abruf blockiert ist oder kein Rezepttext vorliegt:
-  // NIEMALS frei im Web nach ähnlichen Gerichten suchen (useSearch: true)!
-  // Stattdessen null zurückgeben, damit die UI den In-App-Browser oder Screenshot-OCR anbietet.
-  return null;
+  // Fallback 2: Gezielte KI-Suche nach dieser spezifischen URL
+  try {
+    const searchPrompt = `Ermittle das Kochrezept für diese konkrete Webseite: ${cleanUrl}.
+WICHTIG: Suche nach der Webseite oder dem Gericht auf dieser URL.
+Falls ein Rezept existiert, nenne den genauen Titel, Zutaten und Zubereitungsschritte.
+Falls kein Rezept gefunden wird, antworte mit: {"title": "${titleFromUrl(cleanUrl)}", "servings": 4, "ingredients": [], "steps": []}.
+Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}.`;
+
+    const aiSearchResult = await callAI(searchPrompt, true);
+    if (aiSearchResult && (aiSearchResult.ingredients?.length > 0 || aiSearchResult.steps?.length > 0)) {
+      aiSearchResult.sourceUrl = cleanUrl;
+      return aiSearchResult;
+    }
+  } catch (searchErr) {
+    console.warn('KI-Websuche fehlgeschlagen:', searchErr);
+  }
+
+  // Fallback 3: Link-Rezept (kann immer als Link gespeichert werden)
+  return {
+    title: titleFromUrl(cleanUrl) || 'Online-Rezept',
+    servings: 4,
+    ingredients: [],
+    steps: [],
+    nutrition: null,
+    photo: `https://image.thum.io/get/width/600/crop/800/${cleanUrl}`,
+    sourceUrl: cleanUrl,
+    isLinkRecipe: true
+  };
 }
 
 async function ocrRecipeFromImage(base64Data, mimeType = 'image/jpeg') {
@@ -2410,6 +2462,32 @@ Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
 
   const ocrInputRef = useRef(null);
 
+  const handleSaveAsLinkRecipe = () => {
+    const targetUrl = (activeUrl || urlInput || '').trim();
+    if (!targetUrl) {
+      showToast('Keine Webadresse vorhanden', 'error');
+      return;
+    }
+    const cleanUrl = /^https?:\/\//i.test(targetUrl) ? targetUrl : `https://${targetUrl}`;
+    const domain = getDomainFromUrl(cleanUrl);
+    const title = (extracted && extracted.title && extracted.title !== 'Rezept' && extracted.title !== 'Online-Rezept')
+      ? extracted.title
+      : titleFromUrl(cleanUrl);
+
+    onSaveRecipe({
+      title: title || `Rezept von ${domain}`,
+      servingsText: extracted?.servings ? String(extracted.servings) : '4',
+      ingredientsText: (extracted?.ingredients || []).join('\n'),
+      stepsText: (extracted?.steps && extracted.steps.length > 0)
+        ? extracted.steps.join('\n')
+        : `Online-Rezept: Tippe auf den Link oder die Vorschau, um die Zubereitung auf ${domain} zu öffnen.`,
+      nutrition: extracted?.nutrition || null,
+      photo: extracted?.photo || `https://image.thum.io/get/width/600/crop/800/${cleanUrl}`,
+      source: { type: 'link', url: cleanUrl, label: domain || 'Web-Import' },
+      placeholder: !extracted?.ingredients?.length && !extracted?.steps?.length,
+    });
+  };
+
   const handleManualExtract = async () => {
     if (!activeUrl) return;
     setBusy(true);
@@ -2458,17 +2536,33 @@ Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps
         }
       }
 
-      // 2. Fallback auf Backend-Extraktion
+      // 2. Fallback auf Multi-Proxy Backend- & KI-Extraktion
       const res = await extractRecipeFromUrl(activeUrl);
-      if (res && ((res.ingredients && res.ingredients.length > 0) || (res.steps && res.steps.length > 0))) {
+      if (res) {
         setExtracted(res);
         setViewMode('reader');
-        showToast('Rezept erfolgreich analysiert!');
-      } else {
-        throw new Error('Kein Rezept auf der Seite erkannt. Tipp: Du kannst einen Screenshot per OCR hochladen oder per Strg+V einfügen.');
+        if (res.ingredients && res.ingredients.length > 0) {
+          showToast('Rezept erfolgreich analysiert!');
+        } else {
+          showToast('Rezept als Link erfasst. Bereit zum Speichern!', 'info');
+        }
       }
     } catch (e) {
-      setError(e.message || 'Konnte Rezept nicht automatisch analysieren.');
+      console.warn('Manuelle Analyse fehlgeschlagen:', e);
+      // Fallback: Als Link-Rezept bereitstellen
+      const fallback = {
+        title: titleFromUrl(activeUrl) || 'Online-Rezept',
+        servings: 4,
+        ingredients: [],
+        steps: [],
+        nutrition: null,
+        photo: `https://image.thum.io/get/width/600/crop/800/${activeUrl}`,
+        sourceUrl: activeUrl,
+        isLinkRecipe: true
+      };
+      setExtracted(fallback);
+      setViewMode('reader');
+      showToast('Rezept als Link erfasst. Du kannst es direkt übernehmen!', 'info');
     } finally {
       setBusy(false);
     }
@@ -2529,15 +2623,23 @@ Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps
   }, [activeUrl]);
 
   const handleSaveToApp = () => {
-    if (!extracted) return;
+    if (!extracted) {
+      handleSaveAsLinkRecipe();
+      return;
+    }
+    const targetUrl = activeUrl || urlInput || '';
+    const domain = getDomainFromUrl(targetUrl);
     onSaveRecipe({
-      title: extracted.title || 'Importiertes Rezept',
+      title: extracted.title || titleFromUrl(targetUrl) || 'Importiertes Rezept',
       servingsText: extracted.servings ? String(extracted.servings) : '4',
       ingredientsText: (extracted.ingredients || []).join('\n'),
-      stepsText: (extracted.steps || []).join('\n'),
+      stepsText: (extracted.steps && extracted.steps.length > 0)
+        ? extracted.steps.join('\n')
+        : (targetUrl ? `Online-Rezept: Auf ${domain} ansehen.` : ''),
       nutrition: extracted.nutrition || null,
-      photo: extracted.photo || null,
-      source: { type: 'ai', url: activeUrl || urlInput, label: 'In-App-Browser' }
+      photo: extracted.photo || (targetUrl ? `https://image.thum.io/get/width/600/crop/800/${targetUrl}` : null),
+      source: { type: 'link', url: targetUrl, label: domain || 'In-App-Browser' },
+      placeholder: !extracted.ingredients?.length && !extracted.steps?.length,
     });
   };
 
@@ -2598,7 +2700,17 @@ Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps
 
         {/* Action Controls */}
         {activeUrl && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <a
+              href={activeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 hover:bg-stone-800 rounded-lg text-stone-300 hover:text-white transition-colors"
+              title="In neuem Browser-Tab öffnen"
+            >
+              <ExternalLink size={16} />
+            </a>
+
             <button
               onClick={() => setViewMode(viewMode === 'reader' ? 'web' : 'reader')}
               className={`p-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition-colors ${
@@ -2608,6 +2720,15 @@ Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps
             >
               {viewMode === 'reader' ? <Globe size={15} /> : <BookOpen size={15} />}
               <span className="hidden sm:inline">{viewMode === 'reader' ? 'Web' : 'Reader'}</span>
+            </button>
+
+            <button
+              onClick={handleSaveAsLinkRecipe}
+              className="p-1.5 bg-stone-800 hover:bg-stone-700 text-emerald-400 border border-emerald-500/40 rounded-lg flex items-center gap-1 text-xs font-semibold px-2 transition-colors"
+              title="Als Link-Rezept speichern (jederzeit anklickbar)"
+            >
+              <BookmarkPlus size={14} />
+              <span className="hidden sm:inline">Als Link</span>
             </button>
 
             {!extracted && (
@@ -2663,12 +2784,23 @@ Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps
         )}
 
         {error && (
-          <div className="bg-rose-50 border-b border-rose-200 text-rose-800 px-4 py-2.5 text-xs flex justify-between items-center z-10 shrink-0">
+          <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 text-xs flex flex-wrap justify-between items-center gap-2 z-10 shrink-0">
             <div className="flex items-center gap-2">
-              <AlertTriangle size={14} className="text-rose-600 shrink-0" />
+              <AlertTriangle size={15} className="text-amber-600 shrink-0" />
               <span>{error}</span>
             </div>
-            <button onClick={() => setError(null)} className="font-bold underline ml-2">Ausblenden</button>
+            <div className="flex items-center gap-2">
+              {activeUrl && (
+                <button
+                  type="button"
+                  onClick={handleSaveAsLinkRecipe}
+                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-xs flex items-center gap-1 text-xs"
+                >
+                  <ExternalLink size={12} /> Trotzdem als Link speichern
+                </button>
+              )}
+              <button onClick={() => setError(null)} className="font-bold underline text-stone-500 hover:text-stone-700 ml-1">Ausblenden</button>
+            </div>
           </div>
         )}
 
@@ -2677,18 +2809,39 @@ Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 max-w-xl mx-auto w-full bg-white shadow-sm my-2 rounded-2xl">
             <div className="text-center pb-3 border-b border-stone-200">
               <span className="font-mono text-[11px] uppercase tracking-widest text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                Gefundenes Rezept
+                {extracted.isLinkRecipe ? 'Online-Rezept (Link)' : 'Gefundenes Rezept'}
               </span>
               <h2 className="text-xl font-bold mt-2 text-stone-900">{extracted.title || 'Rezept'}</h2>
               <div className="flex items-center justify-center gap-3 text-xs text-stone-500 mt-1">
                 <span>{extracted.servings || 4} Portionen</span>
                 {activeUrl && (
-                  <a href={activeUrl} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-stone-700 flex items-center gap-1 font-mono text-[11px]">
-                    <ExternalLink size={11} /> Quelle
+                  <a href={activeUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:text-emerald-900 flex items-center gap-1 font-mono text-[11px] font-semibold">
+                    <ExternalLink size={11} /> Quelle öffnen
                   </a>
                 )}
               </div>
             </div>
+
+            {(!extracted.ingredients?.length && !extracted.steps?.length) && (
+              <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 text-center space-y-2">
+                <Globe size={24} className="text-emerald-600 mx-auto" />
+                <div className="font-semibold text-emerald-950 text-sm">Online-Rezept bereit zum Speichern</div>
+                <p className="text-xs text-emerald-700 max-w-md mx-auto leading-relaxed">
+                  Dieses Rezept wird mit dem Web-Link gespeichert. Du kannst das Rezept jederzeit in Tischplan aufrufen und mit einem Klick das Original auf {getDomainFromUrl(activeUrl)} öffnen.
+                </p>
+                {activeUrl && (
+                  <a
+                    href={activeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 hover:text-emerald-950 underline pt-1"
+                  >
+                    <span>Webseite im neuen Tab testen</span>
+                    <ExternalLink size={12} />
+                  </a>
+                )}
+              </div>
+            )}
 
             {extracted.nutrition && (
               <div className="grid grid-cols-4 gap-2 text-center">
@@ -2747,15 +2900,35 @@ Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps
 
         {/* VIEW 2: WEB VIEW (Iframe via Proxy) */}
         {activeUrl && viewMode === 'web' && (
-          <div className="flex-1 w-full h-full relative">
+          <div className="flex-1 w-full h-full relative flex flex-col">
+            <div className="bg-stone-200/90 px-3 py-1.5 text-[11px] text-stone-700 flex items-center justify-between border-b border-stone-300 shrink-0">
+              <span className="truncate max-w-[50%] font-mono">{activeUrl}</span>
+              <div className="flex items-center gap-3 shrink-0">
+                <a
+                  href={activeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-stone-700 hover:text-stone-900 flex items-center gap-1 font-medium"
+                >
+                  <ExternalLink size={12} /> Im externen Tab öffnen
+                </a>
+                <button
+                  type="button"
+                  onClick={handleSaveAsLinkRecipe}
+                  className="text-emerald-700 hover:text-emerald-900 font-bold flex items-center gap-1"
+                >
+                  <BookmarkPlus size={13} /> Als Link speichern
+                </button>
+              </div>
+            </div>
             <iframe
               ref={iframeRef}
               src={`/api/proxy?url=${encodeURIComponent(activeUrl)}`}
-              className="w-full h-full border-0 bg-white"
+              className="w-full flex-1 border-0 bg-white"
               sandbox="allow-same-origin allow-forms allow-scripts"
             />
-            {/* Floating button to extract recipe */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+            {/* Floating button bar */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
               <button
                 type="button"
                 onClick={handleManualExtract}
@@ -2763,7 +2936,16 @@ Antworte AUSSCHLIESSLICH mit JSON im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps
                 className="px-4 py-2.5 bg-stone-900/90 hover:bg-stone-900 text-white rounded-full font-mono text-xs font-bold uppercase tracking-wider shadow-xl backdrop-blur-sm flex items-center gap-2 border border-stone-700 active:scale-95 transition-all"
               >
                 <Sparkles size={14} className="text-amber-400" />
-                <span>Rezept aus dieser Seite speichern</span>
+                <span>Rezept analysieren</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAsLinkRecipe}
+                className="px-4 py-2.5 bg-emerald-700/90 hover:bg-emerald-700 text-white rounded-full font-mono text-xs font-bold uppercase tracking-wider shadow-xl backdrop-blur-sm flex items-center gap-2 border border-emerald-500 active:scale-95 transition-all"
+                title="Aktuelle Seite direkt als Rezept mit Link speichern"
+              >
+                <ExternalLink size={14} />
+                <span>Als Link-Rezept speichern</span>
               </button>
             </div>
           </div>
@@ -2912,6 +3094,27 @@ function URLPasteSearch({ onNext }) {
   const [browserUrl, setBrowserUrl] = useState(null);
   const ocrInputRef = useRef(null);
 
+  const handleSaveDirectAsLink = () => {
+    const raw = urlInput.trim();
+    if (!raw) {
+      showToast('Bitte eine gültige URL eingeben', 'error');
+      return;
+    }
+    const cleanUrl = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const domain = getDomainFromUrl(cleanUrl);
+    const title = titleFromUrl(cleanUrl);
+    onNext({
+      title: title || `Rezept von ${domain}`,
+      servingsText: '4',
+      ingredientsText: '',
+      stepsText: `Online-Rezept: Auf ${domain} ansehen.`,
+      nutrition: null,
+      photo: `https://image.thum.io/get/width/600/crop/800/${cleanUrl}`,
+      source: { type: 'link', url: cleanUrl, label: domain || 'Web-Import' },
+      placeholder: true,
+    });
+  };
+
   const handleImport = async () => {
     if (!urlInput.trim()) {
       showToast('Bitte eine gültige URL eingeben', 'error');
@@ -2921,9 +3124,16 @@ function URLPasteSearch({ onNext }) {
     setExtracted(null);
     try {
       const result = await extractRecipeFromUrl(urlInput.trim());
-      if (result && ((result.ingredients && result.ingredients.length >= 1) || (result.steps && result.steps.length >= 1))) {
-        result.photo = `https://image.thum.io/get/width/600/crop/800/${urlInput.trim()}`;
+      if (result) {
+        if (!result.photo) {
+          result.photo = `https://image.thum.io/get/width/600/crop/800/${urlInput.trim()}`;
+        }
         setExtracted(result);
+        if (result.ingredients && result.ingredients.length > 0) {
+          showToast('Rezept erfolgreich extrahiert!');
+        } else {
+          showToast('Rezept als Link erfasst. Bereit zum Speichern!', 'info');
+        }
         return;
       }
       throw new Error('Direkter Textabruf blockiert oder kein Rezept gefunden');
@@ -2992,10 +3202,22 @@ function URLPasteSearch({ onNext }) {
     return (
       <div className="space-y-4">
         <div className="text-center pb-2 border-b border-stone-200">
-          <span className="font-mono text-xs uppercase tracking-widest text-emerald-600 font-bold">Extrahiertes Originalrezept</span>
+          <span className="font-mono text-xs uppercase tracking-widest text-emerald-600 font-bold">
+            {extracted.isLinkRecipe ? 'Online-Rezept (Link)' : 'Extrahiertes Originalrezept'}
+          </span>
           <h2 className="text-xl font-bold mt-1 text-stone-900">{extracted.title || 'Rezept'}</h2>
           <p className="text-sm text-stone-500 mt-1">{extracted.servings || 4} Portionen</p>
         </div>
+
+        {(!extracted.ingredients?.length && !extracted.steps?.length) && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center space-y-2">
+            <Globe size={24} className="text-emerald-600 mx-auto" />
+            <div className="font-semibold text-emerald-950 text-sm">Online-Rezept bereit zum Speichern</div>
+            <p className="text-xs text-emerald-700 max-w-md mx-auto leading-relaxed">
+              Dieses Rezept wird als Web-Link gespeichert. Der direkte Link bleibt im Rezept hinterlegt und ist jederzeit mit einem Klick erreichbar.
+            </p>
+          </div>
+        )}
 
         {extracted.nutrition && (
           <div className="grid grid-cols-4 gap-2 text-center">
@@ -3037,13 +3259,15 @@ function URLPasteSearch({ onNext }) {
           <button
             onClick={() => {
               onNext({
-                title: extracted.title || 'Importiertes Rezept',
+                title: extracted.title || titleFromUrl(urlInput.trim()) || 'Importiertes Rezept',
                 servingsText: extracted.servings ? String(extracted.servings) : '4',
                 ingredientsText: (extracted.ingredients || []).join('\n'),
-                stepsText: (extracted.steps || []).join('\n'),
+                stepsText: (extracted.steps && extracted.steps.length > 0)
+                  ? extracted.steps.join('\n')
+                  : `Online-Rezept: Auf ${getDomainFromUrl(urlInput.trim())} ansehen.`,
                 nutrition: extracted.nutrition || null,
-                photo: extracted.photo || null,
-                source: extracted.source || { type: 'ai', url: urlInput.trim(), label: 'Webseiten-Import' }
+                photo: extracted.photo || `https://image.thum.io/get/width/600/crop/800/${urlInput.trim()}`,
+                source: extracted.source || { type: 'link', url: urlInput.trim(), label: getDomainFromUrl(urlInput.trim()) }
               });
             }}
             className="flex-1 py-2.5 bg-stone-900 text-white rounded-lg font-semibold text-sm hover:bg-stone-850 active:scale-[0.99] flex items-center justify-center gap-2"
@@ -3078,6 +3302,16 @@ function URLPasteSearch({ onNext }) {
           ) : (
             <><Download size={15} /> Rezept importieren</>
           )}
+        </button>
+        <button
+          type="button"
+          onClick={handleSaveDirectAsLink}
+          disabled={!urlInput.trim()}
+          className="px-3 py-2.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 text-xs font-semibold font-mono uppercase shrink-0 flex items-center gap-1.5 transition-colors"
+          title="Direkt als Link-Rezept speichern (jederzeit anklickbar)"
+        >
+          <BookmarkPlus size={14} />
+          <span>Als Link</span>
         </button>
         <button
           type="button"
@@ -3887,6 +4121,25 @@ function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
             {recipe.source && recipe.source.label && <span className="px-2 py-1 bg-stone-100 rounded-full">{recipe.source.label}</span>}
             {recipe.source && recipe.source.url && <a href={recipe.source.url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 bg-stone-100 rounded-full flex items-center gap-1">Quelle <ExternalLink size={10} /></a>}
           </div>
+
+          {recipe.source?.url && (
+            <a
+              href={recipe.source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-900 transition-all group"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Globe size={18} className="text-amber-600 shrink-0" />
+                <div className="min-w-0 text-left">
+                  <div className="text-xs font-bold truncate">Original-Rezept im Web öffnen</div>
+                  <div className="text-[11px] text-stone-500 font-mono truncate">{recipe.source.url}</div>
+                </div>
+              </div>
+              <ExternalLink size={16} className="text-amber-700 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+            </a>
+          )}
+
           {recipe.nutrition && (
             <div className="grid grid-cols-4 gap-2 text-center">
               {NUTRIENT_KEYS.map(k => (
@@ -3897,13 +4150,33 @@ function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
               ))}
             </div>
           )}
-          {recipe.ingredients.length > 0 && (
+
+          {(!recipe.ingredients || recipe.ingredients.length === 0) && (!recipe.steps || recipe.steps.length === 0) && (
+            <div className="p-4 rounded-xl border border-dashed border-stone-200 bg-stone-50/70 text-center space-y-2.5">
+              <BookOpen size={24} className="mx-auto text-stone-400" />
+              <p className="text-xs text-stone-700 font-medium">
+                Dieses Rezept ist als Web-Link hinterlegt. Die Zutaten und Zubereitungsschritte findest du direkt auf der Website.
+              </p>
+              {recipe.source?.url && (
+                <a
+                  href={recipe.source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold shadow hover:bg-amber-700 transition"
+                >
+                  <ExternalLink size={13} /> Original-Rezept aufrufen
+                </a>
+              )}
+            </div>
+          )}
+
+          {recipe.ingredients && recipe.ingredients.length > 0 && (
             <div>
               <div className={labelCls + " mb-1"}>Zutaten</div>
               <ul className="text-sm text-stone-600 space-y-0.5">{recipe.ingredients.map((ing, i) => <li key={i}>• {formatIngredient(ing)}</li>)}</ul>
             </div>
           )}
-          {recipe.steps.length > 0 && (
+          {recipe.steps && recipe.steps.length > 0 && (
             <div>
               <div className={labelCls + " mb-1"}>Zubereitung</div>
               <ol className="text-sm text-stone-600 space-y-1 list-decimal list-inside">{recipe.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
@@ -3926,13 +4199,25 @@ function RecipeGridItem({ recipe, onClick, onLongPress }) {
   return (
     <div 
       {...handlers} 
-      className="bg-white rounded-xl border border-stone-200 overflow-hidden text-left cursor-pointer hover:border-stone-400 hover:bg-stone-50 transition-colors"
+      className="bg-white rounded-xl border border-stone-200 overflow-hidden text-left cursor-pointer hover:border-stone-400 hover:bg-stone-50 transition-colors relative group"
     >
       {getRecipePreview(recipe) ? (
-        <img src={getRecipePreview(recipe)} className="w-full h-24 object-cover" alt="" />
+        <div className="relative w-full h-24">
+          <img src={getRecipePreview(recipe)} className="w-full h-full object-cover" alt="" />
+          {recipe.source?.url && (
+            <span className="absolute top-1.5 right-1.5 bg-black/60 backdrop-blur-sm text-[10px] text-white px-1.5 py-0.5 rounded flex items-center gap-0.5 font-mono">
+              <ExternalLink size={9} /> Link
+            </span>
+          )}
+        </div>
       ) : (
-        <div className="w-full h-24 bg-stone-100 flex items-center justify-center">
+        <div className="w-full h-24 bg-stone-100 flex items-center justify-center relative">
           <Utensils size={20} className="text-stone-300" />
+          {recipe.source?.url && (
+            <span className="absolute top-1.5 right-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5 font-mono">
+              <ExternalLink size={9} /> Link
+            </span>
+          )}
         </div>
       )}
       <div className="p-2.5">
@@ -3941,7 +4226,7 @@ function RecipeGridItem({ recipe, onClick, onLongPress }) {
           {recipe.placeholder && <span className="text-amber-500">●</span>}
         </div>
         <div className="text-xs text-stone-400 font-mono">
-          {recipe.nutrition ? `${recipe.nutrition.kcal} kcal` : 'keine Nährwerte'}
+          {recipe.nutrition ? `${recipe.nutrition.kcal} kcal` : (recipe.source?.url ? 'Web-Rezept' : 'keine Nährwerte')}
         </div>
       </div>
     </div>
@@ -6222,12 +6507,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.16</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.17</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn) · v1.10.11 (Kaiserschmarrn) · v1.10.12 (Kaiserschmarrn) · v1.10.13 (Kaiserschmarrn) · v1.10.14 (Kaiserschmarrn) · v1.10.15 (Kaiserschmarrn) · v1.10.16 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn) · v1.10.11 (Kaiserschmarrn) · v1.10.12 (Kaiserschmarrn) · v1.10.13 (Kaiserschmarrn) · v1.10.14 (Kaiserschmarrn) · v1.10.15 (Kaiserschmarrn) · v1.10.16 (Kaiserschmarrn) · v1.10.17 (Kaiserschmarrn)
         </div>
       </div>
 
