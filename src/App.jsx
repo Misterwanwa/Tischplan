@@ -473,6 +473,102 @@ function extractRecipeFromHtml(html, url) {
   }
 }
 
+async function callAI(prompt, useSearch = false, provider = 'gemini', image = null, maxTokens = null) {
+  let activeProvider = provider;
+  try {
+    const savedSettings = localStorage.getItem('shared_settings') || localStorage.getItem('settings');
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      if (parsed.value) {
+        const valObj = typeof parsed.value === 'string' ? JSON.parse(parsed.value) : parsed.value;
+        if (valObj && valObj.aiProvider) activeProvider = valObj.aiProvider;
+      } else if (parsed && parsed.aiProvider) {
+        activeProvider = parsed.aiProvider;
+      }
+    }
+  } catch (err) {}
+
+  const LOG_GROUP = `[AI-Call] ${new Date().toISOString()}`;
+  console.group(LOG_GROUP);
+  console.log('Provider:', activeProvider);
+  console.log('Prompt (erste 200 Zeichen):', prompt ? prompt.slice(0, 200) : '');
+  console.log('Web Search aktiv:', useSearch);
+  if (image) console.log('Bildanalyse aktiv');
+  
+  try {
+    const res = await fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: activeProvider,
+        prompt,
+        useSearch,
+        image,
+        maxTokens: maxTokens || (image ? 2048 : 4096),
+      }),
+    });
+    
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => 'Kein Error-Body');
+      console.error('HTTP-Fehler:', res.status, res.statusText, errBody);
+      let errMsg = `AI-Worker HTTP ${res.status}`;
+      try {
+        const parsedErr = JSON.parse(errBody);
+        if (parsedErr.error) errMsg += `: ${parsedErr.error}`;
+      } catch (_) {
+        errMsg += `: ${errBody.slice(0, 200)}`;
+      }
+      throw new Error(errMsg);
+    }
+    
+    const { text, error } = await res.json();
+    
+    if (error) {
+      console.error('Worker-Fehler:', error);
+      throw new Error(error);
+    }
+    
+    console.log('Antwort (erste 300 Zeichen):', text?.slice(0, 300));
+    
+    let parsed = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch (_) {
+      const first = text.indexOf('{');
+      const last = text.lastIndexOf('}');
+      if (first !== -1 && last !== -1 && last > first) {
+        parsed = JSON.parse(text.slice(first, last + 1));
+      }
+    }
+    if (!parsed) {
+      console.error('Kein JSON in Antwort gefunden. Vollständiger Text:', text);
+      throw new Error('Keine JSON-Antwort erhalten');
+    }
+    
+    console.log('Geparste Felder:', Object.keys(parsed));
+    console.groupEnd();
+    return parsed;
+    
+  } catch (e) {
+    console.error('callAI fehlgeschlagen:', e.name, e.message);
+    console.groupEnd();
+    throw e;
+  }
+}
+
+const RECIPE_JSON_SCHEMA = '{"title": "...", "servings": Zahl, "ingredients": ["Menge Einheit Zutat", ...], "steps": ["Schritt 1", "Schritt 2", ...], "sourceUrl": "...", "nutrition": {"kcal": Zahl, "protein": Zahl, "carbs": Zahl, "fat": Zahl}}';
+
+async function estimateNutrition(ingredientsText, servings) {
+  const prompt = `Schätze die Nährwerte PRO PORTION für ein Rezept mit ${servings} Portionen. 
+Zutaten:\n${ingredientsText}\n\nAntworte NUR mit JSON, ohne weiteren Text, im Format: {"kcal": Zahl, "protein": Zahl, "carbs": Zahl, "fat": Zahl}`;
+  return callAI(prompt, false);
+}
+
+async function searchRecipeOnline(query) {
+  const prompt = `Erstelle ein vollständiges, leckeres Rezept für "${query}". Antworte NUR mit JSON, ohne weiteren Text, im Format: ${RECIPE_JSON_SCHEMA}. Halte "steps" kurz und knapp (max. 8 Schritte). "nutrition" = Schätzung pro Portion.`;
+  return callAI(prompt, false);
+}
+
 async function fetchHtmlWithFallback(url) {
   const cleanUrl = (url || '').trim();
   const endpoints = [
@@ -2351,7 +2447,10 @@ function AIDirectSearch({ onNext }) {
     try {
       const result = await searchRecipeOnline(query.trim());
       onNext({ title: result.title || query, servingsText: result.servings ? String(result.servings) : '4', ingredientsText: (result.ingredients || []).join('\n'), stepsText: (result.steps || []).join('\n'), nutrition: result.nutrition || null, source: { type: 'ai', url: result.sourceUrl || '', label: 'KI-Rezept' } });
-    } catch (e) { setError('Generierung fehlgeschlagen. Bitte manuell eingeben.'); }
+    } catch (e) {
+      console.error('Rezept-Generierung fehlgeschlagen:', e);
+      setError('Generierung fehlgeschlagen: ' + (e.message || 'Bitte manuell eingeben.'));
+    }
     finally { setBusy(false); }
   };
   return (
@@ -6507,12 +6606,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.17</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.18</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Kaiserschmarrn 🥞
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.0 (Kaiserschmarrn) · v1.10.1 (Kaiserschmarrn) · v1.10.3 (Kaiserschmarrn) · v1.10.4 (Kaiserschmarrn) · v1.10.5 (Kaiserschmarrn) · v1.10.6 (Kaiserschmarrn) · v1.10.7 (Kaiserschmarrn) · v1.10.8 (Kaiserschmarrn) · v1.10.9 (Kaiserschmarrn) · v1.10.10 (Kaiserschmarrn) · v1.10.11 (Kaiserschmarrn) · v1.10.12 (Kaiserschmarrn) · v1.10.13 (Kaiserschmarrn) · v1.10.14 (Kaiserschmarrn) · v1.10.15 (Kaiserschmarrn) · v1.10.16 (Kaiserschmarrn) · v1.10.17 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.18 (Kaiserschmarrn)
         </div>
       </div>
 
