@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "style": "white-outline-doodle",
+  "icons": {
+    "apfel": {
+      "file": "apfel.svg",
+      "source": "apfel-0b7017c206e3.png",
+      "sourceSha256": "0b7017c206e354ef87e31bc6ce2656e545b146f11bd33904f9b1750b8a6e3adb",
+      "reviewed": true
+    },
+    "banane": {
+      "file": "banane.svg",
+      "source": "apfel-0b7017c206e3.png",
+      "sourceSha256": "0b7017c206e354ef87e31bc6ce2656e545b146f11bd33904f9b1750b8a6e3adb",
+      "reviewed": true
+    },
+    "erdbeeren": {
+      "file": "erdbeeren.svg",
+      "source": "apfel-0b7017c206e3.png",
+      "sourceSha256": "0b7017c206e354ef87e31bc6ce2656e545b146f11bd33904f9b1750b8a6e3adb",
+      "reviewed": true
+    },
+    "himbeeren": {
+      "file": "himbeeren.svg",
+      "source": "apfel-0b7017c206e3.png",
+      "sourceSha256": "0b7017c206e354ef87e31bc6ce2656e545b146f11bd33904f9b1750b8a6e3adb",
+      "reviewed": true
+    },
+    "heidelbeeren": {
+      "file": "heidelbeeren.svg",
+      "source": "apfel-0b7017c206e3.png",
+      "sourceSha256": "0b7017c206e354ef87e31bc6ce2656e545b146f11bd33904f9b1750b8a6e3adb",
+      "reviewed": true
+    },
+    "brombeeren": {
+      "file": "brombeeren.svg",
+      "source": "apfel-0b7017c206e3.png",
+      "sourceSha256": "0b7017c206e354ef87e31bc6ce2656e545b146f11bd33904f9b1750b8a6e3adb",
+      "reviewed": true
+    },
+    "johannisbeeren": {
+      "file": "johannisbeeren.svg",
+      "source": "apfel-0b7017c206e3.png",
+      "sourceSha256": "0b7017c206e354ef87e31bc6ce2656e545b146f11bd33904f9b1750b8a6e3adb",
+      "reviewed": true
+    },
+    "stachelbeeren": {
+      "file": "stachelbeeren.svg",
+      "source": "apfel-0b7017c206e3.png",
+      "sourceSha256": "0b7017c206e354ef87e31bc6ce2656e545b146f11bd33904f9b1750b8a6e3adb",
+      "reviewed": true
+    },
+    "zitronen": {
+      "file": "zitronen.svg",
+      "source": "apfel-0b7017c206e3.png",
+      "sourceSha256": "0b7017c206e354ef87e31bc6ce2656e545b146f11bd33904f9b1750b8a6e3adb",
+      "reviewed": true
+    }
+  }
+}

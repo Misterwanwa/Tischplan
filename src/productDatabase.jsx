@@ -1,4 +1,5 @@
 import React from 'react';
+import productIconManifest from '../public/icons/products/manifest.json';
 import {
   Apple, Carrot, Fish, Milk, Egg, Wheat, Wine, Flame, Package, Droplets,
   Heart, Shield, Tag, Coffee, Cookie, Cake, Sun, Moon, Layers, Sparkles, Utensils,
@@ -370,6 +371,30 @@ export function ProductPictogram({
   // 2. Normalization for 1:1 lookups
   const normId = (id || '').toLowerCase().trim();
   const normName = (name || '').toLowerCase().trim();
+
+  // Generated white SVGs inherit the surrounding text colour through a CSS mask.
+  const generatedIcon = productIconManifest.icons[normId];
+  if (generatedIcon) {
+    const mask = `url("/icons/products/${encodeURIComponent(generatedIcon.file)}")`;
+    return (
+      <span
+        role="img"
+        aria-label={name || id || 'Produkt'}
+        className={`${className} inline-block shrink-0`}
+        style={{
+          backgroundColor: 'currentColor',
+          maskImage: mask,
+          WebkitMaskImage: mask,
+          maskSize: 'contain',
+          WebkitMaskSize: 'contain',
+          maskPosition: 'center',
+          WebkitMaskPosition: 'center',
+          maskRepeat: 'no-repeat',
+          WebkitMaskRepeat: 'no-repeat',
+        }}
+      />
+    );
+  }
 
   // 3. Exact 1:1 Bring!-Style Chalk SVG from Registry
   const PictoComponent = PRODUCT_PICTO_REGISTRY[normId] ||
