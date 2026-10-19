@@ -9,6 +9,7 @@ import { fetchProductByBarcode, calculatePortion, searchBuiltinFoods, BUILTIN_FO
 import { calculateStreak, isDayActive } from './modules/streak';
 import { gameDay, hasNormalMeal } from './modules/gamification';
 import GamesHub from './components/GamesHub';
+import { readAiConfigFromStorage } from './modules/aiConfig';
 
 function BarcodeIcon({ size = 16, className = "" }) {
   return (
@@ -1280,12 +1281,14 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt im folgenden Format:
     try {
       let parsed = null;
 
-      // API Request to /api/ai
+      // API Request to /api/ai (Anbieter + Modell laut Einstellungen)
+      const { provider: aiProvider, model: aiModel } = readAiConfigFromStorage();
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'gemini',
+          provider: aiProvider,
+          model: aiModel,
           prompt,
           image: { data: aiImage.base64Data, mimeType: aiImage.mimeType },
           maxTokens: 1024,

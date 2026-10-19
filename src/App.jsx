@@ -7,7 +7,7 @@ import {
   Apple, Carrot, Fish, Milk, Egg, Wheat, Wine, Flame, Package, Droplets, Heart,
   Shield, Tag, ArrowUpDown, ChevronDown, ChevronUp, MoreVertical, PlusCircle,
   CheckCircle2, Clock, Grid, ListFilter, RotateCcw, HelpCircle, Layers,
-  MessageSquare, Shuffle, Globe, RotateCw, BookmarkPlus,
+  MessageSquare, Shuffle, Globe, RotateCw, BookmarkPlus, Cpu,
 } from 'lucide-react';
 import {
   SHOPPING_CATEGORIES,
@@ -21,6 +21,7 @@ import { setSyncStatus, subscribeSyncStatus, SYNC_STATES, SYNC_LABELS } from './
 import { getItemDetails, addDetailToItem, updateDetailInItem, removeDetailFromItem, formatDetailsSummary } from './modules/multiDetails';
 import { analyzeWeekIngredients, findProductMatch, parseIngredientTextLine } from './modules/ingredientMatcher';
 import { STATS_STORAGE_KEY, EVENT_TYPES, createStatEvent, appendStatEvent, generateRewindReport } from './modules/statistics';
+import { AI_PROVIDERS, DEFAULT_OPENROUTER_MODEL, OPENROUTER_MODEL_PRESETS, isValidOpenRouterModel, readAiConfigFromStorage, resolveAiConfig } from './modules/aiConfig';
 
 /* ---------------------------------- Design tokens ---------------------------------- */
 const inputCls = "w-full px-3 py-2 rounded-lg border border-stone-300 text-sm focus:outline-none focus:ring-1 focus:ring-stone-900 bg-white";
@@ -61,6 +62,7 @@ const DEFAULT_SETTINGS = {
   showNextMonday: false,
   showDayNotes: true,
   aiProvider: 'gemini',
+  openrouterModel: DEFAULT_OPENROUTER_MODEL,
   notificationEnabled: false,
   notificationDay: 1, // 1 = Montag
   notificationTime: '18:00',
@@ -474,23 +476,12 @@ function extractRecipeFromHtml(html, url) {
 }
 
 async function callAI(prompt, useSearch = false, provider = 'gemini', image = null, maxTokens = null) {
-  let activeProvider = provider;
-  try {
-    const savedSettings = localStorage.getItem('shared_settings') || localStorage.getItem('settings');
-    if (savedSettings) {
-      const parsed = JSON.parse(savedSettings);
-      if (parsed.value) {
-        const valObj = typeof parsed.value === 'string' ? JSON.parse(parsed.value) : parsed.value;
-        if (valObj && valObj.aiProvider) activeProvider = valObj.aiProvider;
-      } else if (parsed && parsed.aiProvider) {
-        activeProvider = parsed.aiProvider;
-      }
-    }
-  } catch (err) {}
+  // Anbieter + Modell kommen aus den gespeicherten Einstellungen (Default: Gemini)
+  const { provider: activeProvider, model: activeModel } = readAiConfigFromStorage();
 
   const LOG_GROUP = `[AI-Call] ${new Date().toISOString()}`;
   console.group(LOG_GROUP);
-  console.log('Provider:', activeProvider);
+  console.log('Provider:', activeProvider, activeModel ? `(${activeModel})` : '');
   console.log('Prompt (erste 200 Zeichen):', prompt ? prompt.slice(0, 200) : '');
   console.log('Web Search aktiv:', useSearch);
   if (image) console.log('Bildanalyse aktiv');
@@ -501,6 +492,7 @@ async function callAI(prompt, useSearch = false, provider = 'gemini', image = nu
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         provider: activeProvider,
+        model: activeModel,
         prompt,
         useSearch,
         image,
@@ -6046,6 +6038,21 @@ function SettingsTab() {
   const setCookbookSort = async (val) => { await updateSettings({ cookbookSort: val }); };
   useEffect(() => { setPeople(settings.people); }, [settings.people]);
 
+  const aiConfig = resolveAiConfig(settings);
+  const [modelInput, setModelInput] = useState(settings.openrouterModel || DEFAULT_OPENROUTER_MODEL);
+  useEffect(() => { setModelInput(settings.openrouterModel || DEFAULT_OPENROUTER_MODEL); }, [settings.openrouterModel]);
+  const saveOpenRouterModel = async (value) => {
+    const id = (value || '').trim();
+    if (!isValidOpenRouterModel(id)) {
+      showToast('Ungültige Modell-ID (Format: anbieter/modell)', 'error');
+      setModelInput(settings.openrouterModel || DEFAULT_OPENROUTER_MODEL);
+      return;
+    }
+    if (id === settings.openrouterModel) return;
+    await updateSettings({ openrouterModel: id });
+    showToast(`KI-Modell: ${id}`);
+  };
+
   const openRewindModal = async (targetYear = new Date().getFullYear(), isPreview = true) => {
     try {
       const events = await storageGet(STATS_STORAGE_KEY, true, []);
@@ -6564,6 +6571,61 @@ function SettingsTab() {
 
       <div className={cardCls}>
         <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
+          <Cpu size={15} className="text-violet-600" /> KI-Modell
+        </div>
+        <p className="text-xs text-stone-500 mb-3">Gilt für alle KI-Funktionen: Rezeptsuche, Import, Foto-Analyse und Nährwerte.</p>
+        <div className="flex gap-2 mb-3" role="radiogroup" aria-label="KI-Anbieter">
+          {AI_PROVIDERS.map(p => (
+            <button
+              key={p.id}
+              id={`ai-provider-${p.id}`}
+              type="button"
+              role="radio"
+              aria-checked={aiConfig.provider === p.id}
+              onClick={() => aiConfig.provider !== p.id && updateSettings({ aiProvider: p.id }).then(() => showToast(`KI-Anbieter: ${p.label}`))}
+              className={`flex-1 py-2 px-2 rounded-lg text-left transition-colors ${aiConfig.provider === p.id ? 'bg-stone-900 text-white' : 'border border-stone-300 text-stone-700 hover:bg-stone-50'}`}
+            >
+              <div className="text-sm font-mono font-semibold">{p.label}</div>
+              <div className={`text-[10px] font-mono ${aiConfig.provider === p.id ? 'text-stone-300' : 'text-stone-400'}`}>{p.description}</div>
+            </button>
+          ))}
+        </div>
+        {aiConfig.provider === 'openrouter' && (
+          <div className="space-y-2 border-t border-stone-100 pt-3">
+            <label htmlFor="openrouter-model-input" className={labelCls}>OpenRouter-Modell</label>
+            <input
+              id="openrouter-model-input"
+              type="text"
+              value={modelInput}
+              onChange={e => setModelInput(e.target.value)}
+              onBlur={e => saveOpenRouterModel(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
+              placeholder={DEFAULT_OPENROUTER_MODEL}
+              spellCheck={false}
+              autoCapitalize="off"
+              className={inputCls + " font-mono text-xs"}
+            />
+            <div className="flex flex-wrap gap-1.5">
+              {OPENROUTER_MODEL_PRESETS.map(m => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => { setModelInput(m.id); saveOpenRouterModel(m.id); }}
+                  className={`px-2 py-1 rounded-full text-[11px] font-mono border ${aiConfig.model === m.id ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-stone-200 text-stone-600 hover:bg-stone-50'}`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-stone-400">
+              Beliebige Modell-ID von <a href="https://openrouter.ai/models" target="_blank" rel="noopener noreferrer" className="underline">openrouter.ai/models</a> möglich. Für Foto-Funktionen muss das Modell Bilder unterstützen.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
           <Sparkles size={15} className="text-amber-500" /> Jahresrückblick &amp; Statistiken
         </div>
         <div className="space-y-2">
@@ -6606,12 +6668,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.10.18</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.11.0</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
-          Codename: Kaiserschmarrn 🥞
+          Codename: Lebkuchen 🍪
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.18 (Kaiserschmarrn)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.18 (Kaiserschmarrn) · v1.11.0 (Lebkuchen)
         </div>
       </div>
 

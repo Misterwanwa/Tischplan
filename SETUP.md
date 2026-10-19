@@ -19,6 +19,18 @@ Füge hinzu:
 | GEMINI_API_KEY     | dein-key-hier     | Preview     |
 | ANTHROPIC_API_KEY  | sk-ant-...        | Production  |
 | ANTHROPIC_API_KEY  | sk-ant-...        | Preview     |
+| OPENROUTER_API_KEY | sk-or-v1-...      | Production  |
+| OPENROUTER_API_KEY | sk-or-v1-...      | Preview     |
+| OPENROUTER_MODEL   | (optional) z. B. google/gemini-3.5-flash-lite | beide |
+
+## KI-Anbieter wechseln
+In der App unter **Einstellungen → KI-Modell** zwischen *Google Gemini* und *OpenRouter* umschalten.
+Bei OpenRouter kann jede Modell-ID von https://openrouter.ai/models eingetragen werden
+(Default: `google/gemini-3.5-flash-lite`). Der API-Key bleibt immer serverseitig.
+
+## OpenRouter API-Key erhalten
+1. https://openrouter.ai/keys
+2. Guthaben aufladen (Abrechnung pro Token, je nach Modell); Websuche kostet extra.
 
 ## Gemini API-Key erhalten
 1. https://aistudio.google.com/apikey

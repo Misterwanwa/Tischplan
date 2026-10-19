@@ -1,6 +1,9 @@
 // Cloudflare Pages Function – Abgesicherter KI-Proxy
 // Liest API-Keys aus Cloudflare Environment Variables (NIEMALS im Frontend).
 // Unterstützt strukturierte JSON-Schema-Ausgaben, serverseitige Tokenbudgets und echte Modell-Fallbacks.
+// Anbieter: 'gemini' (Google AI), 'openrouter' (OpenRouter), 'anthropic' (Legacy-Fallback).
+
+import { buildOpenRouterBody, isValidOpenRouterModel, DEFAULT_OPENROUTER_MODEL } from '../../src/modules/aiConfig.js';
 
 function verifyOrigin(context) {
   const requestUrl = new URL(context.request.url);
@@ -33,7 +36,7 @@ export async function onRequestPost(context) {
   };
 
   try {
-    const { provider, prompt, useSearch, image, maxTokens, schema } = await context.request.json();
+    const { provider, model, prompt, useSearch, image, maxTokens, schema } = await context.request.json();
 
     if (!prompt && (!image || !image.data)) {
       return new Response(JSON.stringify({ error: 'Prompt oder Bild ist erforderlich' }), { status: 400, headers: corsHeaders });
@@ -156,6 +159,83 @@ export async function onRequestPost(context) {
         ?.join('\n') || '';
 
       result = { text, finishReason: candidate?.finishReason || 'STOP' };
+
+    } else if (provider === 'openrouter') {
+      // OpenRouter (OpenAI-kompatible Chat-Completions-API)
+      const apiKey = context.env.OPENROUTER_API_KEY;
+      if (!apiKey) {
+        return new Response(JSON.stringify({ error: 'OPENROUTER_API_KEY nicht in Umgebungsvariablen konfiguriert' }), { status: 500, headers: corsHeaders });
+      }
+
+      const candidateModels = [...new Set([
+        isValidOpenRouterModel(model) ? model.trim() : null,
+        isValidOpenRouterModel(context.env.OPENROUTER_MODEL) ? context.env.OPENROUTER_MODEL.trim() : null,
+        DEFAULT_OPENROUTER_MODEL,
+      ].filter(Boolean))];
+
+      const requestOrigin = new URL(context.request.url).origin;
+      let res = null;
+      let lastErrText = '';
+      let lastStatus = 500;
+      const triedModels = [];
+
+      for (const candidateModel of candidateModels) {
+        triedModels.push(candidateModel);
+        try {
+          res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+              'HTTP-Referer': requestOrigin,
+              'X-Title': 'Tischplan',
+            },
+            body: JSON.stringify(buildOpenRouterBody({
+              model: candidateModel, prompt, image, maxTokens: safeMaxTokens, schema, useSearch,
+            })),
+          });
+          if (res.ok) break;
+          lastStatus = res.status;
+          lastErrText = await res.text();
+          // Unbekanntes/ungültiges Modell → nächstes probieren, sonst abbrechen
+          if (res.status === 404 || (res.status === 400 && /model/i.test(lastErrText))) continue;
+          break;
+        } catch (fetchErr) {
+          lastErrText = fetchErr.message;
+        }
+      }
+
+      if (!res || !res.ok) {
+        let parsedErrMsg = lastErrText;
+        try {
+          const errObj = JSON.parse(lastErrText);
+          parsedErrMsg = errObj.error?.message || lastErrText;
+        } catch (_) {}
+
+        return new Response(JSON.stringify({
+          error: `OpenRouter Fehler (${lastStatus}) [Modelle: ${triedModels.join(', ')}]: ${parsedErrMsg}`,
+          status: lastStatus
+        }), {
+          status: lastStatus === 429 ? 429 : (lastStatus === 402 ? 402 : (lastStatus >= 500 ? 502 : 400)),
+          headers: corsHeaders
+        });
+      }
+
+      const data = await res.json();
+      if (data.error) {
+        return new Response(JSON.stringify({ error: `OpenRouter Fehler: ${data.error.message || 'Unbekannt'}` }), { status: 502, headers: corsHeaders });
+      }
+      const choice = data.choices?.[0];
+      const msgContent = choice?.message?.content;
+      const text = Array.isArray(msgContent)
+        ? msgContent.filter(p => p.type === 'text').map(p => p.text).join('\n')
+        : (msgContent || '');
+
+      if (choice?.finish_reason === 'content_filter') {
+        return new Response(JSON.stringify({ error: 'Die Anfrage wurde durch Inhaltsfilter blockiert.' }), { status: 422, headers: corsHeaders });
+      }
+
+      result = { text, finishReason: choice?.finish_reason || 'stop', model: data.model || triedModels[triedModels.length - 1] };
 
     } else {
       // Claude Anthropic (Fallback)
