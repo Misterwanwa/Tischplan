@@ -1,0 +1,52 @@
+{
+  "products": [
+    {
+      "id": "limette",
+      "name": "Limetten",
+      "category": "Obst"
+    },
+    {
+      "id": "orangen",
+      "name": "Orangen",
+      "category": "Obst"
+    },
+    {
+      "id": "blutorange",
+      "name": "Blutorangen",
+      "category": "Obst"
+    },
+    {
+      "id": "mandarinen",
+      "name": "Mandarinen",
+      "category": "Obst"
+    },
+    {
+      "id": "clementinen",
+      "name": "Clementinen",
+      "category": "Obst"
+    },
+    {
+      "id": "grapefruit",
+      "name": "Grapefruit",
+      "category": "Obst"
+    },
+    {
+      "id": "kumquats",
+      "name": "Kumquats",
+      "category": "Obst"
+    },
+    {
+      "id": "weintrauben",
+      "name": "Weintrauben",
+      "category": "Obst"
+    },
+    {
+      "id": "birne",
+      "name": "Birnen",
+      "category": "Obst"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Limetten; Orangen; Blutorangen; Mandarinen; Clementinen; Grapefruit; Kumquats; Weintrauben; Birnen",
+  "unusedCells": 0,
+  "generationPrompt": "Use the attached image ONLY as visual style reference. Create a NEW sheet with different subjects, exactly nine minimalist hand-drawn doodle pictograms in a perfectly regular 3x3 grid on a truly transparent background. Match reference's pure WHITE, smooth rounded outline strokes, consistent stroke width, simple organic silhouettes and sparse interior details. No filled shapes, shading, gradients, labels, text, frames, checkerboards or grid lines. Each icon centered entirely inside its equal square cell with generous 20 percent EMPTY padding on every side; keep all gutters totally clear. All artwork opaque white on transparent. Reading order MUST be: row 1: (1) lime, one small whole lime beside one cut lime half with visible radial segments; (2) orange, one round orange with leaf and a separate orange wedge; (3) blood orange, one cut orange half with denser inner segment contour marks and a small whole orange behind. Row 2: (4) mandarin, one squat mandarin with its peel opened into three curling flaps and exposed lobes; (5) clementine, two small round clementines, one with a slender leafy stem, both unpeeled, sparse rind dots; (6) grapefruit, one large round grapefruit half with large radial citrus segments and one wedge. Row 3: (7) kumquats, a small sprig of three small OVAL kumquats, one cut lengthwise showing a thin rind and two small seeds; (8) grapes, a hanging bunch of distinct round grapes with a vine leaf and curling tendril; (9) pear, one classic pear-shaped fruit with slender bent stem and one leaf. Do not reuse the old nine subjects. Nine separate complete motifs, well-spaced, recognizable at small sizes, white outline doodle vector-like drawings. Square canvas."
+}
