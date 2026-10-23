@@ -40,7 +40,12 @@ def manifest():
 
 
 def pending():
-    return [p for p in products() if not (ICONS / (p['ID'] + '.svg')).exists()]
+    state = manifest()
+    icons = state.get('icons', {})
+    return [
+        p for p in products()
+        if not (p['ID'] in icons and (ICONS / icons[p['ID']].get('file', f"{p['ID']}.svg")).exists())
+    ]
 
 
 def grid_cuts(mask, axis):
@@ -88,7 +93,7 @@ def import_sheet(image_path, batch_path, reviewed):
         raise ValueError('Batch must contain 1–9 unique, known product IDs')
     state = manifest()
     for product_id in ids:
-        if (ICONS / f'{product_id}.svg').exists() or product_id in state['icons']:
+        if product_id in state.get('icons', {}) and (ICONS / state['icons'][product_id].get('file', f'{product_id}.svg')).exists():
             raise ValueError(f'Refusing to overwrite existing icon: {product_id}')
 
     image = Image.open(image_path).convert('RGBA')
@@ -127,8 +132,7 @@ def import_sheet(image_path, batch_path, reviewed):
             canvas.paste(ink, ((512 - ink.width) // 2, (512 - ink.height) // 2))
             raster, vector = temp / 'mask.png', temp / 'trace.svg'
             canvas.convert('RGB').save(raster)
-            vtracer.convert_image_to_svg_py(str(raster), str(vector), colormode='binary',
-                                          mode='spline', filter_speckle=8, path_precision=2)
+            vtracer.convert_image_to_svg_py(str(raster), str(vector), 'binary', 'stacked', 'spline', 8, 6, 16, 60, 4.0, 10, 45, 2)
             svg = ET.parse(vector).getroot()
             paths = list(svg.iter('{http://www.w3.org/2000/svg}path'))
             if not paths:
@@ -151,7 +155,9 @@ def import_sheet(image_path, batch_path, reviewed):
         (ICONS / f'{product_id}.svg').write_text(svg, encoding='utf-8')
         state['icons'][product_id] = {'file': f'{product_id}.svg', 'source': source_name,
                                      'sourceSha256': source_hash, 'reviewed': True}
-    MANIFEST.write_text(json.dumps(state, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    temp_manifest = MANIFEST.with_suffix('.tmp')
+    temp_manifest.write_text(json.dumps(state, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    temp_manifest.replace(MANIFEST)
     print(f'Imported {len(generated)} SVG icons; {len(pending())} products remaining.')
 
 

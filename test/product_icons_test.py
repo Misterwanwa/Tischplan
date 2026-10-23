@@ -83,6 +83,15 @@ class ProductIconImportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'gutter'):
             icons.grid_cuts(np.ones((900, 900), dtype=bool), 0)
 
+    def test_unmanifested_svg_does_not_count_as_completed_and_can_be_imported(self):
+        icons.ICONS.mkdir(parents=True, exist_ok=True)
+        (icons.ICONS / 'p0.svg').write_text('<svg></svg>', encoding='utf-8')
+        pending_ids = [p['ID'] for p in icons.pending()]
+        self.assertIn('p0', pending_ids)
+        icons.import_sheet(self.image, self.batch, True)
+        self.assertEqual(icons.pending(), [])
+        self.assertEqual(len(icons.manifest()['icons']), 9)
+
 
 if __name__ == '__main__':
     unittest.main()
