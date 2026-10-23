@@ -14,14 +14,34 @@ ROOT = Path(__file__).resolve().parents[1]
 ICONS = ROOT / 'public/icons/products'
 MANIFEST = ICONS / 'manifest.json'
 SOURCES = ROOT / 'scripts/pictogram_batches'
-STYLE = (
-    'Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. '
+STYLE_BASE = (
     'Pure white smooth rounded outline strokes of consistent width on genuinely transparent '
     'background. Simple organic outlines, sparse interior detail, no solid filled objects, '
     'no shading, gradients, labels, text, borders or grid lines. Each icon fully contained '
     'and centered in its equal square cell, with 18 percent empty padding on every side. '
-    'Keep all nine motifs separate. Items in reading order, left to right, top to bottom: '
 )
+NUMBER_WORDS = {
+    1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five',
+    6: 'six', 7: 'seven', 8: 'eight', 9: 'nine'
+}
+
+
+def prompt_for_batch(batch):
+    count = len(batch)
+    count_word = NUMBER_WORDS.get(count, str(count))
+    if count == 9:
+        intro = (
+            f'Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. '
+            f'{STYLE_BASE}Keep all nine motifs separate. Items in reading order, left to right, top to bottom: '
+        )
+    else:
+        unused = 9 - count
+        intro = (
+            f'Create exactly {count_word} minimalist hand-drawn doodle pictograms in a regular 3x3 grid. '
+            f'{STYLE_BASE}Keep all {count_word} motifs separate in the first {count_word} cells and leave '
+            f'all {unused} remaining cells completely empty. Items in reading order, left to right, top to bottom: '
+        )
+    return intro + '; '.join(p['Name'] for p in batch)
 
 
 def products():
@@ -44,7 +64,10 @@ def pending():
     icons = state.get('icons', {})
     return [
         p for p in products()
-        if not (p['ID'] in icons and (ICONS / icons[p['ID']].get('file', f"{p['ID']}.svg")).exists())
+        if not (
+            (ICONS / (p['ID'] + '.svg')).exists()
+            or (p['ID'] in icons and (ICONS / icons[p['ID']].get('file', f"{p['ID']}.svg")).exists())
+        )
     ]
 
 
@@ -68,11 +91,9 @@ def plan(output):
     batch = pending()[:9]
     result = {
         'products': [{'id': p['ID'], 'name': p['Name'], 'category': p['Kategorie']} for p in batch],
-        'prompt': STYLE + '; '.join(p['Name'] for p in batch),
+        'prompt': prompt_for_batch(batch),
         'unusedCells': 9 - len(batch),
     }
-    if len(batch) < 9:
-        result['prompt'] += '. Leave all remaining cells completely empty.'
     text = json.dumps(result, ensure_ascii=False, indent=2) + '\n'
     if output:
         Path(output).write_text(text, encoding='utf-8')
@@ -93,7 +114,8 @@ def import_sheet(image_path, batch_path, reviewed):
         raise ValueError('Batch must contain 1–9 unique, known product IDs')
     state = manifest()
     for product_id in ids:
-        if product_id in state.get('icons', {}) and (ICONS / state['icons'][product_id].get('file', f'{product_id}.svg')).exists():
+        dest_file = state.get('icons', {}).get(product_id, {}).get('file', f'{product_id}.svg')
+        if (ICONS / f'{product_id}.svg').exists() or (ICONS / dest_file).exists() or product_id in state.get('icons', {}):
             raise ValueError(f'Refusing to overwrite existing icon: {product_id}')
 
     image = Image.open(image_path).convert('RGBA')
@@ -151,13 +173,24 @@ def import_sheet(image_path, batch_path, reviewed):
     shutil.copyfile(image_path, SOURCES / source_name)
     (SOURCES / source_name.replace('.png', '.json')).write_text(
         Path(batch_path).read_text(encoding='utf-8'), encoding='utf-8')
-    for product_id, svg in generated.items():
-        (ICONS / f'{product_id}.svg').write_text(svg, encoding='utf-8')
-        state['icons'][product_id] = {'file': f'{product_id}.svg', 'source': source_name,
-                                     'sourceSha256': source_hash, 'reviewed': True}
-    temp_manifest = MANIFEST.with_suffix('.tmp')
-    temp_manifest.write_text(json.dumps(state, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    temp_manifest.replace(MANIFEST)
+    published_files = []
+    try:
+        for product_id, svg in generated.items():
+            dest = ICONS / f'{product_id}.svg'
+            dest.write_text(svg, encoding='utf-8')
+            published_files.append(dest)
+            state['icons'][product_id] = {'file': f'{product_id}.svg', 'source': source_name,
+                                         'sourceSha256': source_hash, 'reviewed': True}
+        temp_manifest = MANIFEST.with_suffix('.tmp')
+        temp_manifest.write_text(json.dumps(state, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        temp_manifest.replace(MANIFEST)
+    except Exception:
+        for f in published_files:
+            try:
+                f.unlink(missing_ok=True)
+            except Exception:
+                pass
+        raise
     print(f'Imported {len(generated)} SVG icons; {len(pending())} products remaining.')
 
 

@@ -83,14 +83,28 @@ class ProductIconImportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'gutter'):
             icons.grid_cuts(np.ones((900, 900), dtype=bool), 0)
 
-    def test_unmanifested_svg_does_not_count_as_completed_and_can_be_imported(self):
+    def test_unmanifested_svg_blocks_overwrite_and_is_skipped_in_pending(self):
         icons.ICONS.mkdir(parents=True, exist_ok=True)
         (icons.ICONS / 'p0.svg').write_text('<svg></svg>', encoding='utf-8')
         pending_ids = [p['ID'] for p in icons.pending()]
-        self.assertIn('p0', pending_ids)
-        icons.import_sheet(self.image, self.batch, True)
-        self.assertEqual(icons.pending(), [])
-        self.assertEqual(len(icons.manifest()['icons']), 9)
+        self.assertNotIn('p0', pending_ids)
+        with self.assertRaisesRegex(ValueError, 'overwrite'):
+            icons.import_sheet(self.image, self.batch, True)
+
+    def test_partial_batch_prompt_is_consistent(self):
+        batch = [{'ID': f'p{i}', 'Name': f'Product {i}', 'Kategorie': 'Test'} for i in range(6)]
+        prompt = icons.prompt_for_batch(batch)
+        self.assertIn('Create exactly six minimalist', prompt)
+        self.assertNotIn('Create exactly nine', prompt)
+        self.assertIn('leave all 3 remaining cells completely empty', prompt)
+
+    def test_failed_manifest_write_rolls_back_svgs(self):
+        with patch.object(icons.Path, 'write_text', side_effect=OSError('disk full')):
+            with self.assertRaises(OSError):
+                icons.import_sheet(self.image, self.batch, True)
+        # Verify no orphaned SVG was left in icons directory
+        svgs = list(icons.ICONS.glob('*.svg')) if icons.ICONS.exists() else []
+        self.assertEqual(svgs, [])
 
 
 if __name__ == '__main__':
