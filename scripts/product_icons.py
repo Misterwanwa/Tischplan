@@ -89,6 +89,8 @@ def grid_cuts(mask, axis):
 
 def plan(output):
     batch = pending()[:9]
+    if not batch:
+        raise ValueError('No pending products to plan; all icons have been imported')
     result = {
         'products': [{'id': p['ID'], 'name': p['Name'], 'category': p['Kategorie']} for p in batch],
         'prompt': prompt_for_batch(batch),
@@ -210,7 +212,10 @@ def main():
         print(json.dumps({'total': total, 'completed': total - remaining, 'remaining': remaining,
                           'sheetsRemaining': (remaining + 8) // 9}))
     elif args.command == 'next':
-        plan(args.output)
+        try:
+            plan(args.output)
+        except ValueError as err:
+            raise SystemExit(str(err))
     else:
         import_sheet(args.image, args.batch, args.reviewed)
 

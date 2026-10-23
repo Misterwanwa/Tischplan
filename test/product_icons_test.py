@@ -113,6 +113,12 @@ class ProductIconImportTests(unittest.TestCase):
         svgs = list(icons.ICONS.glob('*.svg')) if icons.ICONS.exists() else []
         self.assertEqual(svgs, [])
 
+    def test_plan_when_no_pending_products_raises_error(self):
+        icons.import_sheet(self.image, self.batch, True)
+        self.assertEqual(icons.pending(), [])
+        with self.assertRaisesRegex(ValueError, 'No pending products'):
+            icons.plan(None)
+
 
 if __name__ == '__main__':
     unittest.main()
