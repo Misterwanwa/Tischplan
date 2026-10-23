@@ -123,8 +123,8 @@ def import_sheet(image_path, batch_path, reviewed):
     if width != height or width < 600:
         raise ValueError('Expected a square sheet of at least 600 pixels')
     rgba = np.asarray(image)
-    if not np.any(rgba[:, :, 3] == 0):
-        raise ValueError('Sheet has no genuinely transparent pixels; regenerate with transparency')
+    if np.mean(rgba[:, :, 3] < 128) < 0.50 or not np.any(rgba[:, :, 3] == 0):
+        raise ValueError('Sheet background is not predominantly transparent; regenerate with transparency')
     # Ignore near-transparent residual texture. Preserve only visible white strokes.
     mask = (rgba[:, :, 3] >= 128) & (rgba[:, :, :3].min(axis=2) >= 200)
     row_cuts, col_cuts = grid_cuts(mask, 0), grid_cuts(mask, 1)

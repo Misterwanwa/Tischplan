@@ -60,6 +60,13 @@ class ProductIconImportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'transparent'):
             icons.import_sheet(self.image, self.batch, True)
 
+    def test_mostly_opaque_background_with_isolated_transparent_pixel_is_rejected(self):
+        sheet = Image.new('RGBA', (900, 900), (0, 0, 0, 255))
+        sheet.putpixel((0, 0), (0, 0, 0, 0))
+        sheet.save(self.image)
+        with self.assertRaisesRegex(ValueError, 'transparent'):
+            icons.import_sheet(self.image, self.batch, True)
+
     def test_bad_last_cell_leaves_entire_batch_unpublished(self):
         sheet = Image.open(self.image)
         sheet.paste((0, 0, 0, 0), (600, 600, 900, 900))
