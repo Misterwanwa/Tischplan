@@ -109,6 +109,60 @@
       "source": "limette-f34e872944fe.png",
       "sourceSha256": "f34e872944fec319842e0ff9f9fdc4ce803d6f91bd09c7e633578421e8007302",
       "reviewed": true
+    },
+    "kiwi": {
+      "file": "kiwi.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "wassermelone": {
+      "file": "wassermelone.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "galiamelone": {
+      "file": "galiamelone.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "honigmelone": {
+      "file": "honigmelone.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "cantaloupe": {
+      "file": "cantaloupe.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "pfirsich": {
+      "file": "pfirsich.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "nektarine": {
+      "file": "nektarine.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "aprikose": {
+      "file": "aprikose.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "kirschen": {
+      "file": "kirschen.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
     }
   }
 }
