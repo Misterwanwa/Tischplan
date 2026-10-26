@@ -109,6 +109,114 @@
       "source": "limette-f34e872944fe.png",
       "sourceSha256": "f34e872944fec319842e0ff9f9fdc4ce803d6f91bd09c7e633578421e8007302",
       "reviewed": true
+    },
+    "kiwi": {
+      "file": "kiwi.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "wassermelone": {
+      "file": "wassermelone.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "galiamelone": {
+      "file": "galiamelone.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "honigmelone": {
+      "file": "honigmelone.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "cantaloupe": {
+      "file": "cantaloupe.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "pfirsich": {
+      "file": "pfirsich.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "nektarine": {
+      "file": "nektarine.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "aprikose": {
+      "file": "aprikose.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "kirschen": {
+      "file": "kirschen.svg",
+      "source": "kiwi-8a3dc2d4714b.png",
+      "sourceSha256": "8a3dc2d4714b0cda63327d72996a3b838392c554f5cd1992908d72d19a54128e",
+      "reviewed": true
+    },
+    "pflaumen": {
+      "file": "pflaumen.svg",
+      "source": "pflaumen-0a1882790e39.png",
+      "sourceSha256": "0a1882790e39134e773daeeddb810de7648ab0d23f5cb10328bfa874251be996",
+      "reviewed": true
+    },
+    "zwetschgen": {
+      "file": "zwetschgen.svg",
+      "source": "pflaumen-0a1882790e39.png",
+      "sourceSha256": "0a1882790e39134e773daeeddb810de7648ab0d23f5cb10328bfa874251be996",
+      "reviewed": true
+    },
+    "mirabellen": {
+      "file": "mirabellen.svg",
+      "source": "pflaumen-0a1882790e39.png",
+      "sourceSha256": "0a1882790e39134e773daeeddb810de7648ab0d23f5cb10328bfa874251be996",
+      "reviewed": true
+    },
+    "ananas": {
+      "file": "ananas.svg",
+      "source": "pflaumen-0a1882790e39.png",
+      "sourceSha256": "0a1882790e39134e773daeeddb810de7648ab0d23f5cb10328bfa874251be996",
+      "reviewed": true
+    },
+    "mango": {
+      "file": "mango.svg",
+      "source": "pflaumen-0a1882790e39.png",
+      "sourceSha256": "0a1882790e39134e773daeeddb810de7648ab0d23f5cb10328bfa874251be996",
+      "reviewed": true
+    },
+    "papaya": {
+      "file": "papaya.svg",
+      "source": "pflaumen-0a1882790e39.png",
+      "sourceSha256": "0a1882790e39134e773daeeddb810de7648ab0d23f5cb10328bfa874251be996",
+      "reviewed": true
+    },
+    "feigen": {
+      "file": "feigen.svg",
+      "source": "pflaumen-0a1882790e39.png",
+      "sourceSha256": "0a1882790e39134e773daeeddb810de7648ab0d23f5cb10328bfa874251be996",
+      "reviewed": true
+    },
+    "datteln": {
+      "file": "datteln.svg",
+      "source": "pflaumen-0a1882790e39.png",
+      "sourceSha256": "0a1882790e39134e773daeeddb810de7648ab0d23f5cb10328bfa874251be996",
+      "reviewed": true
+    },
+    "granatapfel": {
+      "file": "granatapfel.svg",
+      "source": "pflaumen-0a1882790e39.png",
+      "sourceSha256": "0a1882790e39134e773daeeddb810de7648ab0d23f5cb10328bfa874251be996",
+      "reviewed": true
     }
   }
 }

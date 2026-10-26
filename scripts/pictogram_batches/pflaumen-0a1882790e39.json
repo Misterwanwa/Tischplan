@@ -1,0 +1,52 @@
+{
+  "products": [
+    {
+      "id": "pflaumen",
+      "name": "Pflaumen",
+      "category": "Obst"
+    },
+    {
+      "id": "zwetschgen",
+      "name": "Zwetschgen",
+      "category": "Obst"
+    },
+    {
+      "id": "mirabellen",
+      "name": "Mirabellen",
+      "category": "Obst"
+    },
+    {
+      "id": "ananas",
+      "name": "Ananas",
+      "category": "Obst"
+    },
+    {
+      "id": "mango",
+      "name": "Mango",
+      "category": "Obst"
+    },
+    {
+      "id": "papaya",
+      "name": "Papaya",
+      "category": "Obst"
+    },
+    {
+      "id": "feigen",
+      "name": "Feigen",
+      "category": "Obst"
+    },
+    {
+      "id": "datteln",
+      "name": "Datteln",
+      "category": "Obst"
+    },
+    {
+      "id": "granatapfel",
+      "name": "Granatapfel",
+      "category": "Obst"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Pflaumen; Zwetschgen; Mirabellen; Ananas; Mango; Papaya; Feigen; Datteln; Granatapfel",
+  "unusedCells": 0,
+  "generationPrompt": "undefined"
+}
