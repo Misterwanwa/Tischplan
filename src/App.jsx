@@ -77,6 +77,7 @@ const DEFAULT_SETTINGS = {
   recurringMealCourse: 'main',
   recurringMealDish: '',
   recurringMealSaveAsRecipe: true,
+  alwaysShowBottomNav: true,
 };
 
 /* ---------------------------------- Helpers ---------------------------------- */
@@ -1081,7 +1082,7 @@ function TopBar() {
     </div>
   );
 }
-function BottomNav({ tab, setTab, isCaloriesEnabled = true }) {
+function BottomNav({ tab, setTab, isCaloriesEnabled = true, alwaysShow = true, onTabClick }) {
   const items = [
     { key: 'calendar', label: 'Plan', icon: Calendar },
     ...(isCaloriesEnabled ? [{ key: 'calories', label: 'Kalorien', icon: Flame }] : []),
@@ -1091,10 +1092,17 @@ function BottomNav({ tab, setTab, isCaloriesEnabled = true }) {
     { key: 'settings', label: 'Einstellungen', icon: SettingsIcon },
   ];
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 no-print z-30">
+    <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 no-print ${alwaysShow ? 'z-[60]' : 'z-30'}`}>
       <div className={`max-w-2xl mx-auto grid ${isCaloriesEnabled ? 'grid-cols-6' : 'grid-cols-5'}`}>
         {items.map(it => (
-          <button key={it.key} onClick={() => setTab(it.key)} className={`flex flex-col items-center gap-0.5 py-2 text-[9px] sm:text-xs font-mono truncate px-0.5 ${tab === it.key ? 'text-stone-900 font-bold' : 'text-stone-400'}`}>
+          <button
+            key={it.key}
+            onClick={() => {
+              setTab(it.key);
+              onTabClick?.();
+            }}
+            className={`flex flex-col items-center gap-0.5 py-2 text-[9px] sm:text-xs font-mono truncate px-0.5 ${tab === it.key ? 'text-stone-900 font-bold' : 'text-stone-400'}`}
+          >
             <it.icon size={18} />
             <span className="truncate">{it.label}</span>
           </button>
@@ -3957,7 +3965,8 @@ function CookModeModal({ recipe, multiplier = 1, onClose }) {
 }
 
 function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
-  const { recipes, updateRecipe, deleteRecipe, showToast } = useApp();
+  const { recipes, updateRecipe, deleteRecipe, showToast, settings } = useApp();
+  const alwaysShowNav = settings?.alwaysShowBottomNav !== false;
   const recipe = recipes.find(r => r.id === initialRecipe.id) || initialRecipe;
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -4027,7 +4036,7 @@ function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
   if (editing) {
     return (
       <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
-        <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-full flex flex-col">
+        <div className={`bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-full flex flex-col ${alwaysShowNav ? 'mb-14 sm:mb-0' : ''}`}>
           <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
             <span className="font-mono font-semibold uppercase tracking-wide text-sm">Rezept bearbeiten</span>
             <button onClick={onClose}><X size={20} /></button>
@@ -4115,7 +4124,7 @@ function RecipeDetailModal({ recipe: initialRecipe, multiplier = 1, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-full flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className={`bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-full flex flex-col ${alwaysShowNav ? 'mb-14 sm:mb-0' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-stone-200 flex items-start justify-between gap-3 flex-shrink-0">
           <h3 className="font-mono font-semibold text-stone-900 leading-snug break-words flex-1 min-w-0">{recipe.title}</h3>
           <div className="flex items-center gap-2 flex-shrink-0 ml-2 pt-0.5">
@@ -5189,48 +5198,73 @@ function ShoppingTab() {
   const [collapsedCategories, setCollapsedCategories] = useState({});
   const [resolutionData, setResolutionData] = useState(null);
 
+  const [extraRindDetailsState, setExtraRindDetailsState] = useState([]);
+
   // Load state from localStorage on mount & check daily CSV auto-sync
   useEffect(() => {
     (async () => {
       const storedItems = await storageGet('shopping_items_v2', true, []);
       let storedCustom = await storageGet('shopping_custom_db', true, []);
 
-      // Ensure every item has a unique ID and migrate legacy product names
+      // Ensure every item has a unique ID, filter deleted products and migrate legacy product names
       const seenIds = new Set();
-      const sanitizedItems = (storedItems || []).map(i => {
-        let item = { ...i };
-        if (!item.id || seenIds.has(item.id)) {
-          item.id = uid();
-        }
-        seenIds.add(item.id);
+      const sanitizedItems = (storedItems || [])
+        .filter(i => {
+          const n = (i.name || '').trim();
+          return n !== 'Coca-Cola Zero Sugar' && n !== 'Coca Cola Zero Sugar' && n !== 'Coca-Cola Zero';
+        })
+        .map(i => {
+          let item = { ...i };
+          if (!item.id || seenIds.has(item.id)) {
+            item.id = uid();
+          }
+          seenIds.add(item.id);
 
-        if (item.name === 'TK-Dönerfleisch / Gyros') {
-          item.name = 'Dönerfleisch / Gyros / Kebap';
-        } else if (item.name === 'TK-Pizza Salami' || item.name === 'TK-Pizza-Salami') {
-          item.name = 'TK-Pizza';
-          if (!item.detail) item.detail = 'Salami';
-        } else if (item.name === 'TK-Asia-Pfannengemüse') {
-          item.name = 'TK-Gemüsemix';
-          if (!item.detail) item.detail = 'Asia';
-        } else if (item.name === 'TK-Frühlingsrollen') {
-          item.name = 'Frühlingsrollen';
-        } else if (item.name === 'Rinderhackfleisch') {
-          item.name = 'Rindfleisch';
-          if (!item.detail) item.detail = 'Rinderhackfleisch';
-        }
-        return item;
-      });
+          if (item.name === 'TK-Dönerfleisch / Gyros') {
+            item.name = 'Dönerfleisch / Gyros / Kebap';
+          } else if (item.name === 'TK-Pizza Salami' || item.name === 'TK-Pizza-Salami') {
+            item.name = 'TK-Pizza';
+            if (!item.detail) item.detail = 'Salami';
+          } else if (item.name === 'TK-Asia-Pfannengemüse') {
+            item.name = 'TK-Gemüsemix';
+            if (!item.detail) item.detail = 'Asia';
+          } else if (item.name === 'TK-Frühlingsrollen') {
+            item.name = 'Frühlingsrollen';
+          } else if (item.name === 'Hackfleisch (gemischt)' || item.name === 'Hackfleisch gemischt') {
+            item.name = 'Hackfleisch';
+            if (!item.detail) item.detail = 'Gemischt';
+          } else if (item.name === 'Rinderhackfleisch') {
+            item.name = 'Rindfleisch';
+            if (!item.detail) item.detail = 'Rinderhackfleisch';
+          }
+          return item;
+        });
 
-      // Filter out removed products from custom DB if any were saved there
+      // Filter out removed products from custom DB, merge duplicate Rindfleisch details
+      const extraRind = [];
       const sanitizedCustom = (storedCustom || [])
-        .filter(p => p.name !== 'TK-Pizza Salami' && p.name !== 'TK-Pizza-Salami' && p.name !== 'TK-Asia-Pfannengemüse')
+        .filter(p => {
+          const n = (p.name || '').trim();
+          if (n === 'Coca-Cola Zero Sugar' || n === 'Coca Cola Zero Sugar' || n === 'Coca-Cola Zero') return false;
+          if (n === 'TK-Pizza Salami' || n === 'TK-Pizza-Salami' || n === 'TK-Asia-Pfannengemüse') return false;
+          if (n.toLowerCase() === 'rindfleisch' || n === 'Rinderhackfleisch') {
+            if (p.suggestedDetails && Array.isArray(p.suggestedDetails)) {
+              extraRind.push(...p.suggestedDetails);
+            }
+            return false; // Remove duplicate Rindfleisch from custom DB, built-in has it!
+          }
+          return true;
+        })
         .map(p => {
           if (p.name === 'TK-Dönerfleisch / Gyros') return { ...p, name: 'Dönerfleisch / Gyros / Kebap' };
           if (p.name === 'TK-Frühlingsrollen') return { ...p, name: 'Frühlingsrollen' };
-          if (p.name === 'Rinderhackfleisch') return { ...p, name: 'Rindfleisch' };
+          if (p.name === 'Hackfleisch (gemischt)' || p.name === 'Hackfleisch gemischt') return { ...p, name: 'Hackfleisch' };
           return p;
         });
 
+      if (extraRind.length > 0) {
+        setExtraRindDetailsState(extraRind);
+      }
       setItems(sanitizedItems);
       setCustomDb(sanitizedCustom);
     })();
@@ -5245,13 +5279,30 @@ function ShoppingTab() {
     }
   };
 
-  // Combine built-in DB and custom DB
+  // Combine built-in DB and custom DB, deduplicating by lowercase name and merging details
   const allProducts = useMemo(() => {
     const map = new Map();
-    BUILTIN_PRODUCTS.forEach(p => map.set(p.id, p));
-    customDb.forEach(p => map.set(p.id, p));
+    BUILTIN_PRODUCTS.forEach(p => {
+      const copy = { ...p, suggestedDetails: [...(p.suggestedDetails || [])] };
+      if (copy.id === 'rindfleisch' && extraRindDetailsState.length > 0) {
+        copy.suggestedDetails = Array.from(new Set([...copy.suggestedDetails, ...extraRindDetailsState]));
+      }
+      map.set(copy.name.toLowerCase().trim(), copy);
+    });
+    customDb.forEach(p => {
+      const key = (p.name || '').toLowerCase().trim();
+      if (!key) return;
+      if (map.has(key)) {
+        const existing = map.get(key);
+        if (p.suggestedDetails && p.suggestedDetails.length > 0) {
+          existing.suggestedDetails = Array.from(new Set([...(existing.suggestedDetails || []), ...p.suggestedDetails]));
+        }
+      } else {
+        map.set(key, { ...p });
+      }
+    });
     return Array.from(map.values());
-  }, [customDb]);
+  }, [customDb, extraRindDetailsState]);
 
   // Current month for seasonal filtering (1 - 12)
   const currentMonth = useMemo(() => new Date().getMonth() + 1, []);
@@ -6482,6 +6533,28 @@ function SettingsTab() {
 
       <div className={cardCls}>
         <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
+          <Grid size={15} /> Ansicht &amp; Navigation
+        </div>
+        <div className="space-y-3">
+          <label className="flex items-start gap-2.5 py-1.5 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={settings.alwaysShowBottomNav !== false} 
+              onChange={e => updateSettings({ alwaysShowBottomNav: e.target.checked })} 
+              className="mt-0.5 rounded border-stone-300 text-stone-900 focus:ring-stone-900" 
+            />
+            <div>
+              <span className="text-sm font-medium text-stone-800">Navigationsleiste immer sichtbar</span>
+              <p className="text-xs text-stone-500 mt-0.5 leading-normal">
+                Die untere Buttonleiste (Plan, Kalorien, etc.) bleibt auch beim Öffnen von Rezepten auf dem Smartphone sichtbar, sodass man direkt zwischen den Bereichen wechseln kann.
+              </p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <div className="text-sm font-semibold mb-2 flex items-center gap-2 font-mono uppercase tracking-wide">
           <Sparkles size={15} className="text-amber-500" /> KI-Einstellungen
         </div>
         <p className="text-xs text-stone-500 leading-normal">
@@ -6668,12 +6741,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.11.1</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.11.2</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Lebkuchen 🍪
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.19 (Kaiserschmarrn) · v1.11.1 (Lebkuchen)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.19 (Kaiserschmarrn) · v1.11.2 (Lebkuchen)
         </div>
       </div>
 
@@ -7293,7 +7366,15 @@ export default function App() {
           {tab === 'cookbook' && <CookbookTab />}
           {tab === 'settings' && <SettingsTab />}
         </main>
-        <BottomNav tab={tab} setTab={setTab} isCaloriesEnabled={isCaloriesEnabled} />
+        <BottomNav
+          tab={tab}
+          setTab={setTab}
+          isCaloriesEnabled={isCaloriesEnabled}
+          alwaysShow={settings.alwaysShowBottomNav !== false}
+          onTabClick={() => {
+            if (recipeDetailModal) setRecipeDetailModal(null);
+          }}
+        />
         {addModal && <AddRecipeModal onClose={() => setAddModal(null)} onSaved={addModal.onSaved} />}
         {recipeDetailModal && (
           <RecipeDetailModal

@@ -63,6 +63,7 @@ susskartoffeln;Süßkartoffeln;Gemüse;Carrot;1kg,2 Stk,Bio;
 brokkoli;Brokkoli;Gemüse;Salad;500g Kopf,1 Stk;6,7,8,9,10
 blumenkohl;Blumenkohl;Gemüse;Salad;1 Kopf,Frisch;6,7,8,9,10
 spinat;Spinat;Gemüse;Leaf;Blattspinat,Rahmspinat,Baby-Spinat,500g;4,5,9,10
+salat;Salat;Gemüse;Salad;Kopfsalat,Eisbergsalat,Gemischter Salat,Feldsalat,Römersalat,1 Kopf,Frisch,Bio;5,6,7,8,9,10
 eisbergsalat;Eisbergsalat;Gemüse;Salad;1 Kopf,Knackig;6,7,8,9
 kopfsalat;Kopfsalat;Gemüse;Salad;1 Kopf,Frisch;5,6,7,8
 rucola;Rucola;Gemüse;Leaf;125g Schale,Bio;5,6,7,8,9
@@ -527,7 +528,7 @@ multivitaminsaft;Multivitaminsaft;Getränke;Wine;1l Karton;
 traubensaft;Traubensaft;Getränke;Wine;100% Saft 1l,Rot;
 ananassaft;Ananassaft;Getränke;Wine;1l Karton;
 cranberrysaft;Cranberrysaft;Getränke;Wine;Ocean Spray 1l;
-cola_original;Cola;Getränke;Wine;1.5l PET,6x1.25l,Zero,Dose 0.33l,6er Pack,Light,Pepsi,Coca Cola;
+cola_original;Cola;Getränke;Wine;1.5l PET,6x1.25l,Zero,Zero Sugar,Dose 0.33l,6er Pack,Light,Pepsi,Coca Cola;
 fanta;Orangenlimonade;Getränke;Wine;1.5l PET,Zero,Dose,Miranda;
 sprite;Zitronenlimonade;Getränke;Wine;1.5l PET,Zero,Dose;
 spezi;Cola-Mix;Getränke;Wine;Kiste 20x0.5l,Dose,Paulaner Spezi,Mezzo Mix;
