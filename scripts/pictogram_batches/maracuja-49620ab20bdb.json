@@ -1,0 +1,52 @@
+{
+  "products": [
+    {
+      "id": "maracuja",
+      "name": "Maracuja / Passionsfrucht",
+      "category": "Obst"
+    },
+    {
+      "id": "drachenfrucht",
+      "name": "Drachenfrucht",
+      "category": "Obst"
+    },
+    {
+      "id": "kaki",
+      "name": "Kaki",
+      "category": "Obst"
+    },
+    {
+      "id": "preiselbeeren",
+      "name": "Preiselbeeren",
+      "category": "Obst"
+    },
+    {
+      "id": "cranberrys",
+      "name": "Cranberrys",
+      "category": "Obst"
+    },
+    {
+      "id": "rhabarber",
+      "name": "Rhabarber",
+      "category": "Obst"
+    },
+    {
+      "id": "lychee",
+      "name": "Litchis",
+      "category": "Obst"
+    },
+    {
+      "id": "kokosnuss",
+      "name": "Kokosnuss",
+      "category": "Obst"
+    },
+    {
+      "id": "quitten",
+      "name": "Quitten",
+      "category": "Obst"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Maracuja / Passionsfrucht; Drachenfrucht; Kaki; Preiselbeeren; Cranberrys; Rhabarber; Litchis; Kokosnuss; Quitten",
+  "unusedCells": 0,
+  "generationPrompt": "undefined"
+}

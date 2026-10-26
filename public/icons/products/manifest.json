@@ -217,6 +217,60 @@
       "source": "pflaumen-0a1882790e39.png",
       "sourceSha256": "0a1882790e39134e773daeeddb810de7648ab0d23f5cb10328bfa874251be996",
       "reviewed": true
+    },
+    "maracuja": {
+      "file": "maracuja.svg",
+      "source": "maracuja-49620ab20bdb.png",
+      "sourceSha256": "49620ab20bdb1044e0853acb5278c6b82d1d7e02c2914483926572e27601f57c",
+      "reviewed": true
+    },
+    "drachenfrucht": {
+      "file": "drachenfrucht.svg",
+      "source": "maracuja-49620ab20bdb.png",
+      "sourceSha256": "49620ab20bdb1044e0853acb5278c6b82d1d7e02c2914483926572e27601f57c",
+      "reviewed": true
+    },
+    "kaki": {
+      "file": "kaki.svg",
+      "source": "maracuja-49620ab20bdb.png",
+      "sourceSha256": "49620ab20bdb1044e0853acb5278c6b82d1d7e02c2914483926572e27601f57c",
+      "reviewed": true
+    },
+    "preiselbeeren": {
+      "file": "preiselbeeren.svg",
+      "source": "maracuja-49620ab20bdb.png",
+      "sourceSha256": "49620ab20bdb1044e0853acb5278c6b82d1d7e02c2914483926572e27601f57c",
+      "reviewed": true
+    },
+    "cranberrys": {
+      "file": "cranberrys.svg",
+      "source": "maracuja-49620ab20bdb.png",
+      "sourceSha256": "49620ab20bdb1044e0853acb5278c6b82d1d7e02c2914483926572e27601f57c",
+      "reviewed": true
+    },
+    "rhabarber": {
+      "file": "rhabarber.svg",
+      "source": "maracuja-49620ab20bdb.png",
+      "sourceSha256": "49620ab20bdb1044e0853acb5278c6b82d1d7e02c2914483926572e27601f57c",
+      "reviewed": true
+    },
+    "lychee": {
+      "file": "lychee.svg",
+      "source": "maracuja-49620ab20bdb.png",
+      "sourceSha256": "49620ab20bdb1044e0853acb5278c6b82d1d7e02c2914483926572e27601f57c",
+      "reviewed": true
+    },
+    "kokosnuss": {
+      "file": "kokosnuss.svg",
+      "source": "maracuja-49620ab20bdb.png",
+      "sourceSha256": "49620ab20bdb1044e0853acb5278c6b82d1d7e02c2914483926572e27601f57c",
+      "reviewed": true
+    },
+    "quitten": {
+      "file": "quitten.svg",
+      "source": "maracuja-49620ab20bdb.png",
+      "sourceSha256": "49620ab20bdb1044e0853acb5278c6b82d1d7e02c2914483926572e27601f57c",
+      "reviewed": true
     }
   }
 }
