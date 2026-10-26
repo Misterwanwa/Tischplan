@@ -7,3 +7,5 @@ dist
 *.log
 .wrangler
 .functions-test
+__pycache__/
+*.pyc
