@@ -325,6 +325,60 @@
       "source": "sanddorn-e46646f9d867.png",
       "sourceSha256": "e46646f9d867a8c6d73c4bf87709b795e1c99be10edc3db8372bdd1d95397db1",
       "reviewed": true
+    },
+    "paprika": {
+      "file": "paprika.svg",
+      "source": "paprika-81c8fc2576b8.png",
+      "sourceSha256": "81c8fc2576b8d031f0ee7dade86c351a2a1f494954c6427a4060a9658757e976",
+      "reviewed": true
+    },
+    "zwiebeln": {
+      "file": "zwiebeln.svg",
+      "source": "paprika-81c8fc2576b8.png",
+      "sourceSha256": "81c8fc2576b8d031f0ee7dade86c351a2a1f494954c6427a4060a9658757e976",
+      "reviewed": true
+    },
+    "schalotten": {
+      "file": "schalotten.svg",
+      "source": "paprika-81c8fc2576b8.png",
+      "sourceSha256": "81c8fc2576b8d031f0ee7dade86c351a2a1f494954c6427a4060a9658757e976",
+      "reviewed": true
+    },
+    "fruhlingszwiebeln": {
+      "file": "fruhlingszwiebeln.svg",
+      "source": "paprika-81c8fc2576b8.png",
+      "sourceSha256": "81c8fc2576b8d031f0ee7dade86c351a2a1f494954c6427a4060a9658757e976",
+      "reviewed": true
+    },
+    "knoblauch": {
+      "file": "knoblauch.svg",
+      "source": "paprika-81c8fc2576b8.png",
+      "sourceSha256": "81c8fc2576b8d031f0ee7dade86c351a2a1f494954c6427a4060a9658757e976",
+      "reviewed": true
+    },
+    "kartoffeln": {
+      "file": "kartoffeln.svg",
+      "source": "paprika-81c8fc2576b8.png",
+      "sourceSha256": "81c8fc2576b8d031f0ee7dade86c351a2a1f494954c6427a4060a9658757e976",
+      "reviewed": true
+    },
+    "susskartoffeln": {
+      "file": "susskartoffeln.svg",
+      "source": "paprika-81c8fc2576b8.png",
+      "sourceSha256": "81c8fc2576b8d031f0ee7dade86c351a2a1f494954c6427a4060a9658757e976",
+      "reviewed": true
+    },
+    "brokkoli": {
+      "file": "brokkoli.svg",
+      "source": "paprika-81c8fc2576b8.png",
+      "sourceSha256": "81c8fc2576b8d031f0ee7dade86c351a2a1f494954c6427a4060a9658757e976",
+      "reviewed": true
+    },
+    "blumenkohl": {
+      "file": "blumenkohl.svg",
+      "source": "paprika-81c8fc2576b8.png",
+      "sourceSha256": "81c8fc2576b8d031f0ee7dade86c351a2a1f494954c6427a4060a9658757e976",
+      "reviewed": true
     }
   }
 }
