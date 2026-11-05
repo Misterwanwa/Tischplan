@@ -379,6 +379,60 @@
       "source": "paprika-81c8fc2576b8.png",
       "sourceSha256": "81c8fc2576b8d031f0ee7dade86c351a2a1f494954c6427a4060a9658757e976",
       "reviewed": true
+    },
+    "spinat": {
+      "file": "spinat.svg",
+      "source": "spinat-98eb18cc69b1.png",
+      "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
+      "reviewed": true
+    },
+    "salat": {
+      "file": "salat.svg",
+      "source": "spinat-98eb18cc69b1.png",
+      "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
+      "reviewed": true
+    },
+    "eisbergsalat": {
+      "file": "eisbergsalat.svg",
+      "source": "spinat-98eb18cc69b1.png",
+      "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
+      "reviewed": true
+    },
+    "kopfsalat": {
+      "file": "kopfsalat.svg",
+      "source": "spinat-98eb18cc69b1.png",
+      "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
+      "reviewed": true
+    },
+    "rucola": {
+      "file": "rucola.svg",
+      "source": "spinat-98eb18cc69b1.png",
+      "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
+      "reviewed": true
+    },
+    "feldsalat": {
+      "file": "feldsalat.svg",
+      "source": "spinat-98eb18cc69b1.png",
+      "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
+      "reviewed": true
+    },
+    "champignons": {
+      "file": "champignons.svg",
+      "source": "spinat-98eb18cc69b1.png",
+      "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
+      "reviewed": true
+    },
+    "kurbis": {
+      "file": "kurbis.svg",
+      "source": "spinat-98eb18cc69b1.png",
+      "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
+      "reviewed": true
+    },
+    "lauch": {
+      "file": "lauch.svg",
+      "source": "spinat-98eb18cc69b1.png",
+      "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
+      "reviewed": true
     }
   }
 }
