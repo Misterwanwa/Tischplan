@@ -487,6 +487,60 @@
       "source": "auberginen-d5eaaa006531.png",
       "sourceSha256": "d5eaaa006531f3a814b423aa025c98ae9673889c0082c7624bad09f78051041b",
       "reviewed": true
+    },
+    "wirsing": {
+      "file": "wirsing.svg",
+      "source": "wirsing-a092b87c8685.png",
+      "sourceSha256": "a092b87c8685a23953e1c24e0ab8e623900786f2d3c069af735f02e9bd53a9c8",
+      "reviewed": true
+    },
+    "chinakohl": {
+      "file": "chinakohl.svg",
+      "source": "wirsing-a092b87c8685.png",
+      "sourceSha256": "a092b87c8685a23953e1c24e0ab8e623900786f2d3c069af735f02e9bd53a9c8",
+      "reviewed": true
+    },
+    "pakchoi": {
+      "file": "pakchoi.svg",
+      "source": "wirsing-a092b87c8685.png",
+      "sourceSha256": "a092b87c8685a23953e1c24e0ab8e623900786f2d3c069af735f02e9bd53a9c8",
+      "reviewed": true
+    },
+    "erbsen": {
+      "file": "erbsen.svg",
+      "source": "wirsing-a092b87c8685.png",
+      "sourceSha256": "a092b87c8685a23953e1c24e0ab8e623900786f2d3c069af735f02e9bd53a9c8",
+      "reviewed": true
+    },
+    "bohnen": {
+      "file": "bohnen.svg",
+      "source": "wirsing-a092b87c8685.png",
+      "sourceSha256": "a092b87c8685a23953e1c24e0ab8e623900786f2d3c069af735f02e9bd53a9c8",
+      "reviewed": true
+    },
+    "dickebohnen": {
+      "file": "dickebohnen.svg",
+      "source": "wirsing-a092b87c8685.png",
+      "sourceSha256": "a092b87c8685a23953e1c24e0ab8e623900786f2d3c069af735f02e9bd53a9c8",
+      "reviewed": true
+    },
+    "linsen": {
+      "file": "linsen.svg",
+      "source": "wirsing-a092b87c8685.png",
+      "sourceSha256": "a092b87c8685a23953e1c24e0ab8e623900786f2d3c069af735f02e9bd53a9c8",
+      "reviewed": true
+    },
+    "kichererbsen": {
+      "file": "kichererbsen.svg",
+      "source": "wirsing-a092b87c8685.png",
+      "sourceSha256": "a092b87c8685a23953e1c24e0ab8e623900786f2d3c069af735f02e9bd53a9c8",
+      "reviewed": true
+    },
+    "mais": {
+      "file": "mais.svg",
+      "source": "wirsing-a092b87c8685.png",
+      "sourceSha256": "a092b87c8685a23953e1c24e0ab8e623900786f2d3c069af735f02e9bd53a9c8",
+      "reviewed": true
     }
   }
 }
