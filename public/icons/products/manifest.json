@@ -271,6 +271,60 @@
       "source": "maracuja-49620ab20bdb.png",
       "sourceSha256": "49620ab20bdb1044e0853acb5278c6b82d1d7e02c2914483926572e27601f57c",
       "reviewed": true
+    },
+    "sanddorn": {
+      "file": "sanddorn.svg",
+      "source": "sanddorn-e46646f9d867.png",
+      "sourceSha256": "e46646f9d867a8c6d73c4bf87709b795e1c99be10edc3db8372bdd1d95397db1",
+      "reviewed": true
+    },
+    "physalis": {
+      "file": "physalis.svg",
+      "source": "sanddorn-e46646f9d867.png",
+      "sourceSha256": "e46646f9d867a8c6d73c4bf87709b795e1c99be10edc3db8372bdd1d95397db1",
+      "reviewed": true
+    },
+    "sternfrucht": {
+      "file": "sternfrucht.svg",
+      "source": "sanddorn-e46646f9d867.png",
+      "sourceSha256": "e46646f9d867a8c6d73c4bf87709b795e1c99be10edc3db8372bdd1d95397db1",
+      "reviewed": true
+    },
+    "guave": {
+      "file": "guave.svg",
+      "source": "sanddorn-e46646f9d867.png",
+      "sourceSha256": "e46646f9d867a8c6d73c4bf87709b795e1c99be10edc3db8372bdd1d95397db1",
+      "reviewed": true
+    },
+    "hagebutten": {
+      "file": "hagebutten.svg",
+      "source": "sanddorn-e46646f9d867.png",
+      "sourceSha256": "e46646f9d867a8c6d73c4bf87709b795e1c99be10edc3db8372bdd1d95397db1",
+      "reviewed": true
+    },
+    "tomaten": {
+      "file": "tomaten.svg",
+      "source": "sanddorn-e46646f9d867.png",
+      "sourceSha256": "e46646f9d867a8c6d73c4bf87709b795e1c99be10edc3db8372bdd1d95397db1",
+      "reviewed": true
+    },
+    "gurke": {
+      "file": "gurke.svg",
+      "source": "sanddorn-e46646f9d867.png",
+      "sourceSha256": "e46646f9d867a8c6d73c4bf87709b795e1c99be10edc3db8372bdd1d95397db1",
+      "reviewed": true
+    },
+    "zucchini": {
+      "file": "zucchini.svg",
+      "source": "sanddorn-e46646f9d867.png",
+      "sourceSha256": "e46646f9d867a8c6d73c4bf87709b795e1c99be10edc3db8372bdd1d95397db1",
+      "reviewed": true
+    },
+    "karotten": {
+      "file": "karotten.svg",
+      "source": "sanddorn-e46646f9d867.png",
+      "sourceSha256": "e46646f9d867a8c6d73c4bf87709b795e1c99be10edc3db8372bdd1d95397db1",
+      "reviewed": true
     }
   }
 }

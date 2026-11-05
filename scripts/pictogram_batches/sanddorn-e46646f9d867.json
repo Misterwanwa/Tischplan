@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "sanddorn",
+      "name": "Sanddorn",
+      "category": "Obst"
+    },
+    {
+      "id": "physalis",
+      "name": "Physalis",
+      "category": "Obst"
+    },
+    {
+      "id": "sternfrucht",
+      "name": "Sternfrucht (Carambola)",
+      "category": "Obst"
+    },
+    {
+      "id": "guave",
+      "name": "Guave",
+      "category": "Obst"
+    },
+    {
+      "id": "hagebutten",
+      "name": "Hagebutten",
+      "category": "Obst"
+    },
+    {
+      "id": "tomaten",
+      "name": "Tomaten",
+      "category": "Gemüse"
+    },
+    {
+      "id": "gurke",
+      "name": "Gurke",
+      "category": "Gemüse"
+    },
+    {
+      "id": "zucchini",
+      "name": "Zucchini",
+      "category": "Gemüse"
+    },
+    {
+      "id": "karotten",
+      "name": "Karotten / Möhren",
+      "category": "Gemüse"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Sanddorn; Physalis; Sternfrucht (Carambola); Guave; Hagebutten; Tomaten; Gurke; Zucchini; Karotten / Möhren",
+  "unusedCells": 0
+}
