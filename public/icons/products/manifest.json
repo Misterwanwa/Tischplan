@@ -433,6 +433,60 @@
       "source": "spinat-98eb18cc69b1.png",
       "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
       "reviewed": true
+    },
+    "auberginen": {
+      "file": "auberginen.svg",
+      "source": "auberginen-d5eaaa006531.png",
+      "sourceSha256": "d5eaaa006531f3a814b423aa025c98ae9673889c0082c7624bad09f78051041b",
+      "reviewed": true
+    },
+    "radieschen": {
+      "file": "radieschen.svg",
+      "source": "auberginen-d5eaaa006531.png",
+      "sourceSha256": "d5eaaa006531f3a814b423aa025c98ae9673889c0082c7624bad09f78051041b",
+      "reviewed": true
+    },
+    "spargel": {
+      "file": "spargel.svg",
+      "source": "auberginen-d5eaaa006531.png",
+      "sourceSha256": "d5eaaa006531f3a814b423aa025c98ae9673889c0082c7624bad09f78051041b",
+      "reviewed": true
+    },
+    "sellerie": {
+      "file": "sellerie.svg",
+      "source": "auberginen-d5eaaa006531.png",
+      "sourceSha256": "d5eaaa006531f3a814b423aa025c98ae9673889c0082c7624bad09f78051041b",
+      "reviewed": true
+    },
+    "staudensellerie": {
+      "file": "staudensellerie.svg",
+      "source": "auberginen-d5eaaa006531.png",
+      "sourceSha256": "d5eaaa006531f3a814b423aa025c98ae9673889c0082c7624bad09f78051041b",
+      "reviewed": true
+    },
+    "rotkohl": {
+      "file": "rotkohl.svg",
+      "source": "auberginen-d5eaaa006531.png",
+      "sourceSha256": "d5eaaa006531f3a814b423aa025c98ae9673889c0082c7624bad09f78051041b",
+      "reviewed": true
+    },
+    "weisskohl": {
+      "file": "weisskohl.svg",
+      "source": "auberginen-d5eaaa006531.png",
+      "sourceSha256": "d5eaaa006531f3a814b423aa025c98ae9673889c0082c7624bad09f78051041b",
+      "reviewed": true
+    },
+    "grunkohl": {
+      "file": "grunkohl.svg",
+      "source": "auberginen-d5eaaa006531.png",
+      "sourceSha256": "d5eaaa006531f3a814b423aa025c98ae9673889c0082c7624bad09f78051041b",
+      "reviewed": true
+    },
+    "rosenkohl": {
+      "file": "rosenkohl.svg",
+      "source": "auberginen-d5eaaa006531.png",
+      "sourceSha256": "d5eaaa006531f3a814b423aa025c98ae9673889c0082c7624bad09f78051041b",
+      "reviewed": true
     }
   }
 }

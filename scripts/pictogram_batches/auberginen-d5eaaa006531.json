@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "auberginen",
+      "name": "Auberginen",
+      "category": "Gemüse"
+    },
+    {
+      "id": "radieschen",
+      "name": "Radieschen",
+      "category": "Gemüse"
+    },
+    {
+      "id": "spargel",
+      "name": "Spargel",
+      "category": "Gemüse"
+    },
+    {
+      "id": "sellerie",
+      "name": "Knollensellerie",
+      "category": "Gemüse"
+    },
+    {
+      "id": "staudensellerie",
+      "name": "Staudensellerie / Stangensellerie",
+      "category": "Gemüse"
+    },
+    {
+      "id": "rotkohl",
+      "name": "Rotkohl",
+      "category": "Gemüse"
+    },
+    {
+      "id": "weisskohl",
+      "name": "Weißkohl",
+      "category": "Gemüse"
+    },
+    {
+      "id": "grunkohl",
+      "name": "Grünkohl",
+      "category": "Gemüse"
+    },
+    {
+      "id": "rosenkohl",
+      "name": "Rosenkohl",
+      "category": "Gemüse"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Auberginen; Radieschen; Spargel; Knollensellerie; Staudensellerie / Stangensellerie; Rotkohl; Weißkohl; Grünkohl; Rosenkohl",
+  "unusedCells": 0
+}
