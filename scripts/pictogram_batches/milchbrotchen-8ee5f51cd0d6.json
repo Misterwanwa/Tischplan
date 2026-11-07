@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "milchbrotchen",
+      "name": "Milchbrötchen",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "wraps",
+      "name": "Tortilla-Wraps",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "tacoshells",
+      "name": "Taco-Shells",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "burgerbuns",
+      "name": "Burger-Buns",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "hotdogbuns",
+      "name": "Hotdog-Buns",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "grissini",
+      "name": "Grissini",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "zwieback",
+      "name": "Zwieback",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "krapfen",
+      "name": "Berliner",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "gebaeck_waffeln",
+      "name": "Waffeln",
+      "category": "Brot & Gebäck"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Milchbrötchen; Tortilla-Wraps; Taco-Shells; Burger-Buns; Hotdog-Buns; Grissini; Zwieback; Berliner; Waffeln",
+  "unusedCells": 0
+}

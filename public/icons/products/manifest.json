@@ -757,6 +757,60 @@
       "source": "knackebrot-e1ccde7a3343.png",
       "sourceSha256": "e1ccde7a33437eb8701721856316240960f099ba31427b662426e3ed169883b9",
       "reviewed": true
+    },
+    "milchbrotchen": {
+      "file": "milchbrotchen.svg",
+      "source": "milchbrotchen-8ee5f51cd0d6.png",
+      "sourceSha256": "8ee5f51cd0d6813e12a41e4ad3b1b7e799ba2af61bbf9f1b55ce452e7ce1b159",
+      "reviewed": true
+    },
+    "wraps": {
+      "file": "wraps.svg",
+      "source": "milchbrotchen-8ee5f51cd0d6.png",
+      "sourceSha256": "8ee5f51cd0d6813e12a41e4ad3b1b7e799ba2af61bbf9f1b55ce452e7ce1b159",
+      "reviewed": true
+    },
+    "tacoshells": {
+      "file": "tacoshells.svg",
+      "source": "milchbrotchen-8ee5f51cd0d6.png",
+      "sourceSha256": "8ee5f51cd0d6813e12a41e4ad3b1b7e799ba2af61bbf9f1b55ce452e7ce1b159",
+      "reviewed": true
+    },
+    "burgerbuns": {
+      "file": "burgerbuns.svg",
+      "source": "milchbrotchen-8ee5f51cd0d6.png",
+      "sourceSha256": "8ee5f51cd0d6813e12a41e4ad3b1b7e799ba2af61bbf9f1b55ce452e7ce1b159",
+      "reviewed": true
+    },
+    "hotdogbuns": {
+      "file": "hotdogbuns.svg",
+      "source": "milchbrotchen-8ee5f51cd0d6.png",
+      "sourceSha256": "8ee5f51cd0d6813e12a41e4ad3b1b7e799ba2af61bbf9f1b55ce452e7ce1b159",
+      "reviewed": true
+    },
+    "grissini": {
+      "file": "grissini.svg",
+      "source": "milchbrotchen-8ee5f51cd0d6.png",
+      "sourceSha256": "8ee5f51cd0d6813e12a41e4ad3b1b7e799ba2af61bbf9f1b55ce452e7ce1b159",
+      "reviewed": true
+    },
+    "zwieback": {
+      "file": "zwieback.svg",
+      "source": "milchbrotchen-8ee5f51cd0d6.png",
+      "sourceSha256": "8ee5f51cd0d6813e12a41e4ad3b1b7e799ba2af61bbf9f1b55ce452e7ce1b159",
+      "reviewed": true
+    },
+    "krapfen": {
+      "file": "krapfen.svg",
+      "source": "milchbrotchen-8ee5f51cd0d6.png",
+      "sourceSha256": "8ee5f51cd0d6813e12a41e4ad3b1b7e799ba2af61bbf9f1b55ce452e7ce1b159",
+      "reviewed": true
+    },
+    "gebaeck_waffeln": {
+      "file": "gebaeck_waffeln.svg",
+      "source": "milchbrotchen-8ee5f51cd0d6.png",
+      "sourceSha256": "8ee5f51cd0d6813e12a41e4ad3b1b7e799ba2af61bbf9f1b55ce452e7ce1b159",
+      "reviewed": true
     }
   }
 }
