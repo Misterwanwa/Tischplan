@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "hackfleisch",
+      "name": "Hackfleisch",
+      "category": "Fleisch"
+    },
+    {
+      "id": "putenbrust",
+      "name": "Putenbrustfilet",
+      "category": "Fleisch"
+    },
+    {
+      "id": "schnitzel",
+      "name": "Schnitzel",
+      "category": "Fleisch"
+    },
+    {
+      "id": "rindersteak",
+      "name": "Steak",
+      "category": "Fleisch"
+    },
+    {
+      "id": "rindergulasch",
+      "name": "Gulasch",
+      "category": "Fleisch"
+    },
+    {
+      "id": "kotelett",
+      "name": "Kotelett",
+      "category": "Fleisch"
+    },
+    {
+      "id": "bacon",
+      "name": "Bacon",
+      "category": "Fleisch"
+    },
+    {
+      "id": "bratwurst",
+      "name": "Bratwurst",
+      "category": "Fleisch"
+    },
+    {
+      "id": "nurnberger",
+      "name": "Nürnberger Rostbratwürstchen",
+      "category": "Fleisch"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Hackfleisch; Putenbrustfilet; Schnitzel; Steak; Gulasch; Kotelett; Bacon; Bratwurst; Nürnberger Rostbratwürstchen",
+  "unusedCells": 0
+}

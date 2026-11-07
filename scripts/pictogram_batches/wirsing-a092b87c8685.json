@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "wirsing",
+      "name": "Wirsing",
+      "category": "Gemüse"
+    },
+    {
+      "id": "chinakohl",
+      "name": "Chinakohl",
+      "category": "Gemüse"
+    },
+    {
+      "id": "pakchoi",
+      "name": "Pak Choi",
+      "category": "Gemüse"
+    },
+    {
+      "id": "erbsen",
+      "name": "Erbsen",
+      "category": "Gemüse"
+    },
+    {
+      "id": "bohnen",
+      "name": "Grüne Bohnen / Buschbohnen",
+      "category": "Gemüse"
+    },
+    {
+      "id": "dickebohnen",
+      "name": "Dicke Bohnen",
+      "category": "Gemüse"
+    },
+    {
+      "id": "linsen",
+      "name": "Linsen",
+      "category": "Gemüse"
+    },
+    {
+      "id": "kichererbsen",
+      "name": "Kichererbsen",
+      "category": "Gemüse"
+    },
+    {
+      "id": "mais",
+      "name": "Zuckermais",
+      "category": "Gemüse"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Wirsing; Chinakohl; Pak Choi; Erbsen; Grüne Bohnen / Buschbohnen; Dicke Bohnen; Linsen; Kichererbsen; Zuckermais",
+  "unusedCells": 0
+}

@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "knackebrot",
+      "name": "Knäckebrot",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "pita",
+      "name": "Pita-Brot",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "pumpernickel",
+      "name": "Pumpernickel",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "naanbrot",
+      "name": "Naan-Brot",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "ciabatta",
+      "name": "Ciabatta",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "focaccia",
+      "name": "Focaccia",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "rosinenbrot",
+      "name": "Rosinenbrot",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "franzbrotchen",
+      "name": "Franzbrötchen",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "schokobrotchen",
+      "name": "Schokobrötchen",
+      "category": "Brot & Gebäck"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Knäckebrot; Pita-Brot; Pumpernickel; Naan-Brot; Ciabatta; Focaccia; Rosinenbrot; Franzbrötchen; Schokobrötchen",
+  "unusedCells": 0
+}
