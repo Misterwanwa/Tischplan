@@ -595,6 +595,60 @@
       "source": "hackfleisch-905a27ddaa20.png",
       "sourceSha256": "905a27ddaa207b5e4dee65b9f372122d70efe230d8dc773333a27086c8573d5d",
       "reviewed": true
+    },
+    "mineralwasser": {
+      "file": "mineralwasser.svg",
+      "source": "mineralwasser-fdf8de6d2d37.png",
+      "sourceSha256": "fdf8de6d2d379783075854010fc2351257b9aa1dd6daa3ad151b7414f9280f9a",
+      "reviewed": true
+    },
+    "apfelsaft": {
+      "file": "apfelsaft.svg",
+      "source": "mineralwasser-fdf8de6d2d37.png",
+      "sourceSha256": "fdf8de6d2d379783075854010fc2351257b9aa1dd6daa3ad151b7414f9280f9a",
+      "reviewed": true
+    },
+    "orangensaft": {
+      "file": "orangensaft.svg",
+      "source": "mineralwasser-fdf8de6d2d37.png",
+      "sourceSha256": "fdf8de6d2d379783075854010fc2351257b9aa1dd6daa3ad151b7414f9280f9a",
+      "reviewed": true
+    },
+    "cola_original": {
+      "file": "cola_original.svg",
+      "source": "mineralwasser-fdf8de6d2d37.png",
+      "sourceSha256": "fdf8de6d2d379783075854010fc2351257b9aa1dd6daa3ad151b7414f9280f9a",
+      "reviewed": true
+    },
+    "bier_pils": {
+      "file": "bier_pils.svg",
+      "source": "mineralwasser-fdf8de6d2d37.png",
+      "sourceSha256": "fdf8de6d2d379783075854010fc2351257b9aa1dd6daa3ad151b7414f9280f9a",
+      "reviewed": true
+    },
+    "rotwein": {
+      "file": "rotwein.svg",
+      "source": "mineralwasser-fdf8de6d2d37.png",
+      "sourceSha256": "fdf8de6d2d379783075854010fc2351257b9aa1dd6daa3ad151b7414f9280f9a",
+      "reviewed": true
+    },
+    "filterkaffee": {
+      "file": "filterkaffee.svg",
+      "source": "mineralwasser-fdf8de6d2d37.png",
+      "sourceSha256": "fdf8de6d2d379783075854010fc2351257b9aa1dd6daa3ad151b7414f9280f9a",
+      "reviewed": true
+    },
+    "pfefferminztee": {
+      "file": "pfefferminztee.svg",
+      "source": "mineralwasser-fdf8de6d2d37.png",
+      "sourceSha256": "fdf8de6d2d379783075854010fc2351257b9aa1dd6daa3ad151b7414f9280f9a",
+      "reviewed": true
+    },
+    "cocktail": {
+      "file": "cocktail.svg",
+      "source": "mineralwasser-fdf8de6d2d37.png",
+      "sourceSha256": "fdf8de6d2d379783075854010fc2351257b9aa1dd6daa3ad151b7414f9280f9a",
+      "reviewed": true
     }
   }
 }

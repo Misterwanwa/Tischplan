@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "mineralwasser",
+      "name": "Mineralwasser",
+      "category": "Getränke"
+    },
+    {
+      "id": "apfelsaft",
+      "name": "Apfelsaft",
+      "category": "Getränke"
+    },
+    {
+      "id": "orangensaft",
+      "name": "Orangensaft",
+      "category": "Getränke"
+    },
+    {
+      "id": "cola_original",
+      "name": "Cola",
+      "category": "Getränke"
+    },
+    {
+      "id": "bier_pils",
+      "name": "Bier",
+      "category": "Getränke"
+    },
+    {
+      "id": "rotwein",
+      "name": "Rotwein",
+      "category": "Getränke"
+    },
+    {
+      "id": "filterkaffee",
+      "name": "Kaffee",
+      "category": "Getränke"
+    },
+    {
+      "id": "pfefferminztee",
+      "name": "Pfefferminztee",
+      "category": "Getränke"
+    },
+    {
+      "id": "cocktail",
+      "name": "Cocktail",
+      "category": "Getränke"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Mineralwasser; Apfelsaft; Orangensaft; Cola; Bier; Rotwein; Kaffee; Pfefferminztee; Cocktail",
+  "unusedCells": 0
+}
