@@ -541,6 +541,60 @@
       "source": "wirsing-a092b87c8685.png",
       "sourceSha256": "a092b87c8685a23953e1c24e0ab8e623900786f2d3c069af735f02e9bd53a9c8",
       "reviewed": true
+    },
+    "hackfleisch": {
+      "file": "hackfleisch.svg",
+      "source": "hackfleisch-905a27ddaa20.png",
+      "sourceSha256": "905a27ddaa207b5e4dee65b9f372122d70efe230d8dc773333a27086c8573d5d",
+      "reviewed": true
+    },
+    "putenbrust": {
+      "file": "putenbrust.svg",
+      "source": "hackfleisch-905a27ddaa20.png",
+      "sourceSha256": "905a27ddaa207b5e4dee65b9f372122d70efe230d8dc773333a27086c8573d5d",
+      "reviewed": true
+    },
+    "schnitzel": {
+      "file": "schnitzel.svg",
+      "source": "hackfleisch-905a27ddaa20.png",
+      "sourceSha256": "905a27ddaa207b5e4dee65b9f372122d70efe230d8dc773333a27086c8573d5d",
+      "reviewed": true
+    },
+    "rindersteak": {
+      "file": "rindersteak.svg",
+      "source": "hackfleisch-905a27ddaa20.png",
+      "sourceSha256": "905a27ddaa207b5e4dee65b9f372122d70efe230d8dc773333a27086c8573d5d",
+      "reviewed": true
+    },
+    "rindergulasch": {
+      "file": "rindergulasch.svg",
+      "source": "hackfleisch-905a27ddaa20.png",
+      "sourceSha256": "905a27ddaa207b5e4dee65b9f372122d70efe230d8dc773333a27086c8573d5d",
+      "reviewed": true
+    },
+    "kotelett": {
+      "file": "kotelett.svg",
+      "source": "hackfleisch-905a27ddaa20.png",
+      "sourceSha256": "905a27ddaa207b5e4dee65b9f372122d70efe230d8dc773333a27086c8573d5d",
+      "reviewed": true
+    },
+    "bacon": {
+      "file": "bacon.svg",
+      "source": "hackfleisch-905a27ddaa20.png",
+      "sourceSha256": "905a27ddaa207b5e4dee65b9f372122d70efe230d8dc773333a27086c8573d5d",
+      "reviewed": true
+    },
+    "bratwurst": {
+      "file": "bratwurst.svg",
+      "source": "hackfleisch-905a27ddaa20.png",
+      "sourceSha256": "905a27ddaa207b5e4dee65b9f372122d70efe230d8dc773333a27086c8573d5d",
+      "reviewed": true
+    },
+    "nurnberger": {
+      "file": "nurnberger.svg",
+      "source": "hackfleisch-905a27ddaa20.png",
+      "sourceSha256": "905a27ddaa207b5e4dee65b9f372122d70efe230d8dc773333a27086c8573d5d",
+      "reviewed": true
     }
   }
 }
