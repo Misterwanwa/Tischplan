@@ -703,6 +703,60 @@
       "source": "brot-c7fc076f1e64.png",
       "sourceSha256": "c7fc076f1e6418e7084cd6925aa449434e492bc4a3b1e977a1c896d232fe782e",
       "reviewed": true
+    },
+    "knackebrot": {
+      "file": "knackebrot.svg",
+      "source": "knackebrot-e1ccde7a3343.png",
+      "sourceSha256": "e1ccde7a33437eb8701721856316240960f099ba31427b662426e3ed169883b9",
+      "reviewed": true
+    },
+    "pita": {
+      "file": "pita.svg",
+      "source": "knackebrot-e1ccde7a3343.png",
+      "sourceSha256": "e1ccde7a33437eb8701721856316240960f099ba31427b662426e3ed169883b9",
+      "reviewed": true
+    },
+    "pumpernickel": {
+      "file": "pumpernickel.svg",
+      "source": "knackebrot-e1ccde7a3343.png",
+      "sourceSha256": "e1ccde7a33437eb8701721856316240960f099ba31427b662426e3ed169883b9",
+      "reviewed": true
+    },
+    "naanbrot": {
+      "file": "naanbrot.svg",
+      "source": "knackebrot-e1ccde7a3343.png",
+      "sourceSha256": "e1ccde7a33437eb8701721856316240960f099ba31427b662426e3ed169883b9",
+      "reviewed": true
+    },
+    "ciabatta": {
+      "file": "ciabatta.svg",
+      "source": "knackebrot-e1ccde7a3343.png",
+      "sourceSha256": "e1ccde7a33437eb8701721856316240960f099ba31427b662426e3ed169883b9",
+      "reviewed": true
+    },
+    "focaccia": {
+      "file": "focaccia.svg",
+      "source": "knackebrot-e1ccde7a3343.png",
+      "sourceSha256": "e1ccde7a33437eb8701721856316240960f099ba31427b662426e3ed169883b9",
+      "reviewed": true
+    },
+    "rosinenbrot": {
+      "file": "rosinenbrot.svg",
+      "source": "knackebrot-e1ccde7a3343.png",
+      "sourceSha256": "e1ccde7a33437eb8701721856316240960f099ba31427b662426e3ed169883b9",
+      "reviewed": true
+    },
+    "franzbrotchen": {
+      "file": "franzbrotchen.svg",
+      "source": "knackebrot-e1ccde7a3343.png",
+      "sourceSha256": "e1ccde7a33437eb8701721856316240960f099ba31427b662426e3ed169883b9",
+      "reviewed": true
+    },
+    "schokobrotchen": {
+      "file": "schokobrotchen.svg",
+      "source": "knackebrot-e1ccde7a3343.png",
+      "sourceSha256": "e1ccde7a33437eb8701721856316240960f099ba31427b662426e3ed169883b9",
+      "reviewed": true
     }
   }
 }
