@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "brot",
+      "name": "Brot",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "brotchen",
+      "name": "Brötchen",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "toast",
+      "name": "Toastbrot",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "baguette",
+      "name": "Baguette",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "croissant",
+      "name": "Croissant",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "brezel",
+      "name": "Laugenbrezel",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "donut",
+      "name": "Donut",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "muffin",
+      "name": "Muffins",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "bagel",
+      "name": "Bagel",
+      "category": "Brot & Gebäck"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Brot; Brötchen; Toastbrot; Baguette; Croissant; Laugenbrezel; Donut; Muffins; Bagel",
+  "unusedCells": 0
+}

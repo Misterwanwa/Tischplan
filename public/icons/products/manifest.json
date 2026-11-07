@@ -649,6 +649,60 @@
       "source": "mineralwasser-fdf8de6d2d37.png",
       "sourceSha256": "fdf8de6d2d379783075854010fc2351257b9aa1dd6daa3ad151b7414f9280f9a",
       "reviewed": true
+    },
+    "brot": {
+      "file": "brot.svg",
+      "source": "brot-c7fc076f1e64.png",
+      "sourceSha256": "c7fc076f1e6418e7084cd6925aa449434e492bc4a3b1e977a1c896d232fe782e",
+      "reviewed": true
+    },
+    "brotchen": {
+      "file": "brotchen.svg",
+      "source": "brot-c7fc076f1e64.png",
+      "sourceSha256": "c7fc076f1e6418e7084cd6925aa449434e492bc4a3b1e977a1c896d232fe782e",
+      "reviewed": true
+    },
+    "toast": {
+      "file": "toast.svg",
+      "source": "brot-c7fc076f1e64.png",
+      "sourceSha256": "c7fc076f1e6418e7084cd6925aa449434e492bc4a3b1e977a1c896d232fe782e",
+      "reviewed": true
+    },
+    "baguette": {
+      "file": "baguette.svg",
+      "source": "brot-c7fc076f1e64.png",
+      "sourceSha256": "c7fc076f1e6418e7084cd6925aa449434e492bc4a3b1e977a1c896d232fe782e",
+      "reviewed": true
+    },
+    "croissant": {
+      "file": "croissant.svg",
+      "source": "brot-c7fc076f1e64.png",
+      "sourceSha256": "c7fc076f1e6418e7084cd6925aa449434e492bc4a3b1e977a1c896d232fe782e",
+      "reviewed": true
+    },
+    "brezel": {
+      "file": "brezel.svg",
+      "source": "brot-c7fc076f1e64.png",
+      "sourceSha256": "c7fc076f1e6418e7084cd6925aa449434e492bc4a3b1e977a1c896d232fe782e",
+      "reviewed": true
+    },
+    "donut": {
+      "file": "donut.svg",
+      "source": "brot-c7fc076f1e64.png",
+      "sourceSha256": "c7fc076f1e6418e7084cd6925aa449434e492bc4a3b1e977a1c896d232fe782e",
+      "reviewed": true
+    },
+    "muffin": {
+      "file": "muffin.svg",
+      "source": "brot-c7fc076f1e64.png",
+      "sourceSha256": "c7fc076f1e6418e7084cd6925aa449434e492bc4a3b1e977a1c896d232fe782e",
+      "reviewed": true
+    },
+    "bagel": {
+      "file": "bagel.svg",
+      "source": "brot-c7fc076f1e64.png",
+      "sourceSha256": "c7fc076f1e6418e7084cd6925aa449434e492bc4a3b1e977a1c896d232fe782e",
+      "reviewed": true
     }
   }
 }
