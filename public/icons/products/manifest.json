@@ -1135,6 +1135,60 @@
       "source": "sushi-b6e828ae4278.png",
       "sourceSha256": "b6e828ae427861853c3af2db2208aa58ba9ca2a9ab8027e2968e34cbc3b37861",
       "reviewed": true
+    },
+    "goldbaeren": {
+      "file": "goldbaeren.svg",
+      "source": "goldbaeren-aec5dca5b97f.png",
+      "sourceSha256": "aec5dca5b97fcc6741274bc4fa2f4dc3db6deeda7dd6782aece63899c9ff6263",
+      "reviewed": true
+    },
+    "butterkekse": {
+      "file": "butterkekse.svg",
+      "source": "goldbaeren-aec5dca5b97f.png",
+      "sourceSha256": "aec5dca5b97fcc6741274bc4fa2f4dc3db6deeda7dd6782aece63899c9ff6263",
+      "reviewed": true
+    },
+    "waffeln": {
+      "file": "waffeln.svg",
+      "source": "goldbaeren-aec5dca5b97f.png",
+      "sourceSha256": "aec5dca5b97fcc6741274bc4fa2f4dc3db6deeda7dd6782aece63899c9ff6263",
+      "reviewed": true
+    },
+    "lebkuchen": {
+      "file": "lebkuchen.svg",
+      "source": "goldbaeren-aec5dca5b97f.png",
+      "sourceSha256": "aec5dca5b97fcc6741274bc4fa2f4dc3db6deeda7dd6782aece63899c9ff6263",
+      "reviewed": true
+    },
+    "gummischlangen": {
+      "file": "gummischlangen.svg",
+      "source": "goldbaeren-aec5dca5b97f.png",
+      "sourceSha256": "aec5dca5b97fcc6741274bc4fa2f4dc3db6deeda7dd6782aece63899c9ff6263",
+      "reviewed": true
+    },
+    "lakritz": {
+      "file": "lakritz.svg",
+      "source": "goldbaeren-aec5dca5b97f.png",
+      "sourceSha256": "aec5dca5b97fcc6741274bc4fa2f4dc3db6deeda7dd6782aece63899c9ff6263",
+      "reviewed": true
+    },
+    "marshmallows": {
+      "file": "marshmallows.svg",
+      "source": "goldbaeren-aec5dca5b97f.png",
+      "sourceSha256": "aec5dca5b97fcc6741274bc4fa2f4dc3db6deeda7dd6782aece63899c9ff6263",
+      "reviewed": true
+    },
+    "pralinen": {
+      "file": "pralinen.svg",
+      "source": "goldbaeren-aec5dca5b97f.png",
+      "sourceSha256": "aec5dca5b97fcc6741274bc4fa2f4dc3db6deeda7dd6782aece63899c9ff6263",
+      "reviewed": true
+    },
+    "zuckerwatte": {
+      "file": "zuckerwatte.svg",
+      "source": "goldbaeren-aec5dca5b97f.png",
+      "sourceSha256": "aec5dca5b97fcc6741274bc4fa2f4dc3db6deeda7dd6782aece63899c9ff6263",
+      "reviewed": true
     }
   }
 }

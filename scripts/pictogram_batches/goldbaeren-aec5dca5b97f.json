@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "goldbaeren",
+      "name": "Gummibärchen",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "butterkekse",
+      "name": "Butterkekse",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "waffeln",
+      "name": "Neapolitaner-Waffeln",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "lebkuchen",
+      "name": "Lebkuchen",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "gummischlangen",
+      "name": "Fruchtgummi-Mix",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "lakritz",
+      "name": "Lakritz",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "marshmallows",
+      "name": "Marshmallows",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "pralinen",
+      "name": "Pralinen",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "zuckerwatte",
+      "name": "Zuckerwatte",
+      "category": "Süssigkeiten"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Gummibärchen; Butterkekse; Neapolitaner-Waffeln; Lebkuchen; Fruchtgummi-Mix; Lakritz; Marshmallows; Pralinen; Zuckerwatte",
+  "unusedCells": 0
+}
