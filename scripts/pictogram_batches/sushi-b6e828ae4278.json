@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "sushi",
+      "name": "Sushi",
+      "category": "Fisch"
+    },
+    {
+      "id": "spaghetti",
+      "name": "Spaghetti",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "burrata",
+      "name": "Burrata",
+      "category": "Käse"
+    },
+    {
+      "id": "avocado",
+      "name": "Avocado",
+      "category": "Gemüse"
+    },
+    {
+      "id": "pistazien",
+      "name": "Pistazien",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "tk_eiscreme",
+      "name": "Eiscreme",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "gruntee",
+      "name": "Grüner Tee",
+      "category": "Getränke"
+    },
+    {
+      "id": "smoothie",
+      "name": "Smoothie",
+      "category": "Getränke"
+    },
+    {
+      "id": "schokolade",
+      "name": "Schokolade",
+      "category": "Süssigkeiten"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Sushi; Spaghetti; Burrata; Avocado; Pistazien; Eiscreme; Grüner Tee; Smoothie; Schokolade",
+  "unusedCells": 0
+}

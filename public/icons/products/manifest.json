@@ -1081,6 +1081,60 @@
       "source": "klopapier-49f1e32ca0fd.png",
       "sourceSha256": "49f1e32ca0fd04c319a2930dfbf8517e0f2304cea12e6dde219e8658e40524a8",
       "reviewed": true
+    },
+    "sushi": {
+      "file": "sushi.svg",
+      "source": "sushi-b6e828ae4278.png",
+      "sourceSha256": "b6e828ae427861853c3af2db2208aa58ba9ca2a9ab8027e2968e34cbc3b37861",
+      "reviewed": true
+    },
+    "spaghetti": {
+      "file": "spaghetti.svg",
+      "source": "sushi-b6e828ae4278.png",
+      "sourceSha256": "b6e828ae427861853c3af2db2208aa58ba9ca2a9ab8027e2968e34cbc3b37861",
+      "reviewed": true
+    },
+    "burrata": {
+      "file": "burrata.svg",
+      "source": "sushi-b6e828ae4278.png",
+      "sourceSha256": "b6e828ae427861853c3af2db2208aa58ba9ca2a9ab8027e2968e34cbc3b37861",
+      "reviewed": true
+    },
+    "avocado": {
+      "file": "avocado.svg",
+      "source": "sushi-b6e828ae4278.png",
+      "sourceSha256": "b6e828ae427861853c3af2db2208aa58ba9ca2a9ab8027e2968e34cbc3b37861",
+      "reviewed": true
+    },
+    "pistazien": {
+      "file": "pistazien.svg",
+      "source": "sushi-b6e828ae4278.png",
+      "sourceSha256": "b6e828ae427861853c3af2db2208aa58ba9ca2a9ab8027e2968e34cbc3b37861",
+      "reviewed": true
+    },
+    "tk_eiscreme": {
+      "file": "tk_eiscreme.svg",
+      "source": "sushi-b6e828ae4278.png",
+      "sourceSha256": "b6e828ae427861853c3af2db2208aa58ba9ca2a9ab8027e2968e34cbc3b37861",
+      "reviewed": true
+    },
+    "gruntee": {
+      "file": "gruntee.svg",
+      "source": "sushi-b6e828ae4278.png",
+      "sourceSha256": "b6e828ae427861853c3af2db2208aa58ba9ca2a9ab8027e2968e34cbc3b37861",
+      "reviewed": true
+    },
+    "smoothie": {
+      "file": "smoothie.svg",
+      "source": "sushi-b6e828ae4278.png",
+      "sourceSha256": "b6e828ae427861853c3af2db2208aa58ba9ca2a9ab8027e2968e34cbc3b37861",
+      "reviewed": true
+    },
+    "schokolade": {
+      "file": "schokolade.svg",
+      "source": "sushi-b6e828ae4278.png",
+      "sourceSha256": "b6e828ae427861853c3af2db2208aa58ba9ca2a9ab8027e2968e34cbc3b37861",
+      "reviewed": true
     }
   }
 }
