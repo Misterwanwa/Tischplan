@@ -973,6 +973,60 @@
       "source": "tomatenmark-0dff63ab1cd5.png",
       "sourceSha256": "0dff63ab1cd5ffdf22b3d029bf5ac29b2f980a33363d3e0b2629cd4dc85a254b",
       "reviewed": true
+    },
+    "mayonnaise": {
+      "file": "mayonnaise.svg",
+      "source": "mayonnaise-aeac12149931.png",
+      "sourceSha256": "aeac1214993193c676c7ec383b12b4400e3b81db00747d5e53d7ea1daceb79d2",
+      "reviewed": true
+    },
+    "hummus": {
+      "file": "hummus.svg",
+      "source": "mayonnaise-aeac12149931.png",
+      "sourceSha256": "aeac1214993193c676c7ec383b12b4400e3b81db00747d5e53d7ea1daceb79d2",
+      "reviewed": true
+    },
+    "guacamole": {
+      "file": "guacamole.svg",
+      "source": "mayonnaise-aeac12149931.png",
+      "sourceSha256": "aeac1214993193c676c7ec383b12b4400e3b81db00747d5e53d7ea1daceb79d2",
+      "reviewed": true
+    },
+    "bruhe": {
+      "file": "bruhe.svg",
+      "source": "mayonnaise-aeac12149931.png",
+      "sourceSha256": "aeac1214993193c676c7ec383b12b4400e3b81db00747d5e53d7ea1daceb79d2",
+      "reviewed": true
+    },
+    "kokosoel": {
+      "file": "kokosoel.svg",
+      "source": "mayonnaise-aeac12149931.png",
+      "sourceSha256": "aeac1214993193c676c7ec383b12b4400e3b81db00747d5e53d7ea1daceb79d2",
+      "reviewed": true
+    },
+    "sonnenblumenol": {
+      "file": "sonnenblumenol.svg",
+      "source": "mayonnaise-aeac12149931.png",
+      "sourceSha256": "aeac1214993193c676c7ec383b12b4400e3b81db00747d5e53d7ea1daceb79d2",
+      "reviewed": true
+    },
+    "balsamico": {
+      "file": "balsamico.svg",
+      "source": "mayonnaise-aeac12149931.png",
+      "sourceSha256": "aeac1214993193c676c7ec383b12b4400e3b81db00747d5e53d7ea1daceb79d2",
+      "reviewed": true
+    },
+    "puderzucker": {
+      "file": "puderzucker.svg",
+      "source": "mayonnaise-aeac12149931.png",
+      "sourceSha256": "aeac1214993193c676c7ec383b12b4400e3b81db00747d5e53d7ea1daceb79d2",
+      "reviewed": true
+    },
+    "nutella": {
+      "file": "nutella.svg",
+      "source": "mayonnaise-aeac12149931.png",
+      "sourceSha256": "aeac1214993193c676c7ec383b12b4400e3b81db00747d5e53d7ea1daceb79d2",
+      "reviewed": true
     }
   }
 }

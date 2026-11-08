@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "mayonnaise",
+      "name": "Mayonnaise",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "hummus",
+      "name": "Hummus",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "guacamole",
+      "name": "Guacamole",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "bruhe",
+      "name": "Brühe",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "kokosoel",
+      "name": "Kokosöl",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "sonnenblumenol",
+      "name": "Sonnenblumenöl",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "balsamico",
+      "name": "Balsamico",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "puderzucker",
+      "name": "Puderzucker",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "nutella",
+      "name": "Nuss-Nougat-Creme",
+      "category": "Grundzutaten"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Mayonnaise; Hummus; Guacamole; Brühe; Kokosöl; Sonnenblumenöl; Balsamico; Puderzucker; Nuss-Nougat-Creme",
+  "unusedCells": 0
+}
