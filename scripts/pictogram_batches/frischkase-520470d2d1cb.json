@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "frischkase",
+      "name": "Frischkäse",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "feta",
+      "name": "Feta",
+      "category": "Käse"
+    },
+    {
+      "id": "schmand",
+      "name": "Schmand",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "rapsol",
+      "name": "Rapsöl",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "ingwerpulver",
+      "name": "Ingwerpulver",
+      "category": "Gewürze"
+    },
+    {
+      "id": "tk_tortelloni",
+      "name": "TK-Pasta",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "sekt",
+      "name": "Sekt",
+      "category": "Getränke"
+    },
+    {
+      "id": "rindfleisch",
+      "name": "Rindfleisch",
+      "category": "Fleisch"
+    },
+    {
+      "id": "essig",
+      "name": "Essig",
+      "category": "Grundzutaten"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Frischkäse; Feta; Schmand; Rapsöl; Ingwerpulver; TK-Pasta; Sekt; Rindfleisch; Essig",
+  "unusedCells": 0
+}

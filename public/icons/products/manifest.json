@@ -1243,6 +1243,60 @@
       "source": "tk_pizza-e961852ba96b.png",
       "sourceSha256": "e961852ba96b33af4b3771e564041b3f320b60b8c7a2f0b05b52c8f3fb510cd7",
       "reviewed": true
+    },
+    "frischkase": {
+      "file": "frischkase.svg",
+      "source": "frischkase-520470d2d1cb.png",
+      "sourceSha256": "520470d2d1cb33b9b6d0cc4ac923685f3b4575ea855ceec3640e5cb1b9fc935b",
+      "reviewed": true
+    },
+    "feta": {
+      "file": "feta.svg",
+      "source": "frischkase-520470d2d1cb.png",
+      "sourceSha256": "520470d2d1cb33b9b6d0cc4ac923685f3b4575ea855ceec3640e5cb1b9fc935b",
+      "reviewed": true
+    },
+    "schmand": {
+      "file": "schmand.svg",
+      "source": "frischkase-520470d2d1cb.png",
+      "sourceSha256": "520470d2d1cb33b9b6d0cc4ac923685f3b4575ea855ceec3640e5cb1b9fc935b",
+      "reviewed": true
+    },
+    "rapsol": {
+      "file": "rapsol.svg",
+      "source": "frischkase-520470d2d1cb.png",
+      "sourceSha256": "520470d2d1cb33b9b6d0cc4ac923685f3b4575ea855ceec3640e5cb1b9fc935b",
+      "reviewed": true
+    },
+    "ingwerpulver": {
+      "file": "ingwerpulver.svg",
+      "source": "frischkase-520470d2d1cb.png",
+      "sourceSha256": "520470d2d1cb33b9b6d0cc4ac923685f3b4575ea855ceec3640e5cb1b9fc935b",
+      "reviewed": true
+    },
+    "tk_tortelloni": {
+      "file": "tk_tortelloni.svg",
+      "source": "frischkase-520470d2d1cb.png",
+      "sourceSha256": "520470d2d1cb33b9b6d0cc4ac923685f3b4575ea855ceec3640e5cb1b9fc935b",
+      "reviewed": true
+    },
+    "sekt": {
+      "file": "sekt.svg",
+      "source": "frischkase-520470d2d1cb.png",
+      "sourceSha256": "520470d2d1cb33b9b6d0cc4ac923685f3b4575ea855ceec3640e5cb1b9fc935b",
+      "reviewed": true
+    },
+    "rindfleisch": {
+      "file": "rindfleisch.svg",
+      "source": "frischkase-520470d2d1cb.png",
+      "sourceSha256": "520470d2d1cb33b9b6d0cc4ac923685f3b4575ea855ceec3640e5cb1b9fc935b",
+      "reviewed": true
+    },
+    "essig": {
+      "file": "essig.svg",
+      "source": "frischkase-520470d2d1cb.png",
+      "sourceSha256": "520470d2d1cb33b9b6d0cc4ac923685f3b4575ea855ceec3640e5cb1b9fc935b",
+      "reviewed": true
     }
   }
 }
