@@ -1297,6 +1297,60 @@
       "source": "frischkase-520470d2d1cb.png",
       "sourceSha256": "520470d2d1cb33b9b6d0cc4ac923685f3b4575ea855ceec3640e5cb1b9fc935b",
       "reviewed": true
+    },
+    "pfeffer": {
+      "file": "pfeffer.svg",
+      "source": "pfeffer-a2bcfbeed29c.png",
+      "sourceSha256": "a2bcfbeed29c8022d40c637035af2f704e657753e08370d0b4b8abafef87f17e",
+      "reviewed": true
+    },
+    "paprika_edelsuess": {
+      "file": "paprika_edelsuess.svg",
+      "source": "pfeffer-a2bcfbeed29c.png",
+      "sourceSha256": "a2bcfbeed29c8022d40c637035af2f704e657753e08370d0b4b8abafef87f17e",
+      "reviewed": true
+    },
+    "basilikum": {
+      "file": "basilikum.svg",
+      "source": "pfeffer-a2bcfbeed29c.png",
+      "sourceSha256": "a2bcfbeed29c8022d40c637035af2f704e657753e08370d0b4b8abafef87f17e",
+      "reviewed": true
+    },
+    "zimtstangen": {
+      "file": "zimtstangen.svg",
+      "source": "pfeffer-a2bcfbeed29c.png",
+      "sourceSha256": "a2bcfbeed29c8022d40c637035af2f704e657753e08370d0b4b8abafef87f17e",
+      "reviewed": true
+    },
+    "muskatnuss": {
+      "file": "muskatnuss.svg",
+      "source": "pfeffer-a2bcfbeed29c.png",
+      "sourceSha256": "a2bcfbeed29c8022d40c637035af2f704e657753e08370d0b4b8abafef87f17e",
+      "reviewed": true
+    },
+    "rosmarin": {
+      "file": "rosmarin.svg",
+      "source": "pfeffer-a2bcfbeed29c.png",
+      "sourceSha256": "a2bcfbeed29c8022d40c637035af2f704e657753e08370d0b4b8abafef87f17e",
+      "reviewed": true
+    },
+    "sternanis": {
+      "file": "sternanis.svg",
+      "source": "pfeffer-a2bcfbeed29c.png",
+      "sourceSha256": "a2bcfbeed29c8022d40c637035af2f704e657753e08370d0b4b8abafef87f17e",
+      "reviewed": true
+    },
+    "vanilleschote": {
+      "file": "vanilleschote.svg",
+      "source": "pfeffer-a2bcfbeed29c.png",
+      "sourceSha256": "a2bcfbeed29c8022d40c637035af2f704e657753e08370d0b4b8abafef87f17e",
+      "reviewed": true
+    },
+    "safran": {
+      "file": "safran.svg",
+      "source": "pfeffer-a2bcfbeed29c.png",
+      "sourceSha256": "a2bcfbeed29c8022d40c637035af2f704e657753e08370d0b4b8abafef87f17e",
+      "reviewed": true
     }
   }
 }
