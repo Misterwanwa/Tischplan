@@ -1567,6 +1567,60 @@
       "source": "blatterteig-26377230ea1b.png",
       "sourceSha256": "26377230ea1bd3449e521f036f675b97af3cbd60518563e8f16db6f5346f360d",
       "reviewed": true
+    },
+    "fenchel": {
+      "file": "fenchel.svg",
+      "source": "fenchel-686d83c1e153.png",
+      "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
+      "reviewed": true
+    },
+    "meerrettich": {
+      "file": "meerrettich.svg",
+      "source": "fenchel-686d83c1e153.png",
+      "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
+      "reviewed": true
+    },
+    "rote_bete": {
+      "file": "rote_bete.svg",
+      "source": "fenchel-686d83c1e153.png",
+      "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
+      "reviewed": true
+    },
+    "pastinaken": {
+      "file": "pastinaken.svg",
+      "source": "fenchel-686d83c1e153.png",
+      "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
+      "reviewed": true
+    },
+    "petersilienwurzel": {
+      "file": "petersilienwurzel.svg",
+      "source": "fenchel-686d83c1e153.png",
+      "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
+      "reviewed": true
+    },
+    "mangold": {
+      "file": "mangold.svg",
+      "source": "fenchel-686d83c1e153.png",
+      "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
+      "reviewed": true
+    },
+    "chicoree": {
+      "file": "chicoree.svg",
+      "source": "fenchel-686d83c1e153.png",
+      "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
+      "reviewed": true
+    },
+    "endivie": {
+      "file": "endivie.svg",
+      "source": "fenchel-686d83c1e153.png",
+      "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
+      "reviewed": true
+    },
+    "kresse": {
+      "file": "kresse.svg",
+      "source": "fenchel-686d83c1e153.png",
+      "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
+      "reviewed": true
     }
   }
 }

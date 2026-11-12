@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "fenchel",
+      "name": "Fenchel",
+      "category": "Gemüse"
+    },
+    {
+      "id": "meerrettich",
+      "name": "Meerrettich",
+      "category": "Gemüse"
+    },
+    {
+      "id": "rote_bete",
+      "name": "Rote Bete",
+      "category": "Gemüse"
+    },
+    {
+      "id": "pastinaken",
+      "name": "Pastinaken",
+      "category": "Gemüse"
+    },
+    {
+      "id": "petersilienwurzel",
+      "name": "Petersilienwurzel",
+      "category": "Gemüse"
+    },
+    {
+      "id": "mangold",
+      "name": "Mangold",
+      "category": "Gemüse"
+    },
+    {
+      "id": "chicoree",
+      "name": "Chicorée",
+      "category": "Gemüse"
+    },
+    {
+      "id": "endivie",
+      "name": "Endiviensalat",
+      "category": "Gemüse"
+    },
+    {
+      "id": "kresse",
+      "name": "Gartenkresse",
+      "category": "Gemüse"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Fenchel; Meerrettich; Rote Bete; Pastinaken; Petersilienwurzel; Mangold; Chicorée; Endiviensalat; Gartenkresse",
+  "unusedCells": 0
+}
