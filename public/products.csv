@@ -657,7 +657,7 @@ lyoner;Lyoner;Fleisch;Flame;Im Ring,In Scheiben,Geflügel-Lyoner,200g;
 smoothie;Smoothie;Getränke;Wine;Mango-Maracuja,Beerenmix,Green Smoothie,250ml Flasche;
 ingwershot;Ingwershot;Getränke;Wine;Klassisch (Ingwer-Zitrone),Mit Kurkuma,Bio 60ml,Große Flasche 330ml;
 marmelade;Marmelade;Grundzutaten;Egg;Erdbeer,Himbeer,Aprikose,Sauerkirsch,Fruchtaufstrich 75%;
-ayvar;Ayvar;Grundzutaten;Egg;Mild,Scharf,Glas 350g;
+ayvar;Ajvar / Ayvar;Grundzutaten;Egg;Mild,Scharf,Glas 350g,Feinkost;
 keimoel;Keimöl;Grundzutaten;Droplets;Maiskeimöl,Sonnenblumenkeimöl,1 Liter Flasche;
 oliven;Oliven;Gemüse;Carrot;Grün,Schwarz,Entsteint,Mit Paprika gefüllt,Im Glas;
 vitaminwasser;Vitaminwasser;Getränke;Wine;Zitrone-Limette,Wassermelone,Ohne Zucker,0.5l PET;
@@ -708,3 +708,14 @@ kuvertuere;Kuvertüre;Grundzutaten;Cookie;Zartbitter,Vollmilch,Weiß,200g Block,
 kokosoel;Kokosöl;Grundzutaten;Droplets;Nativ kaltgepresst,Desodoriert (geschmacksneutral),Bio Glas 500ml;
 maultaschen;Maultaschen;Fertig & Tiefkühlprodukte;Package;Schwäbische Art,Klassisch (mit Fleisch),Vegetarisch / Gemüse,Bürger (6 Stück),In Streifen (Suppe),Bio;
 zuckerwatte;Zuckerwatte;Süssigkeiten;Cookie;Im Eimer,Rosa (Erdbeere),Blau (Blaubeere),Klassisch Weiß,50g,100g;
+dosengericht;Dosengericht;Fertig & Tiefkühlprodukte;Soup;Eintopf,Ravioli,Chili con Carne,Suppe,800g Dose,400g Dose;
+ingwer;Ingwer;Obst;Apple;Frische Knolle,Bio,Ingwerstücke;
+fonds;Fonds;Grundzutaten;Soup;Rinderfond,Geflügelfond,Gemüsefond,Kalbsfond,Fischfond,Glas 400ml;
+portwein;Portwein;Getränke;Wine;Tawny,Ruby,0.75l Flasche,Rot,Weiß;
+sambuca;Sambuca;Getränke;Wine;Mit Kaffeebohnen,0.7l Flasche,Molinari;
+calvados;Calvados;Getränke;Wine;Apfelbrand,0.7l Flasche,VSOP;
+gebaeck;Gebäck;Brot & Gebäck;Wheat;Mürbegebäck,Teegebäck,Feingebäck,Plätzchen,Keksmischung;
+zimtsterne;Zimtsterne;Süssigkeiten;Cookie;Klassisch,Mit Glasur,Weihnachtsbäckerei,200g Packung;11,12
+nougat;Nougat / Nugat;Süssigkeiten;Cookie;Schichtnougat,Haselnuss-Nougat,Backnougat,200g Block;
+marzipan_rohmasse;Marzipan;Süssigkeiten;Cookie;Marzipanrohmasse,Lübecker Marzipan,Edelmarzipan,200g;
+baked_beans;Baked Beans;Fertig & Tiefkühlprodukte;Package;In Tomatensauce,Heinz,Englische Art,415g Dose;

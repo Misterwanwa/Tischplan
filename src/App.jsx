@@ -1277,12 +1277,13 @@ function SlotRow({ course, hasSlot = false, recipe, multiplier, onPick, onRemove
 }
 
 function RecipePickerSheet({ targetSlot = null, onClose, onPick }) {
-  const { recipes, openAddRecipe } = useApp();
+  const { recipes, openAddRecipe, settings } = useApp();
+  const alwaysShowNav = settings?.alwaysShowBottomNav !== false;
   const [query, setQuery] = useState('');
   const filtered = recipes.filter(r => !r.doNotSaveInBook).filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-full flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className={`bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-[85vh] sm:max-h-full flex flex-col ${alwaysShowNav ? 'mb-14 sm:mb-0' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
           <span className="font-mono font-semibold uppercase tracking-wide text-sm">Rezept wählen</span>
           <button onClick={onClose}><X size={20} /></button>
@@ -1658,7 +1659,8 @@ function PlannedMealItem({ meal, course, slot, recipe, onLongPressRecipe, onClic
 }
 
 function WeekAddMealModal({ date, onClose }) {
-  const { recipes, getDayPlan, saveDayPlan, triggerRefresh, openAddRecipe } = useApp();
+  const { recipes, getDayPlan, saveDayPlan, triggerRefresh, openAddRecipe, settings } = useApp();
+  const alwaysShowNav = settings?.alwaysShowBottomNav !== false;
   const [selectedMeal, setSelectedMeal] = useState('dinner');
   const [selectedCourse, setSelectedCourse] = useState('main');
   const [query, setQuery] = useState('');
@@ -1697,7 +1699,7 @@ function WeekAddMealModal({ date, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
-        <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className={`bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-[85vh] sm:max-h-[90vh] flex flex-col ${alwaysShowNav ? 'mb-14 sm:mb-0' : ''}`} onClick={e => e.stopPropagation()}>
           <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
             <div>
               <span className="font-mono font-semibold uppercase tracking-wide text-sm block">Gericht hinzufügen</span>
@@ -3615,7 +3617,8 @@ function RecipeForm({ initial, onBack, backLabel, onSave }) {
 }
 
 function AddRecipeModal({ onClose, onSaved }) {
-  const { addRecipe, showToast } = useApp();
+  const { addRecipe, showToast, settings } = useApp();
+  const alwaysShowNav = settings?.alwaysShowBottomNav !== false;
   const [step, setStep] = useState('source');
   const [draft, setDraft] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -3623,7 +3626,7 @@ function AddRecipeModal({ onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-full flex flex-col">
+      <div className={`bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-[85vh] sm:max-h-full flex flex-col ${alwaysShowNav ? 'mb-14 sm:mb-0' : ''}`}>
         <div className="p-4 border-b border-stone-200 flex items-center justify-between flex-shrink-0">
           <span className="font-mono font-semibold uppercase tracking-wide text-sm">Neues Rezept</span>
           <button onClick={onClose}><X size={20} /></button>
@@ -4416,13 +4419,29 @@ function RecipesTab() {
   const { recipes, openAddRecipe } = useApp();
   const [query, setQuery] = useState('');
   const [onlyUnrated, setOnlyUnrated] = useState(false);
+  const [sortMode, setSortMode] = useState('alpha-asc'); // 'alpha-asc', 'date-desc', 'rating-desc'
   const [selected, setSelected] = useState(null);
   const [manageRecipe, setManageRecipe] = useState(null);
 
   const filtered = recipes
     .filter(r => !r.doNotSaveInBook)
     .filter(r => r.title.toLowerCase().includes(query.toLowerCase()))
-    .filter(r => !onlyUnrated || (!r.rating || r.rating === 0));
+    .filter(r => !onlyUnrated || (!r.rating || r.rating === 0))
+    .sort((a, b) => {
+      if (sortMode === 'rating-desc') {
+        const ratingA = typeof a.rating === 'number' ? a.rating : 0;
+        const ratingB = typeof b.rating === 'number' ? b.rating : 0;
+        if (ratingB !== ratingA) return ratingB - ratingA;
+        return (a.title || '').localeCompare(b.title || '', 'de');
+      } else if (sortMode === 'date-desc') {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (timeB !== timeA) return timeB - timeA;
+        return (a.title || '').localeCompare(b.title || '', 'de');
+      } else {
+        return (a.title || '').localeCompare(b.title || '', 'de');
+      }
+    });
 
   return (
     <div className="space-y-3">
@@ -4431,6 +4450,16 @@ function RecipesTab() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rezepte durchsuchen" className={inputCls + " pl-9"} />
         </div>
+        <select
+          value={sortMode}
+          onChange={e => setSortMode(e.target.value)}
+          className="bg-white text-stone-700 border border-stone-300 rounded-lg px-2.5 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-stone-900 cursor-pointer flex-shrink-0"
+          title="Rezepte sortieren"
+        >
+          <option value="alpha-asc">A-Z Name</option>
+          <option value="rating-desc">★ Bewertung</option>
+          <option value="date-desc">🕒 Datum</option>
+        </select>
         <button 
           onClick={() => setOnlyUnrated(!onlyUnrated)} 
           className={`px-3 rounded-lg border text-xs font-mono flex items-center gap-1.5 flex-shrink-0 transition-colors ${
@@ -4441,9 +4470,9 @@ function RecipesTab() {
           title="Nur unbewertete Rezepte anzeigen"
         >
           <Star size={14} className={onlyUnrated ? 'fill-amber-500 text-amber-500' : 'text-stone-400'} />
-          <span>Unbewertet</span>
+          <span className="hidden sm:inline">Unbewertet</span>
         </button>
-        <button onClick={() => openAddRecipe({})} className="px-4 rounded-lg bg-stone-900 text-white flex-shrink-0"><Plus size={18} /></button>
+        <button onClick={() => openAddRecipe({})} className="px-4 rounded-lg bg-stone-900 text-white flex-shrink-0" title="Neues Rezept"><Plus size={18} /></button>
       </div>
       <div className="grid grid-cols-2 gap-3">
         {filtered.map(r => (
