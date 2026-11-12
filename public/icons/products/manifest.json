@@ -1459,6 +1459,60 @@
       "source": "tk_beeren-a0fd9e9a6e69.png",
       "sourceSha256": "a0fd9e9a6e698791d1381a25240894b5b37f67d4e31dfc6ec05b1bce63670d3f",
       "reviewed": true
+    },
+    "tk_krauter": {
+      "file": "tk_krauter.svg",
+      "source": "tk_krauter-206531ae8b2c.png",
+      "sourceSha256": "206531ae8b2ceec7e24146a1eabb797c58231dfd07f71b014fa4212f771df23c",
+      "reviewed": true
+    },
+    "dosen_tomatensuppe": {
+      "file": "dosen_tomatensuppe.svg",
+      "source": "tk_krauter-206531ae8b2c.png",
+      "sourceSha256": "206531ae8b2ceec7e24146a1eabb797c58231dfd07f71b014fa4212f771df23c",
+      "reviewed": true
+    },
+    "tk_windbeutel": {
+      "file": "tk_windbeutel.svg",
+      "source": "tk_krauter-206531ae8b2c.png",
+      "sourceSha256": "206531ae8b2ceec7e24146a1eabb797c58231dfd07f71b014fa4212f771df23c",
+      "reviewed": true
+    },
+    "tk_knoblauchbrot": {
+      "file": "tk_knoblauchbrot.svg",
+      "source": "tk_krauter-206531ae8b2c.png",
+      "sourceSha256": "206531ae8b2ceec7e24146a1eabb797c58231dfd07f71b014fa4212f771df23c",
+      "reviewed": true
+    },
+    "tk_flammkuchen": {
+      "file": "tk_flammkuchen.svg",
+      "source": "tk_krauter-206531ae8b2c.png",
+      "sourceSha256": "206531ae8b2ceec7e24146a1eabb797c58231dfd07f71b014fa4212f771df23c",
+      "reviewed": true
+    },
+    "tk_calamares": {
+      "file": "tk_calamares.svg",
+      "source": "tk_krauter-206531ae8b2c.png",
+      "sourceSha256": "206531ae8b2ceec7e24146a1eabb797c58231dfd07f71b014fa4212f771df23c",
+      "reviewed": true
+    },
+    "dosen_chili": {
+      "file": "dosen_chili.svg",
+      "source": "tk_krauter-206531ae8b2c.png",
+      "sourceSha256": "206531ae8b2ceec7e24146a1eabb797c58231dfd07f71b014fa4212f771df23c",
+      "reviewed": true
+    },
+    "tk_backfisch": {
+      "file": "tk_backfisch.svg",
+      "source": "tk_krauter-206531ae8b2c.png",
+      "sourceSha256": "206531ae8b2ceec7e24146a1eabb797c58231dfd07f71b014fa4212f771df23c",
+      "reviewed": true
+    },
+    "maultaschen": {
+      "file": "maultaschen.svg",
+      "source": "tk_krauter-206531ae8b2c.png",
+      "sourceSha256": "206531ae8b2ceec7e24146a1eabb797c58231dfd07f71b014fa4212f771df23c",
+      "reviewed": true
     }
   }
 }
