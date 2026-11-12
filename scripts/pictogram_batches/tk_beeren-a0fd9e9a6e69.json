@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "tk_beeren",
+      "name": "TK-Beerenmischung",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "tk_brezeln",
+      "name": "TK-Laugenbrezeln zum Aufbacken",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "dosen_ravioli",
+      "name": "Ravioli",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "instant_nudeln",
+      "name": "Instant-Ramen",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "tk_torte",
+      "name": "TK-Torte",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "tk_falafel",
+      "name": "TK-Falafel",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "tk_veggie_burger",
+      "name": "Hamburger",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "tk_gyoza",
+      "name": "TK-Gyoza / Dumplings",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "tk_kroketten",
+      "name": "TK-Kroketten",
+      "category": "Fertig & Tiefkühlprodukte"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: TK-Beerenmischung; TK-Laugenbrezeln zum Aufbacken; Ravioli; Instant-Ramen; TK-Torte; TK-Falafel; Hamburger; TK-Gyoza / Dumplings; TK-Kroketten",
+  "unusedCells": 0
+}
