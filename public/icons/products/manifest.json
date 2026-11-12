@@ -1513,6 +1513,60 @@
       "source": "tk_krauter-206531ae8b2c.png",
       "sourceSha256": "206531ae8b2ceec7e24146a1eabb797c58231dfd07f71b014fa4212f771df23c",
       "reviewed": true
+    },
+    "blatterteig": {
+      "file": "blatterteig.svg",
+      "source": "blatterteig-26377230ea1b.png",
+      "sourceSha256": "26377230ea1bd3449e521f036f675b97af3cbd60518563e8f16db6f5346f360d",
+      "reviewed": true
+    },
+    "thunfisch_dose": {
+      "file": "thunfisch_dose.svg",
+      "source": "blatterteig-26377230ea1b.png",
+      "sourceSha256": "26377230ea1bd3449e521f036f675b97af3cbd60518563e8f16db6f5346f360d",
+      "reviewed": true
+    },
+    "salami": {
+      "file": "salami.svg",
+      "source": "blatterteig-26377230ea1b.png",
+      "sourceSha256": "26377230ea1bd3449e521f036f675b97af3cbd60518563e8f16db6f5346f360d",
+      "reviewed": true
+    },
+    "kochschinken": {
+      "file": "kochschinken.svg",
+      "source": "blatterteig-26377230ea1b.png",
+      "sourceSha256": "26377230ea1bd3449e521f036f675b97af3cbd60518563e8f16db6f5346f360d",
+      "reviewed": true
+    },
+    "rohschinken": {
+      "file": "rohschinken.svg",
+      "source": "blatterteig-26377230ea1b.png",
+      "sourceSha256": "26377230ea1bd3449e521f036f675b97af3cbd60518563e8f16db6f5346f360d",
+      "reviewed": true
+    },
+    "schwein": {
+      "file": "schwein.svg",
+      "source": "blatterteig-26377230ea1b.png",
+      "sourceSha256": "26377230ea1bd3449e521f036f675b97af3cbd60518563e8f16db6f5346f360d",
+      "reviewed": true
+    },
+    "co2_kartusche": {
+      "file": "co2_kartusche.svg",
+      "source": "blatterteig-26377230ea1b.png",
+      "sourceSha256": "26377230ea1bd3449e521f036f675b97af3cbd60518563e8f16db6f5346f360d",
+      "reviewed": true
+    },
+    "energydrink": {
+      "file": "energydrink.svg",
+      "source": "blatterteig-26377230ea1b.png",
+      "sourceSha256": "26377230ea1bd3449e521f036f675b97af3cbd60518563e8f16db6f5346f360d",
+      "reviewed": true
+    },
+    "pinienkerne": {
+      "file": "pinienkerne.svg",
+      "source": "blatterteig-26377230ea1b.png",
+      "sourceSha256": "26377230ea1bd3449e521f036f675b97af3cbd60518563e8f16db6f5346f360d",
+      "reviewed": true
     }
   }
 }

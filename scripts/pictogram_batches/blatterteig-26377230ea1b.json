@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "blatterteig",
+      "name": "Blätterteig",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "thunfisch_dose",
+      "name": "Thunfisch",
+      "category": "Fisch"
+    },
+    {
+      "id": "salami",
+      "name": "Salami",
+      "category": "Fleisch"
+    },
+    {
+      "id": "kochschinken",
+      "name": "Schinken",
+      "category": "Fleisch"
+    },
+    {
+      "id": "rohschinken",
+      "name": "Rohschinken",
+      "category": "Fleisch"
+    },
+    {
+      "id": "schwein",
+      "name": "Schwein",
+      "category": "Fleisch"
+    },
+    {
+      "id": "co2_kartusche",
+      "name": "CO2-Kartusche",
+      "category": "Getränke"
+    },
+    {
+      "id": "energydrink",
+      "name": "Energy Drink",
+      "category": "Getränke"
+    },
+    {
+      "id": "pinienkerne",
+      "name": "Pinienkerne",
+      "category": "Getreideprodukte"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Blätterteig; Thunfisch; Salami; Schinken; Rohschinken; Schwein; CO2-Kartusche; Energy Drink; Pinienkerne",
+  "unusedCells": 0
+}
