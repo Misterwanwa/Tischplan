@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "penne",
+      "name": "Penne Rigate",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "fusilli",
+      "name": "Fusilli",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "farfalle",
+      "name": "Farfalle",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "gnocchi_frisch",
+      "name": "Gnocchi",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "tortellini_frisch",
+      "name": "Tortellini",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "basmatireis",
+      "name": "Basmati-Reis",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "haferflocken",
+      "name": "Haferflocken",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "mandeln",
+      "name": "Mandeln",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "walnuesse",
+      "name": "Walnusskerne",
+      "category": "Getreideprodukte"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Penne Rigate; Fusilli; Farfalle; Gnocchi; Tortellini; Basmati-Reis; Haferflocken; Mandeln; Walnusskerne",
+  "unusedCells": 0
+}
