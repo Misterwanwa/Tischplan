@@ -1351,6 +1351,60 @@
       "source": "pfeffer-a2bcfbeed29c.png",
       "sourceSha256": "a2bcfbeed29c8022d40c637035af2f704e657753e08370d0b4b8abafef87f17e",
       "reviewed": true
+    },
+    "penne": {
+      "file": "penne.svg",
+      "source": "penne-5dc1437bcc3c.png",
+      "sourceSha256": "5dc1437bcc3ce26cd6df807236e75b206b85708fb002376c661149ec46f2be21",
+      "reviewed": true
+    },
+    "fusilli": {
+      "file": "fusilli.svg",
+      "source": "penne-5dc1437bcc3c.png",
+      "sourceSha256": "5dc1437bcc3ce26cd6df807236e75b206b85708fb002376c661149ec46f2be21",
+      "reviewed": true
+    },
+    "farfalle": {
+      "file": "farfalle.svg",
+      "source": "penne-5dc1437bcc3c.png",
+      "sourceSha256": "5dc1437bcc3ce26cd6df807236e75b206b85708fb002376c661149ec46f2be21",
+      "reviewed": true
+    },
+    "gnocchi_frisch": {
+      "file": "gnocchi_frisch.svg",
+      "source": "penne-5dc1437bcc3c.png",
+      "sourceSha256": "5dc1437bcc3ce26cd6df807236e75b206b85708fb002376c661149ec46f2be21",
+      "reviewed": true
+    },
+    "tortellini_frisch": {
+      "file": "tortellini_frisch.svg",
+      "source": "penne-5dc1437bcc3c.png",
+      "sourceSha256": "5dc1437bcc3ce26cd6df807236e75b206b85708fb002376c661149ec46f2be21",
+      "reviewed": true
+    },
+    "basmatireis": {
+      "file": "basmatireis.svg",
+      "source": "penne-5dc1437bcc3c.png",
+      "sourceSha256": "5dc1437bcc3ce26cd6df807236e75b206b85708fb002376c661149ec46f2be21",
+      "reviewed": true
+    },
+    "haferflocken": {
+      "file": "haferflocken.svg",
+      "source": "penne-5dc1437bcc3c.png",
+      "sourceSha256": "5dc1437bcc3ce26cd6df807236e75b206b85708fb002376c661149ec46f2be21",
+      "reviewed": true
+    },
+    "mandeln": {
+      "file": "mandeln.svg",
+      "source": "penne-5dc1437bcc3c.png",
+      "sourceSha256": "5dc1437bcc3ce26cd6df807236e75b206b85708fb002376c661149ec46f2be21",
+      "reviewed": true
+    },
+    "walnuesse": {
+      "file": "walnuesse.svg",
+      "source": "penne-5dc1437bcc3c.png",
+      "sourceSha256": "5dc1437bcc3ce26cd6df807236e75b206b85708fb002376c661149ec46f2be21",
+      "reviewed": true
     }
   }
 }
