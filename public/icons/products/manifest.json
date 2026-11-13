@@ -1837,6 +1837,60 @@
       "source": "artischocken-ea0ff0fe9264.png",
       "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
       "reviewed": true
+    },
+    "oliven": {
+      "file": "oliven.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "pizzateig": {
+      "file": "pizzateig.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "mandeldrink": {
+      "file": "mandeldrink.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "halloumi": {
+      "file": "halloumi.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "garnelen": {
+      "file": "garnelen.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "zimt": {
+      "file": "zimt.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "dosen_linsen": {
+      "file": "dosen_linsen.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "traubensaft": {
+      "file": "traubensaft.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "chips": {
+      "file": "chips.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
     }
   }
 }
