@@ -1783,6 +1783,60 @@
       "source": "eukalyptusbonbons-063c5989cf6d.png",
       "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
       "reviewed": true
+    },
+    "artischocken": {
+      "file": "artischocken.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "brioche": {
+      "file": "brioche.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "griechischer_joghurt": {
+      "file": "griechischer_joghurt.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "gouda": {
+      "file": "gouda.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "wiener_wurstchen": {
+      "file": "wiener_wurstchen.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "lachs": {
+      "file": "lachs.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "sesamol": {
+      "file": "sesamol.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "tagliatelle": {
+      "file": "tagliatelle.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "multivitaminsaft": {
+      "file": "multivitaminsaft.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
     }
   }
 }
