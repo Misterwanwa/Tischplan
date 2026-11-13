@@ -1675,6 +1675,60 @@
       "source": "kekse-37e6aa664758.png",
       "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
       "reviewed": true
+    },
+    "toffee": {
+      "file": "toffee.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "moncheri": {
+      "file": "moncheri.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "rocher": {
+      "file": "rocher.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "raffaello": {
+      "file": "raffaello.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "kinderbueno": {
+      "file": "kinderbueno.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "duplo": {
+      "file": "duplo.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "hanuta": {
+      "file": "hanuta.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "knoppers": {
+      "file": "knoppers.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "twix": {
+      "file": "twix.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
     }
   }
 }

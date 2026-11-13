@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "toffee",
+      "name": "Toffifee",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "moncheri",
+      "name": "Mon Chéri",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "rocher",
+      "name": "Ferrero Rocher",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "raffaello",
+      "name": "Raffaello",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "kinderbueno",
+      "name": "Kinder Bueno",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "duplo",
+      "name": "Duplo Riegel",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "hanuta",
+      "name": "Hanuta",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "knoppers",
+      "name": "Knoppers",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "twix",
+      "name": "Karamell-Keks-Riegel",
+      "category": "Süssigkeiten"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Toffifee; Mon Chéri; Ferrero Rocher; Raffaello; Kinder Bueno; Duplo Riegel; Hanuta; Knoppers; Karamell-Keks-Riegel",
+  "unusedCells": 0
+}
