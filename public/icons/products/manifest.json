@@ -1729,6 +1729,60 @@
       "source": "toffee-800592a1334c.png",
       "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
       "reviewed": true
+    },
+    "eukalyptusbonbons": {
+      "file": "eukalyptusbonbons.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "energybar": {
+      "file": "energybar.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "m_and_ms": {
+      "file": "m_and_ms.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "skittles": {
+      "file": "skittles.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "kitkat": {
+      "file": "kitkat.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "ahoi_brause": {
+      "file": "ahoi_brause.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "proteinpudding": {
+      "file": "proteinpudding.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "milchreis_fertig": {
+      "file": "milchreis_fertig.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "tk_kuchen": {
+      "file": "tk_kuchen.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
     }
   }
 }
