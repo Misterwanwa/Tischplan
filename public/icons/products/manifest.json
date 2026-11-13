@@ -1621,6 +1621,60 @@
       "source": "fenchel-686d83c1e153.png",
       "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
       "reviewed": true
+    },
+    "kekse": {
+      "file": "kekse.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "dominosteine": {
+      "file": "dominosteine.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "fruchtbonbons": {
+      "file": "fruchtbonbons.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "kaugummi": {
+      "file": "kaugummi.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "muesliriegel": {
+      "file": "muesliriegel.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "marzipan": {
+      "file": "marzipan.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "schokoriegel": {
+      "file": "schokoriegel.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "weingummi": {
+      "file": "weingummi.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "smarties": {
+      "file": "smarties.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
     }
   }
 }
