@@ -28,8 +28,6 @@
     },
     "heidelbeeren": {
       "file": "heidelbeeren.svg",
-      "source": "apfel-0b7017c206e3.png",
-      "sourceSha256": "0b7017c206e354ef87e31bc6ce2656e545b146f11bd33904f9b1750b8a6e3adb",
       "reviewed": true
     },
     "brombeeren": {
@@ -388,8 +386,6 @@
     },
     "salat": {
       "file": "salat.svg",
-      "source": "spinat-98eb18cc69b1.png",
-      "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
       "reviewed": true
     },
     "eisbergsalat": {
@@ -412,8 +408,6 @@
     },
     "feldsalat": {
       "file": "feldsalat.svg",
-      "source": "spinat-98eb18cc69b1.png",
-      "sourceSha256": "98eb18cc69b1454ec1e5b609f3b57bab8430b9cb3001829a8c52b85d53cf1da5",
       "reviewed": true
     },
     "champignons": {
@@ -442,8 +436,6 @@
     },
     "radieschen": {
       "file": "radieschen.svg",
-      "source": "auberginen-d5eaaa006531.png",
-      "sourceSha256": "d5eaaa006531f3a814b423aa025c98ae9673889c0082c7624bad09f78051041b",
       "reviewed": true
     },
     "spargel": {
@@ -1192,8 +1184,6 @@
     },
     "tk_pizza": {
       "file": "tk_pizza.svg",
-      "source": "tk_pizza-e961852ba96b.png",
-      "sourceSha256": "e961852ba96b33af4b3771e564041b3f320b60b8c7a2f0b05b52c8f3fb510cd7",
       "reviewed": true
     },
     "tk_pommes": {
@@ -1438,14 +1428,10 @@
     },
     "tk_falafel": {
       "file": "tk_falafel.svg",
-      "source": "tk_beeren-a0fd9e9a6e69.png",
-      "sourceSha256": "a0fd9e9a6e698791d1381a25240894b5b37f67d4e31dfc6ec05b1bce63670d3f",
       "reviewed": true
     },
     "tk_veggie_burger": {
       "file": "tk_veggie_burger.svg",
-      "source": "tk_beeren-a0fd9e9a6e69.png",
-      "sourceSha256": "a0fd9e9a6e698791d1381a25240894b5b37f67d4e31dfc6ec05b1bce63670d3f",
       "reviewed": true
     },
     "tk_gyoza": {
@@ -1516,8 +1502,6 @@
     },
     "blatterteig": {
       "file": "blatterteig.svg",
-      "source": "blatterteig-26377230ea1b.png",
-      "sourceSha256": "26377230ea1bd3449e521f036f675b97af3cbd60518563e8f16db6f5346f360d",
       "reviewed": true
     },
     "thunfisch_dose": {
@@ -1620,6 +1604,10 @@
       "file": "kresse.svg",
       "source": "fenchel-686d83c1e153.png",
       "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
+      "reviewed": true
+    },
+    "eukalyptusbonbons": {
+      "file": "eukalyptusbonbons.svg",
       "reviewed": true
     }
   }
