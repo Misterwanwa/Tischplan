@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "oliven",
+      "name": "Oliven",
+      "category": "Gemüse"
+    },
+    {
+      "id": "pizzateig",
+      "name": "Pizzateig",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "mandeldrink",
+      "name": "Mandelmilch",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "halloumi",
+      "name": "Halloumi / Grillkäse",
+      "category": "Käse"
+    },
+    {
+      "id": "garnelen",
+      "name": "Garnelen / Shrimps",
+      "category": "Fisch"
+    },
+    {
+      "id": "zimt",
+      "name": "Zimt",
+      "category": "Gewürze"
+    },
+    {
+      "id": "dosen_linsen",
+      "name": "Linseneintopf",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "traubensaft",
+      "name": "Traubensaft",
+      "category": "Getränke"
+    },
+    {
+      "id": "chips",
+      "name": "Chips",
+      "category": "Süssigkeiten"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Oliven; Pizzateig; Mandelmilch; Halloumi / Grillkäse; Garnelen / Shrimps; Zimt; Linseneintopf; Traubensaft; Chips",
+  "unusedCells": 0
+}

@@ -1621,6 +1621,276 @@
       "source": "fenchel-686d83c1e153.png",
       "sourceSha256": "686d83c1e153fd83187981b51ab94428966e864adb0325681c4cbebcb0b1a3fd",
       "reviewed": true
+    },
+    "kekse": {
+      "file": "kekse.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "dominosteine": {
+      "file": "dominosteine.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "fruchtbonbons": {
+      "file": "fruchtbonbons.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "kaugummi": {
+      "file": "kaugummi.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "muesliriegel": {
+      "file": "muesliriegel.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "marzipan": {
+      "file": "marzipan.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "schokoriegel": {
+      "file": "schokoriegel.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "weingummi": {
+      "file": "weingummi.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "smarties": {
+      "file": "smarties.svg",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
+      "reviewed": true
+    },
+    "toffee": {
+      "file": "toffee.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "moncheri": {
+      "file": "moncheri.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "rocher": {
+      "file": "rocher.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "raffaello": {
+      "file": "raffaello.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "kinderbueno": {
+      "file": "kinderbueno.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "duplo": {
+      "file": "duplo.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "hanuta": {
+      "file": "hanuta.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "knoppers": {
+      "file": "knoppers.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "twix": {
+      "file": "twix.svg",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
+      "reviewed": true
+    },
+    "eukalyptusbonbons": {
+      "file": "eukalyptusbonbons.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "energybar": {
+      "file": "energybar.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "m_and_ms": {
+      "file": "m_and_ms.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "skittles": {
+      "file": "skittles.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "kitkat": {
+      "file": "kitkat.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "ahoi_brause": {
+      "file": "ahoi_brause.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "proteinpudding": {
+      "file": "proteinpudding.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "milchreis_fertig": {
+      "file": "milchreis_fertig.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "tk_kuchen": {
+      "file": "tk_kuchen.svg",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
+      "reviewed": true
+    },
+    "artischocken": {
+      "file": "artischocken.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "brioche": {
+      "file": "brioche.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "griechischer_joghurt": {
+      "file": "griechischer_joghurt.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "gouda": {
+      "file": "gouda.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "wiener_wurstchen": {
+      "file": "wiener_wurstchen.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "lachs": {
+      "file": "lachs.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "sesamol": {
+      "file": "sesamol.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "tagliatelle": {
+      "file": "tagliatelle.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "multivitaminsaft": {
+      "file": "multivitaminsaft.svg",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
+      "reviewed": true
+    },
+    "oliven": {
+      "file": "oliven.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "pizzateig": {
+      "file": "pizzateig.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "mandeldrink": {
+      "file": "mandeldrink.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "halloumi": {
+      "file": "halloumi.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "garnelen": {
+      "file": "garnelen.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "zimt": {
+      "file": "zimt.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "dosen_linsen": {
+      "file": "dosen_linsen.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "traubensaft": {
+      "file": "traubensaft.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "chips": {
+      "file": "chips.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
     }
   }
 }
