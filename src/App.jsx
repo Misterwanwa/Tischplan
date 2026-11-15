@@ -22,6 +22,7 @@ import { getItemDetails, addDetailToItem, updateDetailInItem, removeDetailFromIt
 import { analyzeWeekIngredients, findProductMatch, parseIngredientTextLine } from './modules/ingredientMatcher';
 import { STATS_STORAGE_KEY, EVENT_TYPES, createStatEvent, appendStatEvent, generateRewindReport } from './modules/statistics';
 import { AI_PROVIDERS, DEFAULT_OPENROUTER_MODEL, OPENROUTER_MODEL_PRESETS, isValidOpenRouterModel, readAiConfigFromStorage, resolveAiConfig } from './modules/aiConfig';
+import { storageGetDetailed } from './modules/storageSafety';
 
 /* ---------------------------------- Design tokens ---------------------------------- */
 const inputCls = "w-full px-3 py-2 rounded-lg border border-stone-300 text-sm focus:outline-none focus:ring-1 focus:ring-stone-900 bg-white";
@@ -725,34 +726,8 @@ function getRecipePreview(recipe, disableExternal = false) {
 
 
 async function storageGet(key, shared, fallback) {
-  try {
-    if (window.storage && typeof window.storage.get === 'function') {
-      const r = await window.storage.get(key, shared);
-      return r ? JSON.parse(r.value) : fallback;
-    }
-    if (shared) {
-      try {
-        const res = await fetch(`/api/storage?key=${encodeURIComponent(key)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && 'value' in data && data.value !== null) {
-            try {
-              localStorage.setItem(`shared_${key}`, JSON.stringify(data.value));
-            } catch (lsErr) {
-              console.warn(`localStorage cache write failed for shared_${key}:`, lsErr);
-            }
-            return data.value;
-          }
-        }
-      } catch (apiError) {
-        console.warn('KV storage get failed, falling back to local cache:', apiError);
-      }
-      const cachedVal = localStorage.getItem(`shared_${key}`);
-      if (cachedVal !== null) return JSON.parse(cachedVal);
-    }
-    const localVal = localStorage.getItem(key);
-    return localVal ? JSON.parse(localVal) : fallback;
-  } catch (e) { return fallback; }
+  const res = await storageGetDetailed(key, shared, fallback);
+  return res.value;
 }
 async function storageSet(key, value, shared) {
   try {
@@ -6770,12 +6745,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.11.2</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.11.3</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
           Codename: Lebkuchen 🍪
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.19 (Kaiserschmarrn) · v1.11.2 (Lebkuchen)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.19 (Kaiserschmarrn) · v1.11.3 (Lebkuchen)
         </div>
       </div>
 
@@ -6982,6 +6957,7 @@ export default function App() {
   const recipesRef = useRef([]);
   const settingsRef = useRef(settings);
   const mealplanIndexRef = useRef({});
+  const settingsFallbackRef = useRef(false);
 
   useEffect(() => {
     recipesRef.current = recipes;
@@ -7000,14 +6976,24 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      const [r, s, p, idx, bmRecipes, bmPages] = await Promise.all([
-        storageGet('recipes', true, []),
-        storageGet('settings', true, DEFAULT_SETTINGS),
+      const [rRes, sRes, p, idx, bmRecipes, bmPages] = await Promise.all([
+        storageGetDetailed('recipes', true, []),
+        storageGetDetailed('settings', true, DEFAULT_SETTINGS),
         storageGet('profile', false, null),
         storageGet('mealplan_index', true, {}),
         storageGet('firefox_bookmarks_recipes', true, []),
         storageGet('firefox_bookmarks_pages', true, []),
       ]);
+      const r = rRes.value;
+      const s = sRes.value;
+      settingsFallbackRef.current = sRes.source === 'fallback';
+      if (!sRes.canPersist || !rRes.canPersist) {
+        const failedRes = !sRes.canPersist ? sRes : rRes;
+        setSyncStatus(
+          failedRes.source === 'local-cache' ? SYNC_STATES.OFFLINE : SYNC_STATES.ERROR,
+          failedRes.error || 'Cloud-Daten konnten nicht geladen werden'
+        );
+      }
 
       let settingsNext = s, recipesNext = r, persistSettings = false, persistRecipes = false;
       if (!settingsNext.cookbooks) {
@@ -7059,8 +7045,8 @@ export default function App() {
       mealplanIndexRef.current = idx;
       setBookmarksRecipes(bmRecipes); setBookmarksPages(bmPages);
       setLoading(false);
-      if (persistSettings) await storageSet('settings', settingsNext, true);
-      if (persistRecipes) await storageSet('recipes', recipesNext, true);
+      if (persistSettings && sRes.canPersist) await storageSet('settings', settingsNext, true);
+      if (persistRecipes && rRes.canPersist) await storageSet('recipes', recipesNext, true);
     })();
   }, []);
 
@@ -7100,9 +7086,13 @@ export default function App() {
     await storageSet('recipes', next, true);
   };
   const updateSettings = async (patch) => {
-    const next = { ...settings, ...patch };
+    const next = { ...settingsRef.current, ...patch };
     setSettings(next);
     settingsRef.current = next;
+    if (settingsFallbackRef.current) {
+      showToast('Einstellungen konnten beim Start nicht vom Server geladen werden – bitte Seite neu laden, bevor Änderungen gespeichert werden.', 'error');
+      return;
+    }
     await storageSet('settings', next, true);
   };
   const closeVolume = async (newTitle) => {
