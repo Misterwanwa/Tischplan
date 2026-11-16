@@ -1,0 +1,50 @@
+{
+  "products": [
+    {
+      "id": "suppengrun",
+      "name": "Suppengrün / Suppengemüse",
+      "category": "Gemüse"
+    },
+    {
+      "id": "brioche",
+      "name": "Brioche-Zopf",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "nussschnecke",
+      "name": "Nuss-Schnecke",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "garnelen",
+      "name": "Garnelen / Shrimps",
+      "category": "Fisch"
+    },
+    {
+      "id": "lachs",
+      "name": "Lachs",
+      "category": "Fisch"
+    },
+    {
+      "id": "erdnuesse",
+      "name": "Erdnüsse",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "tagliatelle",
+      "name": "Tagliatelle (Bandnudeln)",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "popcorn",
+      "name": "Popcorn",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "spruhsahne",
+      "name": "Sprühsahne",
+      "category": "Milchprodukte"
+    }
+  ],
+  "prompt": "Nine white outline doodles, reading order as listed, on a transparent background."
+}
