@@ -1729,6 +1729,60 @@
       "source": "bambussprossen-c4ca41d3ecbf.png",
       "sourceSha256": "c4ca41d3ecbf8d9a519d3f98a7d6d6c81ebce6c0cb12d2023f8f2a28e62cf193",
       "reviewed": true
+    },
+    "chips": {
+      "file": "chips.svg",
+      "source": "chips-5c56aac6f39b.png",
+      "sourceSha256": "5c56aac6f39bc5766fba3b5cc8ddd59d5949af96dd99d997083ff3321d831c4f",
+      "reviewed": true
+    },
+    "tortilla_chips": {
+      "file": "tortilla_chips.svg",
+      "source": "chips-5c56aac6f39b.png",
+      "sourceSha256": "5c56aac6f39bc5766fba3b5cc8ddd59d5949af96dd99d997083ff3321d831c4f",
+      "reviewed": true
+    },
+    "kekse": {
+      "file": "kekse.svg",
+      "source": "chips-5c56aac6f39b.png",
+      "sourceSha256": "5c56aac6f39bc5766fba3b5cc8ddd59d5949af96dd99d997083ff3321d831c4f",
+      "reviewed": true
+    },
+    "dominosteine": {
+      "file": "dominosteine.svg",
+      "source": "chips-5c56aac6f39b.png",
+      "sourceSha256": "5c56aac6f39bc5766fba3b5cc8ddd59d5949af96dd99d997083ff3321d831c4f",
+      "reviewed": true
+    },
+    "rocher": {
+      "file": "rocher.svg",
+      "source": "chips-5c56aac6f39b.png",
+      "sourceSha256": "5c56aac6f39bc5766fba3b5cc8ddd59d5949af96dd99d997083ff3321d831c4f",
+      "reviewed": true
+    },
+    "seife_stueck": {
+      "file": "seife_stueck.svg",
+      "source": "chips-5c56aac6f39b.png",
+      "sourceSha256": "5c56aac6f39bc5766fba3b5cc8ddd59d5949af96dd99d997083ff3321d831c4f",
+      "reviewed": true
+    },
+    "creme_fraiche": {
+      "file": "creme_fraiche.svg",
+      "source": "chips-5c56aac6f39b.png",
+      "sourceSha256": "5c56aac6f39bc5766fba3b5cc8ddd59d5949af96dd99d997083ff3321d831c4f",
+      "reviewed": true
+    },
+    "griechischer_joghurt": {
+      "file": "griechischer_joghurt.svg",
+      "source": "chips-5c56aac6f39b.png",
+      "sourceSha256": "5c56aac6f39bc5766fba3b5cc8ddd59d5949af96dd99d997083ff3321d831c4f",
+      "reviewed": true
+    },
+    "twix": {
+      "file": "twix.svg",
+      "source": "chips-5c56aac6f39b.png",
+      "sourceSha256": "5c56aac6f39bc5766fba3b5cc8ddd59d5949af96dd99d997083ff3321d831c4f",
+      "reviewed": true
     }
   }
 }
