@@ -1675,6 +1675,60 @@
       "source": "suppengrun-beba854a3b28.png",
       "sourceSha256": "beba854a3b289e657cd407772769cde8b07333b9c1366495c8185fa1d3fea45b",
       "reviewed": true
+    },
+    "bambussprossen": {
+      "file": "bambussprossen.svg",
+      "source": "bambussprossen-c4ca41d3ecbf.png",
+      "sourceSha256": "c4ca41d3ecbf8d9a519d3f98a7d6d6c81ebce6c0cb12d2023f8f2a28e62cf193",
+      "reviewed": true
+    },
+    "hefegeback": {
+      "file": "hefegeback.svg",
+      "source": "bambussprossen-c4ca41d3ecbf.png",
+      "sourceSha256": "c4ca41d3ecbf8d9a519d3f98a7d6d6c81ebce6c0cb12d2023f8f2a28e62cf193",
+      "reviewed": true
+    },
+    "apfeltasche": {
+      "file": "apfeltasche.svg",
+      "source": "bambussprossen-c4ca41d3ecbf.png",
+      "sourceSha256": "c4ca41d3ecbf8d9a519d3f98a7d6d6c81ebce6c0cb12d2023f8f2a28e62cf193",
+      "reviewed": true
+    },
+    "stollen": {
+      "file": "stollen.svg",
+      "source": "bambussprossen-c4ca41d3ecbf.png",
+      "sourceSha256": "c4ca41d3ecbf8d9a519d3f98a7d6d6c81ebce6c0cb12d2023f8f2a28e62cf193",
+      "reviewed": true
+    },
+    "fischstabchen": {
+      "file": "fischstabchen.svg",
+      "source": "bambussprossen-c4ca41d3ecbf.png",
+      "sourceSha256": "c4ca41d3ecbf8d9a519d3f98a7d6d6c81ebce6c0cb12d2023f8f2a28e62cf193",
+      "reviewed": true
+    },
+    "oktopus": {
+      "file": "oktopus.svg",
+      "source": "bambussprossen-c4ca41d3ecbf.png",
+      "sourceSha256": "c4ca41d3ecbf8d9a519d3f98a7d6d6c81ebce6c0cb12d2023f8f2a28e62cf193",
+      "reviewed": true
+    },
+    "muscheln": {
+      "file": "muscheln.svg",
+      "source": "bambussprossen-c4ca41d3ecbf.png",
+      "sourceSha256": "c4ca41d3ecbf8d9a519d3f98a7d6d6c81ebce6c0cb12d2023f8f2a28e62cf193",
+      "reviewed": true
+    },
+    "gouda": {
+      "file": "gouda.svg",
+      "source": "bambussprossen-c4ca41d3ecbf.png",
+      "sourceSha256": "c4ca41d3ecbf8d9a519d3f98a7d6d6c81ebce6c0cb12d2023f8f2a28e62cf193",
+      "reviewed": true
+    },
+    "ghee": {
+      "file": "ghee.svg",
+      "source": "bambussprossen-c4ca41d3ecbf.png",
+      "sourceSha256": "c4ca41d3ecbf8d9a519d3f98a7d6d6c81ebce6c0cb12d2023f8f2a28e62cf193",
+      "reviewed": true
     }
   }
 }
