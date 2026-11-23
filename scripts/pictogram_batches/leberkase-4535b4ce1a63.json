@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "leberkase",
+      "name": "Leberkäse / Fleischkäse",
+      "category": "Fleisch"
+    },
+    {
+      "id": "leberwurst",
+      "name": "Leberwurst",
+      "category": "Fleisch"
+    },
+    {
+      "id": "blutwurst",
+      "name": "Blutwurst",
+      "category": "Fleisch"
+    },
+    {
+      "id": "landjager",
+      "name": "Landjäger",
+      "category": "Fleisch"
+    },
+    {
+      "id": "weisswurst",
+      "name": "Weißwurst",
+      "category": "Fleisch"
+    },
+    {
+      "id": "currywurst",
+      "name": "Currywurst",
+      "category": "Fleisch"
+    },
+    {
+      "id": "krustenbraten",
+      "name": "Krustenbraten",
+      "category": "Fleisch"
+    },
+    {
+      "id": "leber",
+      "name": "Leber",
+      "category": "Fleisch"
+    },
+    {
+      "id": "hahnchen",
+      "name": "Hähnchen",
+      "category": "Fleisch"
+    }
+  ],
+  "prompt": "A square 3×3 contact sheet of nine distinct white monoline grocery doodle icons on uniform pure black production matte. Exact placement in reading order. Top-left: German Leberkäse, a rectangular oven-baked meatloaf with domed crust, one clean rectangular slice leaning against it, finely smooth interior. Top-center: Leberwurst, a short tied sausage and a small bread slice visibly spread smooth with a rounded spreading knife. Top-right: Blutwurst, a thick horseshoe-shaped ring of blood sausage with ends tied together by string, and two small cross-sections with sparse angular fat flecks. Middle-left: Landjäger, two long thin dried sausage sticks with distinctive flat-sided rectangular prism profile, square cut ends and short hanging twine. Middle-center: Bavarian Weisswurst, two short plump smooth boiled sausages with pinched ends, with a small mustard dish, no grill marks. Middle-right: Currywurst, sliced sausage rounds with a few sauce squiggles in an oblong fluted paper takeaway tray and tiny two-prong fork. Bottom-left: Krustenbraten, boneless pork roast block with distinct diamond-scored crackling on top and one sliced piece beside it. Bottom-center: butcher's liver, an asymmetrical smooth broad two-lobed anatomical liver silhouette with one thin line indicating the split and no plate. Bottom-right: a plucked whole chicken with two drumstick ends and tucked wings, classic poultry icon in 3/4 view. White thin lines only, no painted interiors or shading, no lettering, no labels or borders, no grayscale except antialiasing. Natural rounded doodle contours, matching clean stroke widths. Equal square cells centered at 1/6, 1/2, 5/6 on each axis, each motif fully contained in central 65% of its cell and separated by generous black gutters.",
+  "unusedCells": 0
+}
