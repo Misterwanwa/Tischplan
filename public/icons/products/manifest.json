@@ -1837,6 +1837,47 @@
       "source": "chorizo-160b09a15b58.png",
       "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
       "reviewed": true
+    },
+    "bambussprossen": {
+      "file": "bambussprossen.svg",
+      "reviewed": true
+    },
+    "tk_edamame": {
+      "file": "tk_edamame.svg",
+      "reviewed": true
+    },
+    "kohlrabi": {
+      "file": "kohlrabi.svg",
+      "reviewed": true
+    },
+    "sauerkraut": {
+      "file": "sauerkraut.svg",
+      "reviewed": true
+    },
+    "kimchi": {
+      "file": "kimchi.svg",
+      "reviewed": true
+    },
+    "raucherlachs": {
+      "file": "raucherlachs.svg",
+      "reviewed": true
+    },
+    "fischstabchen": {
+      "file": "fischstabchen.svg",
+      "reviewed": true
+    },
+    "muscheln": {
+      "file": "muscheln.svg",
+      "reviewed": true
+    },
+    "jakobsmuscheln": {
+      "file": "jakobsmuscheln.svg",
+      "reviewed": true
+    },
+    "oliven": {
+      "file": "oliven.svg",
+      "source": "src/productDatabase.jsx",
+      "reviewed": true
     }
   }
 }
