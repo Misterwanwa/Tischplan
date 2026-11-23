@@ -1675,6 +1675,60 @@
       "source": "suppengrun-beba854a3b28.png",
       "sourceSha256": "beba854a3b289e657cd407772769cde8b07333b9c1366495c8185fa1d3fea45b",
       "reviewed": true
+    },
+    "oktopus": {
+      "file": "oktopus.svg",
+      "source": "oktopus-b6d8796dc84c.png",
+      "sourceSha256": "b6d8796dc84ced7ea0aecbef441460cac0a729f143cd733d1a1a3818847ee507",
+      "reviewed": true
+    },
+    "streichhoelzer": {
+      "file": "streichhoelzer.svg",
+      "source": "oktopus-b6d8796dc84c.png",
+      "sourceSha256": "b6d8796dc84ced7ea0aecbef441460cac0a729f143cd733d1a1a3818847ee507",
+      "reviewed": true
+    },
+    "wolle_strickgarn": {
+      "file": "wolle_strickgarn.svg",
+      "source": "oktopus-b6d8796dc84c.png",
+      "sourceSha256": "b6d8796dc84ced7ea0aecbef441460cac0a729f143cd733d1a1a3818847ee507",
+      "reviewed": true
+    },
+    "zahnseide": {
+      "file": "zahnseide.svg",
+      "source": "oktopus-b6d8796dc84c.png",
+      "sourceSha256": "b6d8796dc84ced7ea0aecbef441460cac0a729f143cd733d1a1a3818847ee507",
+      "reviewed": true
+    },
+    "wattestaebchen": {
+      "file": "wattestaebchen.svg",
+      "source": "oktopus-b6d8796dc84c.png",
+      "sourceSha256": "b6d8796dc84ced7ea0aecbef441460cac0a729f143cd733d1a1a3818847ee507",
+      "reviewed": true
+    },
+    "pflaster": {
+      "file": "pflaster.svg",
+      "source": "oktopus-b6d8796dc84c.png",
+      "sourceSha256": "b6d8796dc84ced7ea0aecbef441460cac0a729f143cd733d1a1a3818847ee507",
+      "reviewed": true
+    },
+    "rasierer": {
+      "file": "rasierer.svg",
+      "source": "oktopus-b6d8796dc84c.png",
+      "sourceSha256": "b6d8796dc84ced7ea0aecbef441460cac0a729f143cd733d1a1a3818847ee507",
+      "reviewed": true
+    },
+    "zimmerbesen": {
+      "file": "zimmerbesen.svg",
+      "source": "oktopus-b6d8796dc84c.png",
+      "sourceSha256": "b6d8796dc84ced7ea0aecbef441460cac0a729f143cd733d1a1a3818847ee507",
+      "reviewed": true
+    },
+    "feuerzeug": {
+      "file": "feuerzeug.svg",
+      "source": "oktopus-b6d8796dc84c.png",
+      "sourceSha256": "b6d8796dc84ced7ea0aecbef441460cac0a729f143cd733d1a1a3818847ee507",
+      "reviewed": true
     }
   }
 }
