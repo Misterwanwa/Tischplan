@@ -1783,6 +1783,60 @@
       "source": "leberkase-4535b4ce1a63.png",
       "sourceSha256": "4535b4ce1a637ebadbc7b6614aee8e1d10af90d6e5c4dfca65771846bf842728",
       "reviewed": true
+    },
+    "chorizo": {
+      "file": "chorizo.svg",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
+      "reviewed": true
+    },
+    "wiener_wurstchen": {
+      "file": "wiener_wurstchen.svg",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
+      "reviewed": true
+    },
+    "bockwurst": {
+      "file": "bockwurst.svg",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
+      "reviewed": true
+    },
+    "mortadella": {
+      "file": "mortadella.svg",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
+      "reviewed": true
+    },
+    "cabanossi": {
+      "file": "cabanossi.svg",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
+      "reviewed": true
+    },
+    "teewurst": {
+      "file": "teewurst.svg",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
+      "reviewed": true
+    },
+    "pastrami": {
+      "file": "pastrami.svg",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
+      "reviewed": true
+    },
+    "entenbrust": {
+      "file": "entenbrust.svg",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
+      "reviewed": true
+    },
+    "frikadellen": {
+      "file": "frikadellen.svg",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
+      "reviewed": true
     }
   }
 }

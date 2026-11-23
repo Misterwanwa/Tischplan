@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "chorizo",
+      "name": "Chorizo",
+      "category": "Fleisch"
+    },
+    {
+      "id": "wiener_wurstchen",
+      "name": "Wiener Würstchen",
+      "category": "Fleisch"
+    },
+    {
+      "id": "bockwurst",
+      "name": "Bockwurst",
+      "category": "Fleisch"
+    },
+    {
+      "id": "mortadella",
+      "name": "Mortadella",
+      "category": "Fleisch"
+    },
+    {
+      "id": "cabanossi",
+      "name": "Cabanossi",
+      "category": "Fleisch"
+    },
+    {
+      "id": "teewurst",
+      "name": "Teewurst",
+      "category": "Fleisch"
+    },
+    {
+      "id": "pastrami",
+      "name": "Pastrami",
+      "category": "Fleisch"
+    },
+    {
+      "id": "entenbrust",
+      "name": "Entenbrust",
+      "category": "Fleisch"
+    },
+    {
+      "id": "frikadellen",
+      "name": "Frikadellen",
+      "category": "Fleisch"
+    }
+  ],
+  "prompt": "Create exactly nine minimalist hand-drawn doodle pictograms in a regular 3x3 grid. Pure white smooth rounded outline strokes of consistent width on genuinely transparent background. Simple organic outlines, sparse interior detail, no solid filled objects, no shading, gradients, labels, text, borders or grid lines. Each icon fully contained and centered in its equal square cell, with 18 percent empty padding on every side. Keep all nine motifs separate. Items in reading order, left to right, top to bottom: Chorizo; Wiener Würstchen; Bockwurst; Mortadella; Cabanossi; Teewurst; Pastrami; Entenbrust; Frikadellen. Motif details in reading order: Spanish chorizo with round slices and a chili; two long whole Wiener sausages; plump Bockwurst sausages in a screw-top jar; folded Mortadella with pistachios; a narrow U-shaped Cabanossi with casing creases; Teewurst with a slice of bread and a creamy swirl; layered Pastrami with a pepper bark edge; duck breast with diamond-scored skin and two slices; two flattened Frikadellen, one cut open.",
+  "unusedCells": 0
+}
