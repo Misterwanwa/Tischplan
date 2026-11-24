@@ -26,6 +26,7 @@ pfirsich;Pfirsiche;Obst;Apple;Plattpfirsiche,1kg,500g;6,7,8,9
 nektarine;Nektarinen;Obst;Apple;Gelbfleischig,Weißfleischig,1kg;6,7,8,9
 aprikose;Aprikosen;Obst;Apple;500g Schale,1kg;6,7,8
 kirschen;Kirschen;Obst;Cherry;Süßkirschen,Sauerkirschen,500g;6,7
+sauerkirschen;Sauerkirschen;Obst;Cherry;Frisch,Entsteint,Im Glas,Tiefgekühlt,500g;6,7
 pflaumen;Pflaumen;Obst;Apple;Blau,500g,1kg;7,8,9
 zwetschgen;Zwetschgen;Obst;Apple;1kg Korb,Zum Backen;8,9
 mirabellen;Mirabellen;Obst;Apple;Gelb,500g;8,9
@@ -339,6 +340,7 @@ mayonnaise;Mayonnaise;Grundzutaten;Package;80% Fett Tube,Glas;
 ketchup;Ketchup;Grundzutaten;Package;Heinz 500ml,Knorr;
 remoulade;Remoulade;Grundzutaten;Package;Tube 200ml;
 sojasauce;Sojasauce;Grundzutaten;Wine;Kikkoman 250ml,Dunkel;
+austernsauce;Austernsauce;Grundzutaten;Wine;Flasche 250 ml,Flasche 500 ml,Premium;
 worcestersauce;Worcestersauce;Grundzutaten;Wine;140ml Flasche;
 tabasco;Tabasco-Sauce;Grundzutaten;Flame;Rot 57ml;
 sriracha;Sriracha;Grundzutaten;Flame;Scharf (Grüne Kappe);
