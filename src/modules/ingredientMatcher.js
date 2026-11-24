@@ -15,6 +15,18 @@ export function normalizeIngredientName(str) {
     .trim();
 }
 
+const WHOLE_MILK_CHOCOLATE = { productId: 'schokolade', detail: 'Vollmilch' };
+const TENDER_OATS = { productId: 'haferflocken', detail: 'Zart' };
+const SHOPPING_VARIANTS = new Map([
+  ['vollmilchschokolade', WHOLE_MILK_CHOCOLATE],
+  ['haferflockenzart', TENDER_OATS],
+  ['zartehaferflocken', TENDER_OATS],
+]);
+
+export function getShoppingVariant(name) {
+  return SHOPPING_VARIANTS.get(normalizeIngredientName(name).replaceAll(' ', ''));
+}
+
 /**
  * Known culinary units in German and international recipes
  */
@@ -231,6 +243,12 @@ export function findProductMatch(ingredientName, allProducts = []) {
   const rawLower = raw.toLowerCase();
   const norm = normalizeIngredientName(raw);
 
+  const variant = getShoppingVariant(raw);
+  if (variant) {
+    const product = allProducts.find(p => p.id === variant.productId);
+    if (product) return { type: 'variant', product, detail: variant.detail };
+  }
+
   // 1. Exact name or ID match
   const exact = allProducts.find(p =>
     p.id === rawLower ||
@@ -350,6 +368,7 @@ export function analyzeWeekIngredients(usageList, allProducts) {
 
         if (autoItemsMap.has(key)) {
           const item = autoItemsMap.get(key);
+          if (match.detail) item.productDetails.add(match.detail);
           if (normAmt.baseUnit && item.baseUnit === normAmt.baseUnit) {
             item.baseAmount = (item.baseAmount || 0) + normAmt.baseAmount;
           } else if (normAmt.amount != null) {
@@ -368,7 +387,8 @@ export function analyzeWeekIngredients(usageList, allProducts) {
             baseUnit: normAmt.baseUnit,
             rawUnit: normAmt.unit,
             extraAmounts: normAmt.baseUnit ? [] : (normAmt.amount != null ? [{ amount: normAmt.amount, unit: normAmt.unit }] : []),
-            sourceRecipes: [recipeTitle]
+            sourceRecipes: [recipeTitle],
+            productDetails: new Set(match.detail ? [match.detail] : []),
           });
         }
       } else {
@@ -396,7 +416,7 @@ export function analyzeWeekIngredients(usageList, allProducts) {
 
   // Convert auto items to final shopping items format
   const autoItems = Array.from(autoItemsMap.values()).map(item => {
-    const details = ['Automatisch hinzugefügt'];
+    const details = ['Automatisch hinzugefügt', ...item.productDetails];
 
     const mainDetail = formatAggregatedDetail(item.baseAmount, item.baseUnit, item.rawUnit);
     if (mainDetail) details.push(mainDetail);

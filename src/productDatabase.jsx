@@ -912,7 +912,7 @@ export const BUILTIN_PRODUCTS = [
   { id: "milchreis_roh", name: "Milchreis (Rohreis)", category: "Getreideprodukte", icon: "Wheat", suggestedDetails: ["500g Packung"] },
   { id: "risottoreis", name: "Risottoreis (Arborio)", category: "Getreideprodukte", icon: "Wheat", suggestedDetails: ["500g Packung"] },
   { id: "wildreis", name: "Wildreis-Mischung", category: "Getreideprodukte", icon: "Wheat", suggestedDetails: ["500g Packung"] },
-  { id: "haferflocken", name: "Haferflocken", category: "Getreideprodukte", icon: "Wheat", suggestedDetails: ["Kölln 500g", "Bio", "500g Packung", "Kernig"] },
+  { id: "haferflocken", name: "Haferflocken", category: "Getreideprodukte", icon: "Wheat", suggestedDetails: ["Kölln 500g", "Bio", "500g Packung", "Kernig", "Zart"] },
   { id: "couscous", name: "Couscous", category: "Getreideprodukte", icon: "Wheat", suggestedDetails: ["500g Packung", "Vollkorn"] },
   { id: "quinoa", name: "Quinoa", category: "Getreideprodukte", icon: "Nut", suggestedDetails: ["Bio 500g", "Weiß", "Bunt"] },
   { id: "bulgur", name: "Bulgur", category: "Getreideprodukte", icon: "Wheat", suggestedDetails: ["500g Packung"] },
