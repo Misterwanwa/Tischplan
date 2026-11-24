@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "bambussprossen",
+      "name": "Bambussprossen",
+      "category": "Gemüse"
+    },
+    {
+      "id": "pizzateig",
+      "name": "Pizzateig",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "filoteig",
+      "name": "Filoteig",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "flammkuchenteig",
+      "name": "Flammkuchenteig",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "murbeteig",
+      "name": "Mürbeteig",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "hefegeback",
+      "name": "Hefezopf",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "apfeltasche",
+      "name": "Apfeltasche",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "stollen",
+      "name": "Christstollen",
+      "category": "Brot & Gebäck"
+    },
+    {
+      "id": "griechischer_joghurt",
+      "name": "Griechischer Joghurt",
+      "category": "Milchprodukte"
+    }
+  ],
+  "prompt": "A square transparent PNG sprite sheet with nine white monoline hand-drawn doodle icons. Exact 3×3 grid, one centered motif per cell with clear transparent gutters. Pure white rounded strokes on genuine alpha, transparent silhouette interiors, no lettering, fills, shading or grid lines. Reading order: two bamboo shoots with strips; plain round raw pizza dough with rim and dimples; three thin filo sheets with curled corner; half-unfurled thin oval Flammkuchen dough; shortcrust dough ball with crumbly cracks and rolling pin; braided Hefezopf with pearl sugar; crimped triangular apple turnover with apple wedge; Christstollen with folded crest and raisin slice; ceramic bowl of thick Greek yoghurt with spoon and swirl.",
+  "unusedCells": 0
+}
