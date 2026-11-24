@@ -1837,6 +1837,60 @@
       "source": "bambussprossen-b65cd69002fe.png",
       "sourceSha256": "b65cd69002feb14bcd63ae07ce4071e24470ef3f222d6b14f0b885f62e98e0a2",
       "reviewed": true
+    },
+    "eistee": {
+      "file": "eistee.svg",
+      "source": "eistee-c84f40103f3b.png",
+      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "reviewed": true
+    },
+    "haselnuesse": {
+      "file": "haselnuesse.svg",
+      "source": "eistee-c84f40103f3b.png",
+      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "reviewed": true
+    },
+    "cheddar": {
+      "file": "cheddar.svg",
+      "source": "eistee-c84f40103f3b.png",
+      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "reviewed": true
+    },
+    "tk_kuchen": {
+      "file": "tk_kuchen.svg",
+      "source": "eistee-c84f40103f3b.png",
+      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "reviewed": true
+    },
+    "proteinpudding": {
+      "file": "proteinpudding.svg",
+      "source": "eistee-c84f40103f3b.png",
+      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "reviewed": true
+    },
+    "vanillezucker": {
+      "file": "vanillezucker.svg",
+      "source": "eistee-c84f40103f3b.png",
+      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "reviewed": true
+    },
+    "zimt": {
+      "file": "zimt.svg",
+      "source": "eistee-c84f40103f3b.png",
+      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "reviewed": true
+    },
+    "sauce": {
+      "file": "sauce.svg",
+      "source": "eistee-c84f40103f3b.png",
+      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "reviewed": true
+    },
+    "agavendicksaft": {
+      "file": "agavendicksaft.svg",
+      "source": "eistee-c84f40103f3b.png",
+      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "reviewed": true
     }
   }
 }

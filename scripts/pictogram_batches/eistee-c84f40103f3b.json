@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "eistee",
+      "name": "Eistee",
+      "category": "Getränke"
+    },
+    {
+      "id": "haselnuesse",
+      "name": "Haselnusskerne",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "cheddar",
+      "name": "Cheddar",
+      "category": "Käse"
+    },
+    {
+      "id": "tk_kuchen",
+      "name": "TK-Kuchen",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "proteinpudding",
+      "name": "Pudding",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "vanillezucker",
+      "name": "Vanillezucker",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "zimt",
+      "name": "Zimt",
+      "category": "Gewürze"
+    },
+    {
+      "id": "sauce",
+      "name": "Sauce",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "agavendicksaft",
+      "name": "Agavendicksaft",
+      "category": "Grundzutaten"
+    }
+  ],
+  "unusedCells": 0,
+  "prompt": "Square high-resolution exact 3x3 icon sheet for a shopping app. Draw nine standalone pure-white monoline hand-drawn doodle pictograms, only crisp white outlines of consistent medium thickness, on a flat uniform pitch-black (#000000) background used for clean extraction of true transparency. Black interiors. No labels, letters, shading, fills, colors, glow, texture, visible grids, borders or stray marks. Every motif strictly centered within its equal square, approximately 65–72% of its cell, with plenty of completely clear gutters. The product order is exact. Top left: iced tea in a tall straight drinking glass with a thin tea surface line, two clearly outlined ice cubes, a lemon half-wheel on the rim and a straight straw. Top center: three edible shelled hazelnut kernels, distinctly tapered round hazelnut silhouettes, each with ribbed skin hinted by one or two short curved contour lines, one split to show its smooth center. No shells. Top right: sharp cheddar, a low block of firm cheese with no holes, angled end, two flat rectangular slices fanned beside it and a few tiny crumb lines at the cut edge. Middle left: frozen tray cake, one rectangular layered sheet-cake square, clearly horizontal sponge/cream layers and a single small classic six-armed snowflake beside it, no candle. Middle center: a single unmolded fluted dome of pudding on a shallow dessert plate with a tiny sauce drape over the top. Middle right: vanilla sugar, an upright torn-open little paper sachet with no label, small scatter of sugar grains at its foot, a vanilla blossom and one slender curled vanilla pod leaning against it, distinct from cinnamon. Bottom left: ground cinnamon, a small flat scoop facing sideways filled with a little mound of powder, sparse dot texture contained within mound, a short single tightly rolled cinnamon bark quill as a secondary cue. Bottom center: sauce, elegant low ceramic gravy boat with long pouring lip, loop handle, and flowing sauce ribbon visibly pouring from the spout. Bottom right: agave syrup, small narrow inverted squeeze dispenser bottle with cap nozzle pointed down and a single syrup droplet, with an unmistakable pointed-leaf agave rosette beside it. Pure white ink on solid black, smooth organic linework, bright high contrast.\nCorrection: Keep the entire layout. Use a hollow outline and a short curved interior seam for the split hazelnut kernel. Use thin separated outlines for the cake layers."
+}
