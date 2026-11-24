@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "kekse",
+      "name": "Kekse",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "twix",
+      "name": "Karamell-Keks-Riegel",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "sauerkirschen",
+      "name": "Sauerkirschen",
+      "category": "Obst"
+    },
+    {
+      "id": "marzipan",
+      "name": "Marzipan-Brot",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "marzipan_rohmasse",
+      "name": "Marzipan",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "sesamsamen",
+      "name": "Sesamsamen",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "muesli",
+      "name": "Müsli",
+      "category": "Getreideprodukte"
+    },
+    {
+      "id": "passierte_tomaten",
+      "name": "Passierte Tomaten",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "stueckige_tomaten",
+      "name": "Dosentomaten",
+      "category": "Grundzutaten"
+    }
+  ],
+  "unusedCells": 0,
+  "prompt": "Square high-resolution 3-by-3 sheet of 9 shopping app white line icons on uniform pure black #000000 tracing background. Equal invisible square cells, substantial empty gutters, each motif centered and within 72% of its cell, precise rows and columns. Crisp white, rounded, clean hand-drawn monoline doodles of consistent stroke width, every large interior stays black. No fill, shadows, texture, text, numbers, visible grid, borders or labels. Exact layout in reading order. Row 1 left: a pair of round bakery cookies, one with a bite missing, six small outlined chocolate chips. Row 1 center: two slim finger-shaped chocolate-coated caramel biscuit bars, one with a clean cross section showing the candy coating, soft caramel and crunchy biscuit in three unfilled horizontal contour bands, no branding. Row 1 right: three round sour cherries with connected curved stems, one cut half with a clearly visible stone, one small leaf. Row 2 left: chocolate-coated German marzipan loaf, a short low rounded oblong log with a slice standing against its end showing a clear second contour for the dark shell around a plain marzipan center, no stripes inside the core. Row 2 center: plain raw marzipan paste, a squared-off uncoated almond paste block with a cut slab lying flat in front and two almonds at the side, entirely outline and without an outer coating. Row 2 right: a little shallow saucer with a loose pile of recognizable tiny pointed oval sesame seeds, sparse and clearly spaced. Row 3 left: a squat breakfast bowl with spoon and a few visibly large oat flakes and raisins in it. Row 3 center: a single upright rectangular capped carton of smooth tomato passata with a small unlettered tomato outline on the carton front and a tiny teardrop underneath the tomato mark. Row 3 right: a single open cylindrical tin of canned tomatoes, partially peeled-back metal lid and two plum tomatoes showing inside the open tin, plain can sides with two short curved seam strokes. Clean, polished retail pictogram linework. Continuous bright strokes and fully hollow interiors."
+}

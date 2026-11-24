@@ -1891,6 +1891,60 @@
       "source": "eistee-c84f40103f3b.png",
       "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
       "reviewed": true
+    },
+    "kekse": {
+      "file": "kekse.svg",
+      "source": "kekse-98d97a63881b.png",
+      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "reviewed": true
+    },
+    "twix": {
+      "file": "twix.svg",
+      "source": "kekse-98d97a63881b.png",
+      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "reviewed": true
+    },
+    "sauerkirschen": {
+      "file": "sauerkirschen.svg",
+      "source": "kekse-98d97a63881b.png",
+      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "reviewed": true
+    },
+    "marzipan": {
+      "file": "marzipan.svg",
+      "source": "kekse-98d97a63881b.png",
+      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "reviewed": true
+    },
+    "marzipan_rohmasse": {
+      "file": "marzipan_rohmasse.svg",
+      "source": "kekse-98d97a63881b.png",
+      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "reviewed": true
+    },
+    "sesamsamen": {
+      "file": "sesamsamen.svg",
+      "source": "kekse-98d97a63881b.png",
+      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "reviewed": true
+    },
+    "muesli": {
+      "file": "muesli.svg",
+      "source": "kekse-98d97a63881b.png",
+      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "reviewed": true
+    },
+    "passierte_tomaten": {
+      "file": "passierte_tomaten.svg",
+      "source": "kekse-98d97a63881b.png",
+      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "reviewed": true
+    },
+    "stueckige_tomaten": {
+      "file": "stueckige_tomaten.svg",
+      "source": "kekse-98d97a63881b.png",
+      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "reviewed": true
     }
   }
 }
