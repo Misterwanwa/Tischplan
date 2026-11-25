@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "kondensmilch",
+      "name": "Kondensmilch",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "sojadrink",
+      "name": "Sojamilch",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "mandeldrink",
+      "name": "Mandelmilch",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "reisdrink",
+      "name": "Reismilch",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "kokosdrink",
+      "name": "Kokosdrink",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "krauterbutter",
+      "name": "Kräuterbutter",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "korniger_frischkase",
+      "name": "Körniger Frischkäse / Hüttenkäse",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "babybel",
+      "name": "Babybel",
+      "category": "Käse"
+    },
+    {
+      "id": "scamorza",
+      "name": "Scamorza",
+      "category": "Käse"
+    }
+  ],
+  "unusedCells": 0,
+  "prompt": "Produce a square high-resolution grocery-icon sprite sheet. Exact 3 by 3 grid, nine centered isolated icons in reading order, each about 63–70% of its equal cell with generous gutters. Draw only pure white rounded, medium uniform-weight strokes on a flat pure black (#000000) tracing backdrop with entirely black hollow interiors. Organic hand-drawn doodles, clean curves, few internal details, legible at small size. No lettering or numbers, solid white areas, shading, textures, shadows, grid lines, colors, or decorations. Exact reading order: TOP LEFT condensed milk: small squat round metal tin with a partially raised pull-tab lid and a single thick drop clinging to the tip of a teaspoon beside it. TOP CENTER soy milk: tall capped beverage carton with blank sides beside a prominent curving soybean pod with three rounded bulges and two loose round soybeans. TOP RIGHT almond milk: short capped glass bottle beside two prominent pointy curved almond kernels, each with one thin curved interior stroke. MIDDLE LEFT rice milk: short wide tumbler and three clearly defined narrow rice grains beside one drooping panicle of rice. MIDDLE CENTER coconut drink: slim straw carton beside two clearly visible coconut shell halves, front coconut half has a simple double rim and straw is on the carton, no text. MIDDLE RIGHT herb butter: diagonal short cylindrical butter roll with a single separate circular pat with small individual herb-fleck outlines, plus a little three-leaf parsley sprig. BOTTOM LEFT cottage cheese: low opened dairy tub with one short spoon showing a mound of individual rounded curds visible as thin scallops, a few individual curds visible in tub, no label. BOTTOM CENTER Babybel: two very small thick round cheese wheels with thin wax peel seams, one wheel has two curved ribbons of wax peeling up with its pull tab visible, no missing wedges, no branding. BOTTOM RIGHT Scamorza: unmistakable bulbous pear-shaped Italian cheese with a little round cheese head above a narrow neck tied with short string, the larger body plump and lightly curved, no holes. Do not include any other icons or graphical marks. The actual strokes must be white and surroundings absolutely smooth black. Correction: outlined rice panicle grains and short contour strokes in herb butter."
+}

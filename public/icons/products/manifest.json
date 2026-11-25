@@ -1999,6 +1999,60 @@
       "source": "austernsauce-d03e0e9690ad.png",
       "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
       "reviewed": true
+    },
+    "kondensmilch": {
+      "file": "kondensmilch.svg",
+      "source": "kondensmilch-8db6545075c3.png",
+      "sourceSha256": "8db6545075c36295a310fe25642db176d3678a2bbd2d4a8193ba526697c2fbe0",
+      "reviewed": true
+    },
+    "sojadrink": {
+      "file": "sojadrink.svg",
+      "source": "kondensmilch-8db6545075c3.png",
+      "sourceSha256": "8db6545075c36295a310fe25642db176d3678a2bbd2d4a8193ba526697c2fbe0",
+      "reviewed": true
+    },
+    "mandeldrink": {
+      "file": "mandeldrink.svg",
+      "source": "kondensmilch-8db6545075c3.png",
+      "sourceSha256": "8db6545075c36295a310fe25642db176d3678a2bbd2d4a8193ba526697c2fbe0",
+      "reviewed": true
+    },
+    "reisdrink": {
+      "file": "reisdrink.svg",
+      "source": "kondensmilch-8db6545075c3.png",
+      "sourceSha256": "8db6545075c36295a310fe25642db176d3678a2bbd2d4a8193ba526697c2fbe0",
+      "reviewed": true
+    },
+    "kokosdrink": {
+      "file": "kokosdrink.svg",
+      "source": "kondensmilch-8db6545075c3.png",
+      "sourceSha256": "8db6545075c36295a310fe25642db176d3678a2bbd2d4a8193ba526697c2fbe0",
+      "reviewed": true
+    },
+    "krauterbutter": {
+      "file": "krauterbutter.svg",
+      "source": "kondensmilch-8db6545075c3.png",
+      "sourceSha256": "8db6545075c36295a310fe25642db176d3678a2bbd2d4a8193ba526697c2fbe0",
+      "reviewed": true
+    },
+    "korniger_frischkase": {
+      "file": "korniger_frischkase.svg",
+      "source": "kondensmilch-8db6545075c3.png",
+      "sourceSha256": "8db6545075c36295a310fe25642db176d3678a2bbd2d4a8193ba526697c2fbe0",
+      "reviewed": true
+    },
+    "babybel": {
+      "file": "babybel.svg",
+      "source": "kondensmilch-8db6545075c3.png",
+      "sourceSha256": "8db6545075c36295a310fe25642db176d3678a2bbd2d4a8193ba526697c2fbe0",
+      "reviewed": true
+    },
+    "scamorza": {
+      "file": "scamorza.svg",
+      "source": "kondensmilch-8db6545075c3.png",
+      "sourceSha256": "8db6545075c36295a310fe25642db176d3678a2bbd2d4a8193ba526697c2fbe0",
+      "reviewed": true
     }
   }
 }
