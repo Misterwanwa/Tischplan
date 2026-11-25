@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "thymian",
+      "name": "Thymian",
+      "category": "Gewürze"
+    },
+    {
+      "id": "dill",
+      "name": "Dillspitzen",
+      "category": "Gewürze"
+    },
+    {
+      "id": "lorbeerblaetter",
+      "name": "Lorbeerblätter",
+      "category": "Gewürze"
+    },
+    {
+      "id": "nelken",
+      "name": "Nelken",
+      "category": "Gewürze"
+    },
+    {
+      "id": "kardamom",
+      "name": "Kardamom",
+      "category": "Gewürze"
+    },
+    {
+      "id": "kurkuma",
+      "name": "Kurkuma",
+      "category": "Gewürze"
+    },
+    {
+      "id": "chiliflocken",
+      "name": "Chiliflocken",
+      "category": "Gewürze"
+    },
+    {
+      "id": "bockshornklee",
+      "name": "Bockshornklee",
+      "category": "Gewürze"
+    },
+    {
+      "id": "sumach",
+      "name": "Sumach",
+      "category": "Gewürze"
+    }
+  ],
+  "unusedCells": 0,
+  "prompt": "Create one square high-resolution perfectly regular 3×3 sprite sheet of nine hand-drawn grocery spice doodle pictograms. Pure white smooth rounded medium-weight linework on absolutely flat pitch black for clean alpha extraction. Every interior remains hollow black. No filled dots: tiny details are either thin dashes or hollow rings. No color, labels, letters, texture, shadow, grid or borders. Each icon clearly centered and occupies at most 70% of its square cell, with ample uninterrupted black gutters. Exact raster reading order: TOP LEFT thyme, two slender curved woody sprigs with paired very small simple oval leaves, each outline hollow; TOP CENTER dill tips, one graceful stalk with four spread feathery threadlike fronds, simple open branching thin lines, no oval leaves and no flowers; TOP RIGHT dried bay leaves, two large long pointed whole leaves leaning at opposite angles, strong center veins and two vein pairs each. MIDDLE LEFT whole spice cloves, three unmistakably small dried nail-shaped stalks with short four-point collars and a round bulbous head on each, simple hollow outlines; MIDDLE CENTER green cardamom, three oval pointed grooved pods, one open pod showing four outlined round seeds tucked inside; MIDDLE RIGHT turmeric, a stubby branching bumpy turmeric rhizome with two parallel ring lines, plus a prominent cut slice in front showing a concentric interior ring. BOTTOM LEFT chili flakes, a low pinch bowl holding a few outlined irregular angular pepper flakes, with one long slender curved chile pepper next to it, no writing; BOTTOM CENTER fenugreek, a single very long thin hooked seedpod behind three oversized irregular angular cuboid fenugreek seeds each with one notch, one small three-leaf sprig as secondary cue; BOTTOM RIGHT culinary sumac, one distinctive tapering upright conical cluster of many small open round berries, six to ten prominent berry outlines in a compact triangular group, with one short curved stem and two small serrated leaflets, optional three grains of scattered powder drawn as hollow circles below. Even consistent white stroke width, restrained detail, distinct silhouettes, empty space between all motifs."
+}
