@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "austernsauce",
+      "name": "Austernsauce",
+      "category": "Grundzutaten"
+    },
+    {
+      "id": "tzatziki",
+      "name": "Tzatziki",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "halloumi",
+      "name": "Halloumi / Grillkäse",
+      "category": "Käse"
+    },
+    {
+      "id": "brie",
+      "name": "Brie",
+      "category": "Käse"
+    },
+    {
+      "id": "tête_de_moine",
+      "name": "Tête de Moine",
+      "category": "Käse"
+    },
+    {
+      "id": "mortadella",
+      "name": "Mortadella",
+      "category": "Fleisch"
+    },
+    {
+      "id": "chorizo",
+      "name": "Chorizo",
+      "category": "Fleisch"
+    },
+    {
+      "id": "fischstabchen",
+      "name": "Fischstäbchen",
+      "category": "Fisch"
+    },
+    {
+      "id": "dorade",
+      "name": "Dorade / Goldbrasse",
+      "category": "Fisch"
+    }
+  ],
+  "unusedCells": 0,
+  "prompt": "Draw one square high-resolution 3×3 contact sheet with nine centered white monoline organic hand-drawn doodle pictograms for a grocery app. Pure solid black (#000000) flat backdrop for exact matte extraction. Leave all silhouette interiors black and use only bright white rounded medium-weight strokes and joins. No solid white patches, shading, textures, color, borders, grid lines, words or numbering. Each symbol uses 60–72% of its own equal square cell and is isolated by broad clean black gutters. Exact reading order: TOP LEFT oyster sauce, a tall narrow capped sauce bottle with a single fan-ridged open oyster shell by its base, bottle has no text or label. TOP CENTER tzatziki, a squat small dip bowl, two curved strokes on its top showing thick dip, a sliced cucumber round and a small sprig of dill beside the bowl. TOP RIGHT halloumi, two thick slightly overlapping oblong rectangular slabs of grilled cheese showing three diagonal grill marks on the tops, no holes. MIDDLE LEFT Brie, a round low wheel of soft cheese with a wedge removed and the wedge upright in front beside it, single thin interior arc for the outer rind, no holes. MIDDLE CENTER Tête de Moine cheese, a wide flower-like cheese rosette made of thin ruffled shavings with a visible irregular outer contour and two inner spiraling ruffled arcs, beside the short cylindrical cheese wheel it was scraped from, no holes. MIDDLE RIGHT Mortadella, three very wide thin round deli slices with a gentle folded-over edge on one, a few tiny outlined irregular pistachio shapes spaced on the largest slice. BOTTOM LEFT Chorizo, short curved cured Spanish sausage tied at the end, two small round cut medallions with a few speckles beside it and a small pointed chili pepper as a secondary cue. BOTTOM CENTER fish fingers, three rectangular breaded fish sticks gently crisscrossed, with just a few small breadcrumb marks and one thin lemon wedge to the side. BOTTOM RIGHT whole gilthead sea bream, facing left, one deep-bodied oval fish with gently forked tail, spiny dorsal ridge, one curved gill line, double short arc across forehead and tiny ring for eye. Uniform crisp white outlines, minimal few internal details, no icons touching each other."
+}

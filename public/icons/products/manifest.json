@@ -1945,6 +1945,60 @@
       "source": "kekse-98d97a63881b.png",
       "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
       "reviewed": true
+    },
+    "austernsauce": {
+      "file": "austernsauce.svg",
+      "source": "austernsauce-d03e0e9690ad.png",
+      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "reviewed": true
+    },
+    "tzatziki": {
+      "file": "tzatziki.svg",
+      "source": "austernsauce-d03e0e9690ad.png",
+      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "reviewed": true
+    },
+    "halloumi": {
+      "file": "halloumi.svg",
+      "source": "austernsauce-d03e0e9690ad.png",
+      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "reviewed": true
+    },
+    "brie": {
+      "file": "brie.svg",
+      "source": "austernsauce-d03e0e9690ad.png",
+      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "reviewed": true
+    },
+    "tête_de_moine": {
+      "file": "tête_de_moine.svg",
+      "source": "austernsauce-d03e0e9690ad.png",
+      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "reviewed": true
+    },
+    "mortadella": {
+      "file": "mortadella.svg",
+      "source": "austernsauce-d03e0e9690ad.png",
+      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "reviewed": true
+    },
+    "chorizo": {
+      "file": "chorizo.svg",
+      "source": "austernsauce-d03e0e9690ad.png",
+      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "reviewed": true
+    },
+    "fischstabchen": {
+      "file": "fischstabchen.svg",
+      "source": "austernsauce-d03e0e9690ad.png",
+      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "reviewed": true
+    },
+    "dorade": {
+      "file": "dorade.svg",
+      "source": "austernsauce-d03e0e9690ad.png",
+      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "reviewed": true
     }
   }
 }
