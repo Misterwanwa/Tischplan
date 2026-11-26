@@ -1630,8 +1630,8 @@
     },
     "brioche": {
       "file": "brioche.svg",
-      "source": "suppengrun-beba854a3b28.png",
-      "sourceSha256": "beba854a3b289e657cd407772769cde8b07333b9c1366495c8185fa1d3fea45b",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
       "reviewed": true
     },
     "nussschnecke": {
@@ -1642,14 +1642,14 @@
     },
     "garnelen": {
       "file": "garnelen.svg",
-      "source": "suppengrun-beba854a3b28.png",
-      "sourceSha256": "beba854a3b289e657cd407772769cde8b07333b9c1366495c8185fa1d3fea45b",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
       "reviewed": true
     },
     "lachs": {
       "file": "lachs.svg",
-      "source": "suppengrun-beba854a3b28.png",
-      "sourceSha256": "beba854a3b289e657cd407772769cde8b07333b9c1366495c8185fa1d3fea45b",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
       "reviewed": true
     },
     "erdnuesse": {
@@ -1660,8 +1660,8 @@
     },
     "tagliatelle": {
       "file": "tagliatelle.svg",
-      "source": "suppengrun-beba854a3b28.png",
-      "sourceSha256": "beba854a3b289e657cd407772769cde8b07333b9c1366495c8185fa1d3fea45b",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
       "reviewed": true
     },
     "popcorn": {
@@ -1786,14 +1786,12 @@
     },
     "bambussprossen": {
       "file": "bambussprossen.svg",
-      "source": "bambussprossen-b65cd69002fe.png",
-      "sourceSha256": "b65cd69002feb14bcd63ae07ce4071e24470ef3f222d6b14f0b885f62e98e0a2",
       "reviewed": true
     },
     "pizzateig": {
       "file": "pizzateig.svg",
-      "source": "bambussprossen-b65cd69002fe.png",
-      "sourceSha256": "b65cd69002feb14bcd63ae07ce4071e24470ef3f222d6b14f0b885f62e98e0a2",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
       "reviewed": true
     },
     "filoteig": {
@@ -1834,8 +1832,8 @@
     },
     "griechischer_joghurt": {
       "file": "griechischer_joghurt.svg",
-      "source": "bambussprossen-b65cd69002fe.png",
-      "sourceSha256": "b65cd69002feb14bcd63ae07ce4071e24470ef3f222d6b14f0b885f62e98e0a2",
+      "source": "artischocken-ea0ff0fe9264.png",
+      "sourceSha256": "ea0ff0fe9264261acca3ffc85ffaa2237544e2b6ffdfb1a73d2ad85af2e4d38b",
       "reviewed": true
     },
     "eistee": {
@@ -1858,14 +1856,14 @@
     },
     "tk_kuchen": {
       "file": "tk_kuchen.svg",
-      "source": "eistee-c84f40103f3b.png",
-      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
       "reviewed": true
     },
     "proteinpudding": {
       "file": "proteinpudding.svg",
-      "source": "eistee-c84f40103f3b.png",
-      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "source": "eukalyptusbonbons-063c5989cf6d.png",
+      "sourceSha256": "063c5989cf6d0a2cff0661603c67e8eaae597c8ef5145f9db9b7f28d93bd54c0",
       "reviewed": true
     },
     "vanillezucker": {
@@ -1876,8 +1874,8 @@
     },
     "zimt": {
       "file": "zimt.svg",
-      "source": "eistee-c84f40103f3b.png",
-      "sourceSha256": "c84f40103f3b9ef0344f2de31f20b86bbac8ebc24f24b4cfbe4d1103e3575c58",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
       "reviewed": true
     },
     "sauce": {
@@ -1894,14 +1892,14 @@
     },
     "kekse": {
       "file": "kekse.svg",
-      "source": "kekse-98d97a63881b.png",
-      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
       "reviewed": true
     },
     "twix": {
       "file": "twix.svg",
-      "source": "kekse-98d97a63881b.png",
-      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "source": "toffee-800592a1334c.png",
+      "sourceSha256": "800592a1334c60c8368efe9a245cbdf8cfaeed13f0f95355d05cc5a62df4e2aa",
       "reviewed": true
     },
     "sauerkirschen": {
@@ -1912,8 +1910,8 @@
     },
     "marzipan": {
       "file": "marzipan.svg",
-      "source": "kekse-98d97a63881b.png",
-      "sourceSha256": "98d97a63881b6d6c65c613ee6e353af593f2980b89b8446ee1787b7f48debcb2",
+      "source": "kekse-37e6aa664758.png",
+      "sourceSha256": "37e6aa6647588947fb4bae051a6effa6b4a24970a07f3ee4d473932f54e2ef10",
       "reviewed": true
     },
     "marzipan_rohmasse": {
@@ -1960,8 +1958,8 @@
     },
     "halloumi": {
       "file": "halloumi.svg",
-      "source": "austernsauce-d03e0e9690ad.png",
-      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
       "reviewed": true
     },
     "brie": {
@@ -1978,20 +1976,18 @@
     },
     "mortadella": {
       "file": "mortadella.svg",
-      "source": "austernsauce-d03e0e9690ad.png",
-      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
       "reviewed": true
     },
     "chorizo": {
       "file": "chorizo.svg",
-      "source": "austernsauce-d03e0e9690ad.png",
-      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
       "reviewed": true
     },
     "fischstabchen": {
       "file": "fischstabchen.svg",
-      "source": "austernsauce-d03e0e9690ad.png",
-      "sourceSha256": "d03e0e9690adc7da9e8327a090fbed17a697fdb11a25c280b00c7891ab2496e3",
       "reviewed": true
     },
     "dorade": {
@@ -2014,8 +2010,8 @@
     },
     "mandeldrink": {
       "file": "mandeldrink.svg",
-      "source": "kondensmilch-8db6545075c3.png",
-      "sourceSha256": "8db6545075c36295a310fe25642db176d3678a2bbd2d4a8193ba526697c2fbe0",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
       "reviewed": true
     },
     "reisdrink": {
@@ -2344,6 +2340,18 @@
     },
     "jakobsmuscheln": {
       "file": "jakobsmuscheln.svg",
+      "reviewed": true
+    },
+    "oliven": {
+      "file": "oliven.svg",
+      "source": "oliven-6bf73d54c364.png",
+      "sourceSha256": "6bf73d54c3649494c85c86df060fcdc22682a3d43d189df37daf7691f332acd7",
+      "reviewed": true
+    },
+    "wiener_wurstchen": {
+      "file": "wiener_wurstchen.svg",
+      "source": "chorizo-160b09a15b58.png",
+      "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
       "reviewed": true
     }
   }
