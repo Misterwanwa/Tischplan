@@ -2353,6 +2353,60 @@
       "source": "chorizo-160b09a15b58.png",
       "sourceSha256": "160b09a15b581b8cc9b9c4cf64ef2a8e2e1e1eac6711d06c055661681fe0ff2c",
       "reviewed": true
+    },
+    "zimtsterne": {
+      "file": "zimtsterne.svg",
+      "source": "zimtsterne-81ae3ffd6fa2.png",
+      "sourceSha256": "81ae3ffd6fa2500c6140570fa2755c297b172f8d61095fe0d7711290853c4c58",
+      "reviewed": true
+    },
+    "nougat": {
+      "file": "nougat.svg",
+      "source": "zimtsterne-81ae3ffd6fa2.png",
+      "sourceSha256": "81ae3ffd6fa2500c6140570fa2755c297b172f8d61095fe0d7711290853c4c58",
+      "reviewed": true
+    },
+    "tortilla_chips": {
+      "file": "tortilla_chips.svg",
+      "source": "zimtsterne-81ae3ffd6fa2.png",
+      "sourceSha256": "81ae3ffd6fa2500c6140570fa2755c297b172f8d61095fe0d7711290853c4c58",
+      "reviewed": true
+    },
+    "salzbrezeln": {
+      "file": "salzbrezeln.svg",
+      "source": "zimtsterne-81ae3ffd6fa2.png",
+      "sourceSha256": "81ae3ffd6fa2500c6140570fa2755c297b172f8d61095fe0d7711290853c4c58",
+      "reviewed": true
+    },
+    "tk_himbeeren": {
+      "file": "tk_himbeeren.svg",
+      "source": "zimtsterne-81ae3ffd6fa2.png",
+      "sourceSha256": "81ae3ffd6fa2500c6140570fa2755c297b172f8d61095fe0d7711290853c4c58",
+      "reviewed": true
+    },
+    "ayran": {
+      "file": "ayran.svg",
+      "source": "zimtsterne-81ae3ffd6fa2.png",
+      "sourceSha256": "81ae3ffd6fa2500c6140570fa2755c297b172f8d61095fe0d7711290853c4c58",
+      "reviewed": true
+    },
+    "ricotta": {
+      "file": "ricotta.svg",
+      "source": "zimtsterne-81ae3ffd6fa2.png",
+      "sourceSha256": "81ae3ffd6fa2500c6140570fa2755c297b172f8d61095fe0d7711290853c4c58",
+      "reviewed": true
+    },
+    "fruchtquark": {
+      "file": "fruchtquark.svg",
+      "source": "zimtsterne-81ae3ffd6fa2.png",
+      "sourceSha256": "81ae3ffd6fa2500c6140570fa2755c297b172f8d61095fe0d7711290853c4c58",
+      "reviewed": true
+    },
+    "milchsnack": {
+      "file": "milchsnack.svg",
+      "source": "zimtsterne-81ae3ffd6fa2.png",
+      "sourceSha256": "81ae3ffd6fa2500c6140570fa2755c297b172f8d61095fe0d7711290853c4c58",
+      "reviewed": true
     }
   }
 }

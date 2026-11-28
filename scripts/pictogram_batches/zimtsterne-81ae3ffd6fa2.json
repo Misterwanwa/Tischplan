@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "zimtsterne",
+      "name": "Zimtsterne",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "nougat",
+      "name": "Nougat / Nugat",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "tortilla_chips",
+      "name": "Tortilla-Chips",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "salzbrezeln",
+      "name": "Salzbrezeln",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "tk_himbeeren",
+      "name": "TK-Obst",
+      "category": "Fertig & Tiefkühlprodukte"
+    },
+    {
+      "id": "ayran",
+      "name": "Ayran",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "ricotta",
+      "name": "Ricotta",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "fruchtquark",
+      "name": "Fruchtquark",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "milchsnack",
+      "name": "Milchsnack",
+      "category": "Milchprodukte"
+    }
+  ],
+  "unusedCells": 0,
+  "prompt": "Create one square high-resolution exact 3x3 sprite sheet of nine grocery shopping pictograms. White stroke-only doodle lines on uniform pure black for clean transparency extraction. A slightly organic drawn line, consistent medium weight, smooth rounded caps. Hollow black interiors everywhere, no fills, labels, letters, colors, shadows, visible grid or textures. Strong recognizability at 32 pixels. Strict independent equal square cells with broad empty gutters, each motif centered, max 70% of each cell. Exact positions in row-major order: TOP LEFT German cinnamon star cookies, two overlapping six-pointed cookies with a simple smaller inset star-shaped icing outline and a subtle side edge on the larger one, no sparkles or dots. TOP CENTER nougat, a small rectangular bar with a cut slice showing two horizontal nougat layers and a single opened hazelnut kernel alongside. TOP RIGHT tortilla chips, three broad triangular slightly irregular corn chips with only two short toasted dashes on each, arranged in an open fanned cluster with no bowl. MIDDLE LEFT mini salty pretzel snacks, two small thin crunchy knot-shaped pretzels, three distinct openings on the front pretzel, only a few short salt dash marks on it, no bag. MIDDLE CENTER frozen fruit, open upright freezer pouch with a simple outlined six-arm snowflake on the front, one strawberry and two small blueberries beside the pouch, no text. MIDDLE RIGHT ayran, a tall tulip-shaped thin-waisted drinking glass of foamy yogurt drink, the foam surface has three small open round bubbles, with a pinch of salt indicated by a tiny angled salt shaker beside the glass. BOTTOM LEFT ricotta, one small unmolded truncated cone of fresh ricotta, slightly flared downwards, scalloped or ridged basket imprint shown as four curved vertical strokes, a wedge taken from the front, no holes and no garnish. BOTTOM CENTER fruit quark, low open dairy tub with creamy swirl and a single halved strawberry adjacent to it, no label. BOTTOM RIGHT milk snack, two thin rectangular cocoa sponge sandwiches with visibly thick milk filling as hollow separated contour lines, one whole and one showing a clean cut end, no branding. No added objects. Clean black background and pure white outlines. Correction: show the milk filling as two thin contour lines with a hollow interior."
+}
