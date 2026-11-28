@@ -2407,6 +2407,60 @@
       "source": "zimtsterne-81ae3ffd6fa2.png",
       "sourceSha256": "81ae3ffd6fa2500c6140570fa2755c297b172f8d61095fe0d7711290853c4c58",
       "reviewed": true
+    },
+    "erdnusslocken": {
+      "file": "erdnusslocken.svg",
+      "source": "erdnusslocken-2b510f18304e.png",
+      "sourceSha256": "2b510f18304edcfe6b49a23473842bf8b349ecfa4234c874972a01c9455353cf",
+      "reviewed": true
+    },
+    "salzstangen": {
+      "file": "salzstangen.svg",
+      "source": "erdnusslocken-2b510f18304e.png",
+      "sourceSha256": "2b510f18304edcfe6b49a23473842bf8b349ecfa4234c874972a01c9455353cf",
+      "reviewed": true
+    },
+    "brotchips": {
+      "file": "brotchips.svg",
+      "source": "erdnusslocken-2b510f18304e.png",
+      "sourceSha256": "2b510f18304edcfe6b49a23473842bf8b349ecfa4234c874972a01c9455353cf",
+      "reviewed": true
+    },
+    "kefir": {
+      "file": "kefir.svg",
+      "source": "erdnusslocken-2b510f18304e.png",
+      "sourceSha256": "2b510f18304edcfe6b49a23473842bf8b349ecfa4234c874972a01c9455353cf",
+      "reviewed": true
+    },
+    "mascarpone": {
+      "file": "mascarpone.svg",
+      "source": "erdnusslocken-2b510f18304e.png",
+      "sourceSha256": "2b510f18304edcfe6b49a23473842bf8b349ecfa4234c874972a01c9455353cf",
+      "reviewed": true
+    },
+    "skyr": {
+      "file": "skyr.svg",
+      "source": "erdnusslocken-2b510f18304e.png",
+      "sourceSha256": "2b510f18304edcfe6b49a23473842bf8b349ecfa4234c874972a01c9455353cf",
+      "reviewed": true
+    },
+    "ghee": {
+      "file": "ghee.svg",
+      "source": "erdnusslocken-2b510f18304e.png",
+      "sourceSha256": "2b510f18304edcfe6b49a23473842bf8b349ecfa4234c874972a01c9455353cf",
+      "reviewed": true
+    },
+    "kakaomilch": {
+      "file": "kakaomilch.svg",
+      "source": "erdnusslocken-2b510f18304e.png",
+      "sourceSha256": "2b510f18304edcfe6b49a23473842bf8b349ecfa4234c874972a01c9455353cf",
+      "reviewed": true
+    },
+    "bananenmilch": {
+      "file": "bananenmilch.svg",
+      "source": "erdnusslocken-2b510f18304e.png",
+      "sourceSha256": "2b510f18304edcfe6b49a23473842bf8b349ecfa4234c874972a01c9455353cf",
+      "reviewed": true
     }
   }
 }

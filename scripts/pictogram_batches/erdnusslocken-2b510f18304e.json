@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "erdnusslocken",
+      "name": "Flips",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "salzstangen",
+      "name": "Salzstangen",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "brotchips",
+      "name": "Brotchips",
+      "category": "Süssigkeiten"
+    },
+    {
+      "id": "kefir",
+      "name": "Kefir",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "mascarpone",
+      "name": "Mascarpone",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "skyr",
+      "name": "Skyr",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "ghee",
+      "name": "Ghee (Butterreinfett)",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "kakaomilch",
+      "name": "Kakao",
+      "category": "Milchprodukte"
+    },
+    {
+      "id": "bananenmilch",
+      "name": "Bananenmilch",
+      "category": "Milchprodukte"
+    }
+  ],
+  "unusedCells": 0,
+  "prompt": "Create one square high-resolution regular 3x3 sheet of nine grocery pictograms. Pure WHITE smooth medium monoline doodle strokes on perfectly flat pure BLACK for extraction, black hollow interiors, no solid patches, all tiny accents short strokes or hollow rings. Clean organic hand-drawn look, rounded ends, consistent width, high recognizability at small sizes, NO words, labels, grid lines, texture or shadows. Center each of nine isolated symbols in its exact square cell, use 62–70% of cell at most with fully clear generous gutters. Exact order: TOP LEFT German peanut flips, three visibly puffy curved C-shaped corn puffs, each thick and smoothly round-ended in outline with one small curved interior line, plus a small peanut in its shell near lower right; TOP CENTER pretzel sticks, a small scattered fan of five thin straight long slender sticks with rounded ends and a few tiny short salt dashes, no bowl or wrapper; TOP RIGHT bread chips, three overlapping thin irregular oval toasted baguette slices with a second slightly irregular thin contour for crust on the front slice and three short small crumb marks inside, no loaf. MIDDLE LEFT kefir, a rounded shoulders dairy bottle with a flat screw cap and three separate small outlined bubbles rising beside its neck, with two compact bumpy cauliflower-like kefir grains beside the base, no text; MIDDLE CENTER mascarpone, a squat open oval tub, one gently folded smooth dollop on a spoon resting diagonally across the rim, next to one ladyfinger biscuit with thin center line to suggest tiramisu use; MIDDLE RIGHT skyr, a tall tapered open single-serving dairy pot with foil peeled halfway up and a sharply defined, pointed peak of thick skyr standing above the rim, no spoon, no fruit. BOTTOM LEFT ghee clarified butter, a short wide cylindrical screw-top glass jar, outlined horizontal liquid meniscus inside, a single outlined large drop beside it and no label; BOTTOM CENTER drinking cocoa, short glass dairy bottle with small flat cap, cocoa pod with curved long grooves and two oval cocoa beans beside it, no cocoa mug, no text; BOTTOM RIGHT banana milk, plain tall slim drink carton with gable top and a short straw, and one clearly curved banana with a partially opened peel leaning alongside. Keep very different silhouettes for the dairy items. Use ONLY medium white continuous contour strokes."
+}
