@@ -18,7 +18,7 @@ import {
 } from './productDatabase';
 import CaloriesTab from './CaloriesTab';
 import { setSyncStatus, subscribeSyncStatus, SYNC_STATES, SYNC_LABELS } from './modules/syncStatus';
-import { getItemDetails, addDetailToItem, updateDetailInItem, removeDetailFromItem, formatDetailsSummary } from './modules/multiDetails';
+import { getItemDetails, addDetailToItem, updateDetailInItem, removeDetailFromItem, formatDetailsSummary, getDetailsPreviewInfo } from './modules/multiDetails';
 import { analyzeWeekIngredients, findProductMatch, parseIngredientTextLine } from './modules/ingredientMatcher';
 import { STATS_STORAGE_KEY, EVENT_TYPES, createStatEvent, appendStatEvent, generateRewindReport } from './modules/statistics';
 import { AI_PROVIDERS, DEFAULT_OPENROUTER_MODEL, OPENROUTER_MODEL_PRESETS, isValidOpenRouterModel, readAiConfigFromStorage, resolveAiConfig } from './modules/aiConfig';
@@ -687,6 +687,23 @@ STRIKTE REGELN:
 5. Schätze die Nährwerte (kcal, protein, carbs, fat) pro Portion grob ab, falls nicht im Bild angegeben.
 
 Antworte AUSSCHLIESSLICH als JSON im Format: ${RECIPE_JSON_SCHEMA}.`;
+
+  const imageObj = {
+    mimeType: mimeType || 'image/jpeg',
+    data: base64Data
+  };
+  return callAI(prompt, false, 'gemini', imageObj, 2048);
+}
+
+async function analyzeCookbookShelfImage(base64Data, mimeType = 'image/jpeg') {
+  const prompt = `Du bist ein präzises Bilderkennungs- und OCR-System für Bücherregale.
+Analysiere dieses Foto eines Bücherregals oder Buchstapels und erkenne alle sichtbaren (Koch-)Bücher anhand der Buchrücken oder Cover.
+STRIKTE REGELN:
+1. Lies für jedes erkennbare Buch den Titel ("title") und, soweit sichtbar oder eindeutig zuordenbar, den Autor bzw. Herausgeber ("author") ab.
+2. Wenn der Autor auf dem Buchrücken nicht lesbar und nicht sicher bekannt ist, lasse "author" als leeren String "".
+3. Erfinde KEINE Bücher, die nicht im Bild zu sehen sind.
+4. Antworte AUSSCHLIESSLICH mit gültigem JSON ohne weiteren Text im Format:
+{"books": [{"title": "Buchtitel", "author": "Autor Name"}, ...]}`;
 
   const imageObj = {
     mimeType: mimeType || 'image/jpeg',
@@ -5135,10 +5152,32 @@ function ShoppingTile({ item, product, isActive, onShortClick, onLongPress }) {
     450
   );
 
+  const detailRef = useRef(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  const previewInfo = useMemo(() => getDetailsPreviewInfo(item), [item]);
+  const detailText = previewInfo.summary;
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      const el = detailRef.current;
+      if (el) {
+        setIsOverflowing(el.scrollWidth > el.clientWidth + 1);
+      } else {
+        setIsOverflowing(false);
+      }
+    };
+    checkOverflow();
+    window.addEventListener('resize', checkOverflow);
+    return () => window.removeEventListener('resize', checkOverflow);
+  }, [detailText, previewInfo.count]);
+
   const iconName = product?.icon || item.icon;
   const categoryName = product?.category || item.category;
   const imageSrc = product?.image || item.image;
   const productId = product?.id || item.productId || item.id;
+
+  const showMoreIndicator = isOverflowing || previewInfo.extraCount > 0;
 
   return (
     <div
@@ -5176,11 +5215,33 @@ function ShoppingTile({ item, product, isActive, onShortClick, onLongPress }) {
         <div className={`text-xs sm:text-sm font-bold leading-tight truncate px-1 ${isActive ? 'text-rose-950' : 'text-stone-800'}`}>
           {item.name}
         </div>
-        {item.detail ? (
-          <div className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full inline-block truncate max-w-full ${
-            isActive ? 'bg-rose-200/80 text-rose-900' : 'bg-stone-200/70 text-stone-600'
-          }`}>
-            {item.detail}
+        {detailText ? (
+          <div
+            onClick={(e) => {
+              if (showMoreIndicator) {
+                e.stopPropagation();
+                onLongPress(item);
+              }
+            }}
+            title={showMoreIndicator ? `${detailText} (Tippen für alle Details)` : detailText}
+            className={`inline-flex items-center justify-center gap-1 max-w-full px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold ${
+              isActive ? 'bg-rose-200/80 text-rose-900' : 'bg-stone-200/70 text-stone-600'
+            }`}
+          >
+            <span ref={detailRef} className="truncate min-w-0">
+              {detailText}
+            </span>
+            {showMoreIndicator && (
+              <span
+                className={`flex-shrink-0 inline-flex items-center px-1 py-0.2 rounded-full text-[9px] font-mono font-bold leading-tight ${
+                  isActive
+                    ? 'bg-rose-700 text-white shadow-2xs'
+                    : 'bg-stone-600 text-white shadow-2xs'
+                }`}
+              >
+                {previewInfo.extraCount > 0 ? `+${previewInfo.extraCount}` : '···'}
+              </span>
+            )}
           </div>
         ) : (
           <div className="h-4"></div>
@@ -5631,13 +5692,13 @@ function ShoppingTab() {
     <div className="space-y-4 pb-12 select-none">
       {/* Container header & actions */}
       <div className={cardCls + " space-y-3"}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="flex items-center gap-2 pr-2">
             <ShoppingCart className="text-stone-900 stroke-[2.25]" size={20} />
             <h2 className="font-bold text-base tracking-tight text-stone-900 font-mono uppercase">Einkaufsliste</h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-2 sm:ml-4">
             {/* Sort Selector Dropdown */}
             <div className="relative">
               <select
@@ -6086,6 +6147,10 @@ function SettingsTab() {
   } = useApp();
   const [people, setPeople] = useState(settings.people);
   const [cookbookInput, setCookbookInput] = useState('');
+  const [cookbookAuthorInput, setCookbookAuthorInput] = useState('');
+  const [shelfScanBusy, setShelfScanBusy] = useState(false);
+  const [shelfCandidates, setShelfCandidates] = useState([]);
+  const [shelfScanError, setShelfScanError] = useState(null);
   const [bmBusy, setBmBusy] = useState(null);
   const [testCodeInput, setTestCodeInput] = useState('');
   const [rewindData, setRewindData] = useState(null);
@@ -6154,20 +6219,124 @@ function SettingsTab() {
     }
     await updateSettings({ notificationEnabled: enabled });
   };
-  const addCookbook = async () => {
-    const titleToAdd = cookbookInput.trim();
-    if (!titleToAdd) return;
-    const exists = settings.cookbooks.some(c => (typeof c === 'string' ? c : c.title) === titleToAdd);
+  const formatCookbookTitle = (titleStr, authorStr) => {
+    const t = (titleStr || '').trim();
+    const a = (authorStr || '').trim();
+    if (!t) return '';
+    return a ? `${t} (${a})` : t;
+  };
+  const addCookbookEntry = async (titleStr, authorStr = '') => {
+    const t = (titleStr || '').trim();
+    const a = (authorStr || '').trim();
+    if (!t) return false;
+    const formatted = formatCookbookTitle(t, a);
+    const exists = settings.cookbooks.some(c => {
+      const existingTitle = (typeof c === 'string' ? c : c.title || '').toLowerCase();
+      return existingTitle === formatted.toLowerCase() || existingTitle === t.toLowerCase();
+    });
     if (exists) {
       showToast('Dieses Kochbuch existiert bereits!', 'error');
-      return;
+      return false;
     }
-    await updateSettings({ cookbooks: [...settings.cookbooks, { title: titleToAdd, addedAt: Date.now() }] });
-    setCookbookInput('');
+    const newEntry = { title: formatted, bookTitle: t, author: a, addedAt: Date.now() };
+    await updateSettings({ cookbooks: [...settings.cookbooks, newEntry] });
+    return true;
+  };
+  const addCookbook = async () => {
+    const ok = await addCookbookEntry(cookbookInput, cookbookAuthorInput);
+    if (ok) {
+      setCookbookInput('');
+      setCookbookAuthorInput('');
+    }
   };
   const removeCookbook = async (c) => {
     const cTitle = typeof c === 'string' ? c : c.title;
     await updateSettings({ cookbooks: settings.cookbooks.filter(x => (typeof x === 'string' ? x : x.title) !== cTitle) });
+  };
+  const handleShelfPhotoScan = async (file) => {
+    if (!file) return;
+    setShelfScanBusy(true);
+    setShelfScanError(null);
+    try {
+      const dataUrl = await resizeImage(file, 1600, 0.88);
+      const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      showToast('KI analysiert Bücherregal im Hintergrund...', 'info');
+      const res = await analyzeCookbookShelfImage(base64, 'image/jpeg');
+      const books = Array.isArray(res?.books) ? res.books : (Array.isArray(res) ? res : []);
+      const cleaned = books
+        .map(b => ({
+          id: uid(),
+          title: (b?.title || '').trim(),
+          author: (b?.author || '').trim(),
+        }))
+        .filter(b => b.title.length > 0);
+      if (cleaned.length === 0) {
+        setShelfScanError('Es konnten keine Bücher auf dem Foto erkannt werden.');
+        showToast('Keine Bücher auf dem Foto erkannt', 'warning');
+      } else {
+        setShelfCandidates(prev => [...cleaned, ...prev]);
+        showToast(`${cleaned.length} ${cleaned.length === 1 ? 'Buch' : 'Bücher'} vom Regal erkannt!`);
+      }
+    } catch (e) {
+      console.error('Regal-Analyse fehlgeschlagen:', e);
+      setShelfScanError(e.message || 'Analyse fehlgeschlagen');
+      showToast('Regal-Analyse fehlgeschlagen: ' + (e.message || 'Unbekannter Fehler'), 'error');
+    } finally {
+      setShelfScanBusy(false);
+    }
+  };
+  const handleAcceptShelfCandidate = async (cand, mode = 'both') => {
+    const t = (cand.title || '').trim();
+    const a = (cand.author || '').trim();
+    let finalTitle = t;
+    let finalAuthor = '';
+    if (mode === 'both') {
+      finalTitle = t;
+      finalAuthor = a;
+    } else if (mode === 'title') {
+      finalTitle = t;
+      finalAuthor = '';
+    } else if (mode === 'author') {
+      finalTitle = a || t;
+      finalAuthor = '';
+    }
+    if (!finalTitle) return;
+    const ok = await addCookbookEntry(finalTitle, finalAuthor);
+    if (ok) {
+      setShelfCandidates(prev => prev.filter(item => item.id !== cand.id));
+      showToast(`„${formatCookbookTitle(finalTitle, finalAuthor)}“ übernommen`);
+    }
+  };
+  const handleAcceptAllShelfCandidates = async () => {
+    if (shelfCandidates.length === 0) return;
+    const existingLower = new Set(
+      settings.cookbooks.map(c => (typeof c === 'string' ? c : c.title || '').toLowerCase())
+    );
+    const toAdd = [];
+    const now = Date.now();
+    shelfCandidates.forEach((cand, idx) => {
+      const t = (cand.title || '').trim();
+      const a = (cand.author || '').trim();
+      if (!t) return;
+      const formatted = formatCookbookTitle(t, a);
+      if (!existingLower.has(formatted.toLowerCase()) && !existingLower.has(t.toLowerCase())) {
+        existingLower.add(formatted.toLowerCase());
+        toAdd.push({ title: formatted, bookTitle: t, author: a, addedAt: now + idx });
+      }
+    });
+    if (toAdd.length > 0) {
+      await updateSettings({ cookbooks: [...settings.cookbooks, ...toAdd] });
+      showToast(`${toAdd.length} ${toAdd.length === 1 ? 'Kochbuch' : 'Kochbücher'} übernommen!`);
+    } else {
+      showToast('Alle erkannten Bücher sind bereits vorhanden', 'info');
+    }
+    setShelfCandidates([]);
+  };
+  const handleRejectShelfCandidate = (id) => {
+    setShelfCandidates(prev => prev.filter(item => item.id !== id));
+  };
+  const handleUpdateShelfCandidate = (id, field, value) => {
+    setShelfCandidates(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
   };
   const switchProfile = async (idx) => {
     await storageSet('profile', { personIndex: idx }, false);
@@ -6591,17 +6760,158 @@ function SettingsTab() {
             </select>
           )}
         </div>
-        <div className="flex gap-2 mb-2">
-          <input value={cookbookInput} onChange={e => setCookbookInput(e.target.value)} placeholder="Titel hinzufügen" className={inputCls} onKeyDown={e => e.key === 'Enter' && addCookbook()} />
-          <button onClick={addCookbook} className="px-3 rounded-lg bg-stone-900 text-white flex-shrink-0"><Plus size={16} /></button>
+        <div className="flex flex-col sm:flex-row gap-2 mb-2">
+          <input value={cookbookInput} onChange={e => setCookbookInput(e.target.value)} placeholder="Titel hinzufügen" className={inputCls + " flex-1"} onKeyDown={e => e.key === 'Enter' && addCookbook()} />
+          <div className="flex gap-2">
+            <input value={cookbookAuthorInput} onChange={e => setCookbookAuthorInput(e.target.value)} placeholder="Autor (optional)" className={inputCls + " sm:w-44"} onKeyDown={e => e.key === 'Enter' && addCookbook()} />
+            <button onClick={addCookbook} className="px-3 py-2 rounded-lg bg-stone-900 text-white flex-shrink-0" title="Kochbuch hinzufügen"><Plus size={16} /></button>
+          </div>
         </div>
+
+        {/* KI-Regal-Scan per Foto */}
+        <div className="mb-3 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className={secondaryBtnCls + " cursor-pointer text-xs font-mono py-2 px-3 flex-1 min-w-[200px]"}>
+              {shelfScanBusy ? (
+                <><Loader2 size={14} className="animate-spin text-amber-600" /> KI analysiert Bücherregal im Hintergrund...</>
+              ) : (
+                <><Camera size={14} className="text-stone-700" /> <Sparkles size={13} className="text-amber-500" /> Regal fotografieren &amp; Bücher per KI erkennen</>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={shelfScanBusy}
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (f) handleShelfPhotoScan(f);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+          </div>
+          <p className="text-[11px] text-stone-400 mt-1">
+            Fotografiere dein Kochbuch-Regal – die KI listet erkannte Bücher mit Autor im Hintergrund zur Auswahl auf.
+          </p>
+          {shelfScanError && (
+            <div className="mt-2 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center justify-between">
+              <span>{shelfScanError}</span>
+              <button onClick={() => setShelfScanError(null)} className="text-rose-400 hover:text-rose-700 ml-2"><X size={14} /></button>
+            </div>
+          )}
+        </div>
+
+        {/* Erkannte Bücher aus dem Regal-Scan */}
+        {shelfCandidates.length > 0 && (
+          <div className="mb-3 p-3 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-mono font-bold uppercase tracking-wide text-amber-900 flex items-center gap-1.5">
+                <Sparkles size={13} className="text-amber-600" /> Erkannte Bücher ({shelfCandidates.length})
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleAcceptAllShelfCandidates}
+                  className="px-2.5 py-1 rounded-lg bg-stone-900 text-white text-[11px] font-mono font-semibold hover:bg-stone-800 flex items-center gap-1"
+                >
+                  <Check size={12} /> Alle übernehmen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShelfCandidates([])}
+                  className="px-2 py-1 rounded-lg border border-amber-300 text-amber-800 hover:bg-amber-100 text-[11px] font-mono"
+                >
+                  Verwerfen
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-0.5">
+              {shelfCandidates.map(cand => (
+                <div key={cand.id} className="p-2.5 bg-white rounded-lg border border-amber-200/80 shadow-2xs space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    <div>
+                      <label className="text-[10px] font-mono uppercase text-stone-400 block">Titel</label>
+                      <input
+                        type="text"
+                        value={cand.title}
+                        onChange={e => handleUpdateShelfCandidate(cand.id, 'title', e.target.value)}
+                        placeholder="Buchtitel"
+                        className="w-full px-2 py-1 rounded border border-stone-200 text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-stone-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-mono uppercase text-stone-400 block">Autor</label>
+                      <input
+                        type="text"
+                        value={cand.author}
+                        onChange={e => handleUpdateShelfCandidate(cand.id, 'author', e.target.value)}
+                        placeholder="Autor (optional)"
+                        className="w-full px-2 py-1 rounded border border-stone-200 text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-stone-900"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    {cand.author.trim() ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleAcceptShelfCandidate(cand, 'both')}
+                          disabled={!cand.title.trim()}
+                          className="px-2.5 py-1 rounded-md bg-stone-900 text-white text-[11px] font-mono font-semibold hover:bg-stone-800 disabled:opacity-40 flex items-center gap-1"
+                          title="Titel & Autor übernehmen"
+                        >
+                          <Check size={11} /> Titel &amp; Autor
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAcceptShelfCandidate(cand, 'title')}
+                          disabled={!cand.title.trim()}
+                          className="px-2 py-1 rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 text-[11px] font-mono font-medium disabled:opacity-40"
+                          title="Nur den Buchtitel übernehmen"
+                        >
+                          Nur Titel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAcceptShelfCandidate(cand, 'author')}
+                          className="px-2 py-1 rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 text-[11px] font-mono font-medium"
+                          title="Nur den Autor übernehmen"
+                        >
+                          Nur Autor
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleAcceptShelfCandidate(cand, 'title')}
+                        disabled={!cand.title.trim()}
+                        className="px-2.5 py-1 rounded-md bg-stone-900 text-white text-[11px] font-mono font-semibold hover:bg-stone-800 disabled:opacity-40 flex items-center gap-1"
+                      >
+                        <Check size={11} /> Übernehmen
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRejectShelfCandidate(cand.id)}
+                      className="ml-auto px-2 py-1 rounded-md text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 text-[11px] font-mono flex items-center gap-1"
+                      title="Vorschlag ablehnen"
+                    >
+                      <X size={12} /> Ablehnen
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-1">
           {sortedCookbooks.map(c => {
             const val = typeof c === 'string' ? c : c.title;
             return (
               <div key={val} className="flex items-center justify-between px-3 py-2 bg-stone-50 rounded-lg text-sm">
-                <span>{val}</span>
-                <button onClick={() => removeCookbook(c)} title="Entfernen"><X size={14} className="text-stone-400 hover:text-rose-500" /></button>
+                <span className="truncate pr-2">{val}</span>
+                <button onClick={() => removeCookbook(c)} title="Entfernen" className="flex-shrink-0"><X size={14} className="text-stone-400 hover:text-rose-500" /></button>
               </div>
             );
           })}
@@ -6745,12 +7055,12 @@ function SettingsTab() {
 
       <div className={cardCls + " bg-stone-50 border-dashed border-stone-300 text-center flex flex-col items-center justify-center p-4"}>
         <div className="text-xs text-stone-400 font-mono uppercase tracking-widest">Programmversion</div>
-        <div className="text-lg font-bold text-stone-800 mt-1">v1.11.7</div>
+        <div className="text-lg font-bold text-stone-800 mt-1">v1.12.0</div>
         <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1.5 border border-emerald-100 uppercase tracking-wider font-mono">
-          Codename: Lebkuchen 🍪
+          Codename: Milchreis 🍚
         </div>
         <div className="text-[10px] text-stone-450 mt-2 font-mono uppercase leading-normal">
-          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.19 (Kaiserschmarrn) · v1.11.7 (Lebkuchen)
+          Verlauf: v1.0.0 (Apfelkuchen) · v1.1.0 (Brokkoliauflauf) · v1.2.0 (Cacio e Pepe) · v1.3.6 (Dampfnudel) · v1.4.1 (Erbsensuppe) · v1.5.7 (Flammkuchen) · v1.6.0 (Gyros) · v1.7.3 (Hefezopf) · v1.8.22 (Ingwertee) · v1.9.1 (Jägermeister) · v1.10.19 (Kaiserschmarrn) · v1.11.7 (Lebkuchen) · v1.12.0 (Milchreis)
         </div>
       </div>
 

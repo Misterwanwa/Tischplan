@@ -1,6 +1,6 @@
 {
   "name": "tischplan",
-  "version": "1.11.7",
+  "version": "1.12.0",
   "description": "2-Personen Speiseplaner mit KI-Rezeptsuche, Nährwerttracking und Kochbuch-Management",
   "type": "module",
   "scripts": {

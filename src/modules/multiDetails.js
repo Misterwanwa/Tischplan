@@ -70,3 +70,18 @@ export function formatDetailsSummary(details = []) {
   const list = Array.isArray(details) ? details : (details?.details || []);
   return list.map(d => typeof d === 'string' ? d : d?.text || '').filter(Boolean).join(' · ');
 }
+
+/**
+ * Computes compact tile preview info and overflow indicator for product details.
+ * @param {object} item - Shopping item with `details` and/or `detail`
+ * @returns {{ list: string[], summary: string, count: number, extraCount: number, hasMore: boolean }}
+ */
+export function getDetailsPreviewInfo(item) {
+  const list = getItemDetails(item);
+  const summary = formatDetailsSummary(list) || (typeof item?.detail === 'string' ? item.detail.trim() : '');
+  const count = list.length;
+  const extraCount = Math.max(0, count - 1);
+  // Indicates whether there are multiple details or a long detail string that likely overflows on small screens
+  const hasMore = extraCount > 0 || summary.length > 14;
+  return { list, summary, count, extraCount, hasMore };
+}

@@ -5,7 +5,8 @@ import {
   addDetailToItem,
   updateDetailInItem,
   removeDetailFromItem,
-  formatDetailsSummary
+  formatDetailsSummary,
+  getDetailsPreviewInfo
 } from '../src/modules/multiDetails.js';
 
 test('MultiDetails: Backwards compatibility with single string detail', () => {
@@ -65,4 +66,25 @@ test('MultiDetails: Preset option toggling logic', () => {
   detailsList = removeDetailFromItem(detailsList, foundIdx);
   assert.deepStrictEqual(detailsList, ['1kg']);
 });
+
+test('MultiDetails: Preview info and overflow indicators', () => {
+  const singleShort = { name: 'Milch', details: ['1l'] };
+  const info1 = getDetailsPreviewInfo(singleShort);
+  assert.strictEqual(info1.count, 1);
+  assert.strictEqual(info1.extraCount, 0);
+  assert.strictEqual(info1.hasMore, false);
+
+  const multipleDetails = { name: 'Äpfel', details: ['1kg', 'Bio', 'Gala'] };
+  const info2 = getDetailsPreviewInfo(multipleDetails);
+  assert.strictEqual(info2.count, 3);
+  assert.strictEqual(info2.extraCount, 2);
+  assert.strictEqual(info2.hasMore, true);
+
+  const singleLong = { name: 'Fleisch', detail: 'Vom Wochenmarkt am Freitag' };
+  const info3 = getDetailsPreviewInfo(singleLong);
+  assert.strictEqual(info3.count, 1);
+  assert.strictEqual(info3.extraCount, 0);
+  assert.strictEqual(info3.hasMore, true);
+});
+
 
